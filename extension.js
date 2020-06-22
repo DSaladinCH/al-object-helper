@@ -1,7 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
-import {  } from "./src/Reader";
+const Reader = require('./src/Reader.js');
+
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -27,12 +28,15 @@ function activate(context) {
 
 	context.subscriptions.push(disposable);
 
+	const reader = new Reader();
+	reader.readAllFiles();
+
 	disposable = vscode.commands.registerCommand('al-object-helper.openALFile', async function () {
 		// The code you place here will be executed every time your command is executed
 
 		// Display a message box to the user
-		const input = await vscode.window.showInputBox();
-		openFile(input);
+		var input = await vscode.window.showInputBox();
+		reader.openFile(input);
 	});
 
 	context.subscriptions.push(disposable);

@@ -25,7 +25,7 @@
 				"title": "Open AL File"
 			}
 		],
-		"keybindings":[
+		"keybindings": [
 			{
 				"command": "al-object-helper.openALFile",
 				"key": "Ctrl+Alt+O"
@@ -47,5 +47,8 @@
 		"mocha": "^7.1.2",
 		"typescript": "^3.8.3",
 		"vscode-test": "^1.3.0"
+	},
+	"dependencies": {
+		"node-stream-zip": "^1.11.2"
 	}
 }
