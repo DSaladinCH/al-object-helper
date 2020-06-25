@@ -21,10 +21,10 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/FunPlay3rs/al-object-helper.git"
+		"url": "https://github.com/DSaladinCH/al-object-helper.git"
 	},
 	"bugs": {
-		"url": "https://github.com/FunPlay3rs/al-object-helper/issues",
+		"url": "https://github.com/DSaladinCH/al-object-helper/issues",
 		"email": "git@dsaladin.ch"
 	},
 	"keywords": [
