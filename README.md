@@ -7,6 +7,7 @@ So you can quickly access objects without searching for them for a long time.
 ## Features
 
 * **Open Files** easy with a shortcut
+* **Open Files** easy with their Name
 * **Standard** and **Custom** Objects
 
 You can open any AL File.
@@ -34,8 +35,7 @@ Ex. P21 for Customer Page
 
 ## Commands
 
-* **Open AL File Fast**: Open AL File with Type and ID (Shortcut Ctrl + Alt + O)
-* **Open AL File Search**: Search for an AL File by its Object Name or Object ID (Shortcut Ctrl + Alt + O)
+* **Open AL File**: Open AL File with Type and ID or its Object Name (Shortcut Ctrl + Alt + O)
 * **Regenerate**: Regenerate Temp Files for extension from local files and app file
 
 ## Known Issues
@@ -71,6 +71,10 @@ Fixed Startup Problems
 
 Added functionality to show list of Objects on open File
 Changed Activation Events
+
+### 1.2.1
+
+Changed Features and Commands in README
 
 -----------------------------------------------------------------------------------------------------------
 
