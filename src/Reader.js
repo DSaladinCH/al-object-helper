@@ -136,10 +136,11 @@ module.exports = class Reader {
         var i = 0;
         files.forEach(async element => {
             var line = await firstLine(element);
-            var aLObject = this.getALObject(line, element);
-            this.alObjects.push(aLObject);
+            var alObject = this.getALObject(line, element);
+            if (alObject != undefined)
+                this.alObjects.push(alObject);
             i++;
-            if (i === arrLen - 1) {
+            if (i >= arrLen - 1) {
                 vscode.window.showInformationMessage("Found " + arrLen + " Custom AL Files");
 
                 this.detectAllExtensions();
@@ -152,10 +153,11 @@ module.exports = class Reader {
         var i2 = 0;
         files2.forEach(async element => {
             var line = await firstLine(element);
-            var aLObject = this.getALObject(line, element);
-            this.alObjects.push(aLObject);
+            var alObject = this.getALObject(line, element);
+            if (alObject != undefined)
+                this.alObjects.push(alObject);
             i2++;
-            if (i2 === arrLen2 - 1) {
+            if (i2 >= arrLen2 - 1) {
                 vscode.window.showInformationMessage("Found " + arrLen2 + " Standard AL Files");
 
                 this.detectAllExtensions();
@@ -209,7 +211,7 @@ module.exports = class Reader {
     }
 
     openFile(input) {
-        if (input === '')
+        if (input == '' || input == undefined)
             return;
 
         input = input.toLowerCase();
@@ -262,7 +264,7 @@ module.exports = class Reader {
                 break;
         }
         if (alObject == undefined) {
-            vscode.window.showInformationMessage("No Object found with Type " + longType + " and ID " + id);
+            vscode.window.showWarningMessage("No Object found with Type " + longType + " and ID " + id);
             return;
         }
 
@@ -281,9 +283,13 @@ module.exports = class Reader {
         var startIndex = 0;
         var endIndex = firstLine.indexOf(' ');
         var type = firstLine.substring(startIndex, endIndex);
+        if (type == '')
+            return undefined;
         startIndex = endIndex + 1;
         endIndex = firstLine.indexOf(' ', startIndex);
         var id = firstLine.substring(startIndex, endIndex);
+        if (id == '' || !this.hasNumber(id))
+            return undefined;
         startIndex = endIndex + 1;
         endIndex = firstLine.indexOf(' ', startIndex);
         if (firstLine[startIndex] == '"') {
@@ -295,6 +301,9 @@ module.exports = class Reader {
             name = firstLine.substring(startIndex)
         else
             name = firstLine.substring(startIndex, endIndex);
+
+        if (name == '')
+            return undefined;
 
         if (type.endsWith("extension")) {
             startIndex = firstLine.indexOf("extends ") + "extends ".length;
@@ -324,6 +333,8 @@ class ALObject {
     constructor(path, type, id, name, extendsName) {
         this.path = path;
         this.type = type.trim();
+        this.displayType = type[0].toUpperCase() + type.substring(1);
+        this.shortType = this.convertToShortType(this.type);
         this.id = id;
         this.name = name.trim();
         this.extendsName = extendsName.trim();
@@ -335,6 +346,29 @@ class ALObject {
         else {
             this.extension = true;
             this.extendsType = this.type.substring(0, this.type.indexOf("extension")).trim();
+        }
+    }
+
+    convertToShortType(type) {
+        switch (type) {
+            case "table":
+                return "t";
+            case "page":
+                return "p";
+            case "codeunit":
+                return "c";
+            case "report":
+                return "r";
+            case "xmlport":
+                return "x";
+            case "enum":
+                return "e";
+            case "tableextension":
+                return "te";
+            case "pagextension":
+                return "pe";
+            case "enumextension":
+                return "ee";
         }
     }
 }

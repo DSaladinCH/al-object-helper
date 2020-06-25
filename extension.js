@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const Reader = require('./src/Reader.js');
+const ALObjectItem = require('./src/ALObjectItem.js');
 
 
 // this method is called when your extension is activated
@@ -11,7 +12,6 @@ const Reader = require('./src/Reader.js');
  * @param {vscode.ExtensionContext} context
  */
 async function activate(context) {
-
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
@@ -30,8 +30,25 @@ async function activate(context) {
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand('al-object-helper.openALFile', async function () {
-		var input = await vscode.window.showInputBox({ placeHolder: "Object Shortcut + Object ID (ex. T18)" });
-		reader.openFile(input);
+		var temp = [];
+		reader.alObjects.forEach(element => {
+			temp.push(ALObjectItem.getALObjectItem(element));
+		});
+
+		var quickPick = vscode.window.createQuickPick();
+		quickPick.items = temp;
+		quickPick.placeholder = "Search for a Object or use shortcut"
+		quickPick.matchOnDescription = true;
+		quickPick.onDidAccept(function(event){
+			if (quickPick.selectedItems[0] == undefined)
+				reader.openFile(quickPick.value);
+			else{
+				const alObject = ALObjectItem.convertToALObjectItem(quickPick.selectedItems[0]);
+				reader.openFile(alObject.shortType + alObject.id);
+			}
+		});
+
+		quickPick.show();
 	});
 
 	context.subscriptions.push(disposable);

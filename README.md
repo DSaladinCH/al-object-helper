@@ -21,8 +21,10 @@ Just use the Object Shortcut and the ID.
 * EE = EnumExtension
 * X = Report
 
+Ex. T27 for Item Table
 ![Ex. T27 for Item Table](Images/vid01.gif)
 
+Ex. P21 for Customer Page
 ![Ex. P21 for Customer Page](Images/vid02.gif)
 
 ## Requirements
@@ -32,8 +34,9 @@ Just use the Object Shortcut and the ID.
 
 ## Commands
 
-* **Open AL File**: Open AL File with Type and ID (Shortcut Ctrl + Alt + O)
-* **Regenerate**: Regenerate Temp Files for extension
+* **Open AL File Fast**: Open AL File with Type and ID (Shortcut Ctrl + Alt + O)
+* **Open AL File Search**: Search for an AL File by its Object Name or Object ID (Shortcut Ctrl + Alt + O)
+* **Regenerate**: Regenerate Temp Files for extension from local files and app file
 
 ## Known Issues
 
@@ -64,11 +67,14 @@ Added Changelog for old versions
 
 Fixed Startup Problems
 
+### 1.2.0
+
+Added functionality to show list of Objects on open File
+Changed Activation Events
+
 -----------------------------------------------------------------------------------------------------------
 
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+## Shortcuts
 
 * Open AL File (`Cmd+Alt+O` on macOS or `Ctrl+Alt+O` on Windows and Linux)
 
