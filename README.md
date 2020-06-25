@@ -51,7 +51,7 @@ Initial release of AL Object Helper
 
 Changed git package.json Publisher
 
-### 1.1.2
+### 1.1.2 / 1.1.3
 
 Changed minimum VS Code Version
 Fixed Regenerate
