@@ -47,7 +47,7 @@ Newest Releases
 
 Initial release of AL Object Helper
 
-### 1.1.0
+### 1.1.1
 
 Changed git package.json Publisher
 
