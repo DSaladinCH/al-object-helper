@@ -56,6 +56,14 @@ Changed git package.json Publisher
 Changed minimum VS Code Version
 Fixed Regenerate
 
+### 1.1.4
+
+Added Changelog for old versions
+
+### 1.1.5
+
+Fixed Startup Problems
+
 -----------------------------------------------------------------------------------------------------------
 
 ## Working with Markdown

@@ -2,6 +2,10 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.1.5] - 25.06.2020
+### Fixed
+- Startup Problem
+
 ## [1.1.4] - 25.06.2020
 ### Added
 - Changelog for old versions

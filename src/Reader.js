@@ -2,7 +2,6 @@ const vscode = require('vscode');
 const { workspace } = require("vscode");
 const path = require("path");
 const fs = require('fs');
-const readline = require('readline');
 const JSZip = require('jszip');
 const { resolve } = require('path');
 const firstLine = require('firstline');
@@ -39,7 +38,7 @@ module.exports = class Reader {
                         }
                     }
                 }
-                else{
+                else {
                     fs.unlink(baseAppFolderPath, async function (error) {
                         await reader.readFiles();
                     });
@@ -62,7 +61,7 @@ module.exports = class Reader {
         appFiles = [appFiles[0]];
         appFiles.forEach(async element => {
             var splittedName = path.basename(element).split('_');
-            if (splittedName[0] != "Microsoft" || splittedName[1] != "Base Application")
+            if (splittedName[0] != "Microsoft" || !splittedName[1].endsWith("Application"))
                 return;
 
             fs.copyFile(element, baseAppZipPath, async (err) => {

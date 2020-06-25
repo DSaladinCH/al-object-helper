@@ -15,6 +15,7 @@ async function activate(context) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
+	vscode.window.showInformationMessage("Welcome to the AL Object Helper :)");
 
 	const reader = new Reader();
 	await reader.generateAll(true);
