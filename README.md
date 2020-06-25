@@ -1,51 +1,53 @@
-# al-object-helper README
+# AL Object Helper
 
-This is the README for your extension "al-object-helper". After writing up a brief description, we recommend including the following sections.
+If you work with large AL projects, you quickly lose track of your objects.
+This extension helps you with this.
+So you can quickly access objects without searching for them for a long time.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+* **Open Files** easy with a shortcut
+* **Standard** and **Custom** Objects
 
-For example if there is an image subfolder under your extension project workspace:
+You can open any AL File.
+Just use the Object Shortcut and the ID.
 
-\!\[feature X\]\(images/feature-x.png\)
+* T = Table
+* TE = TableExtension
+* P = Page
+* PE = PageExtension
+* R = Report
+* E = Enum
+* EE = EnumExtension
+* X = Report
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Ex. T27 for Item Table
+![](Images/vid01.gif)
+
+Ex. P5050 for Customer Page
+![](Images/vid02.gif)
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+* [AL Language](https://marketplace.visualstudio.com/items?itemName=ms-dynamics-smb.al)
 
-## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## Commands
 
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+* **Open AL File**: Open AL File with Type and ID (Shortcut Ctrl + Alt + O)
+* **Regenerate**: Regenerate Temp Files for extension
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+-
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+Newest Releases
 
 ### 1.0.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+Initial release of AL Object Helper
 
 -----------------------------------------------------------------------------------------------------------
 
@@ -53,13 +55,6 @@ Added features X, Y, and Z.
 
 **Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+* Open AL File (`Cmd+Alt+O` on macOS or `Ctrl+Alt+O` on Windows and Linux)
 
 **Enjoy!**

@@ -3,7 +3,8 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "0.0.1",
+	"version": "1.0.0",
+	"icon": "Images/alLanguageHelper.png",
 	"engines": {
 		"vscode": "^1.46.0"
 	},
@@ -11,18 +12,39 @@
 		"Other"
 	],
 	"activationEvents": [
-		"*"
+		"onLanguage:AL",
+		"onStartupFinished"
+	],
+	"author": {
+		"name": "Dominic Saladin",
+		"email": "git@dsaladin.ch"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/FunPlay3rs/al-object-helper.git"
+	},
+	"bugs": {
+		"url": "https://github.com/FunPlay3rs/al-object-helper/issues",
+		"email": "git@dsaladin.ch"
+	},
+	"keywords": [
+		"AL",
+		"AL Extensions",
+		"Business Central",
+		"Dynamics NAV",
+		"Helper",
+		"Fast Opener"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "al-object-helper.helloWorld",
-				"title": "Hello World"
+				"command": "al-object-helper.regenerate",
+				"title": "AL Helper: Regenerate"
 			},
 			{
 				"command": "al-object-helper.openALFile",
-				"title": "Open AL File"
+				"title": "AL Helper: Open AL File"
 			}
 		],
 		"keybindings": [
@@ -49,6 +71,8 @@
 		"vscode-test": "^1.3.0"
 	},
 	"dependencies": {
-		"node-stream-zip": "^1.11.2"
+		"adm-zip": "^0.4.16",
+		"firstline": "^2.0.2",
+		"jszip": "^3.5.0"
 	}
 }
