@@ -10,41 +10,36 @@ const Reader = require('./src/Reader.js');
 /**
  * @param {vscode.ExtensionContext} context
  */
-function activate(context) {
+async function activate(context) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
 
+	const reader = new Reader();
+	await reader.generateAll(true);
+
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('al-object-helper.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from AL Object Helper!');
+	let disposable = vscode.commands.registerCommand('al-object-helper.regenerate', async function () {
+		await reader.generateAll(false);
 	});
 
 	context.subscriptions.push(disposable);
 
-	const reader = new Reader();
-	reader.readAllFiles();
-
 	disposable = vscode.commands.registerCommand('al-object-helper.openALFile', async function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		var input = await vscode.window.showInputBox();
+		var input = await vscode.window.showInputBox({ placeHolder: "Object Shortcut + Object ID (ex. T18)" });
 		reader.openFile(input);
 	});
 
 	context.subscriptions.push(disposable);
+	console.log('Registered all commands');
 }
 exports.activate = activate;
 
 // this method is called when your extension is deactivated
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,
