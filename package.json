@@ -3,10 +3,10 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"icon": "Images/alLanguageHelper.png",
 	"engines": {
-		"vscode": "^1.46.0"
+		"vscode": "^1.40.0"
 	},
 	"categories": [
 		"Other"
