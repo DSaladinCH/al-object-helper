@@ -21,11 +21,9 @@ Just use the Object Shortcut and the ID.
 * EE = EnumExtension
 * X = Report
 
-Ex. T27 for Item Table
-![](Images/vid01.gif)
+![Ex. T27 for Item Table](Images/vid01.gif)
 
-Ex. P5050 for Customer Page
-![](Images/vid02.gif)
+![Ex. P21 for Customer Page](Images/vid02.gif)
 
 ## Requirements
 
@@ -48,6 +46,10 @@ Newest Releases
 ### 1.0.0
 
 Initial release of AL Object Helper
+
+### 1.1.0
+
+Changed git package.json Publisher
 
 -----------------------------------------------------------------------------------------------------------
 
