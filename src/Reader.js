@@ -39,6 +39,11 @@ module.exports = class Reader {
                         }
                     }
                 }
+                else{
+                    fs.unlink(baseAppFolderPath, async function (error) {
+                        await reader.readFiles();
+                    });
+                }
             }
         });
     }
