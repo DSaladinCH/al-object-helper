@@ -3,24 +3,37 @@ const { workspace } = require("vscode");
 const path = require("path");
 const fs = require('fs');
 const JSZip = require('jszip');
-const { resolve } = require('path');
 const firstLine = require('firstline');
 const os = require('os');
+const ALObjectItem = require('./ALObjectItem');
+const AppPackage = require('./AppPackage');
+const ALObject = require('./ALObject');
 
 module.exports = class Reader {
     constructor() {
         this.alObjects = [];
+        this.appPackages = [];
+        this.appPackages.push(new AppPackage('Custom'));
+        this.readLocalFiles = false;
     }
 
     generateAll(checkExists) {
         const rootPath = workspace.rootPath;
         const alCachePath = rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'BaseApp').replace(/\\/g, '/');
+        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper').replace(/\\/g, '/');
         const reader = this;
+        console.log(path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper'));
+        this.readLocalFiles = false;
+        this.alObjects = [];
+        this.appPackages = [];
+        this.appPackages.push(new AppPackage('Custom'));
 
         fs.readdir(baseAppFolderPath, async function (error, files) {
             if (checkExists && files != undefined && files.length > 0) {
-                await reader.detectAllAlFiles();
+                await reader.detectCustomAlFiles();
+                files.forEach(async element => {
+                    await reader.detectAllAlFiles(path.basename(element));
+                });
             }
             else {
                 if (checkExists) {
@@ -30,16 +43,19 @@ module.exports = class Reader {
                     else {
                         if (files != undefined && files.length > 0) {
                             fs.unlink(baseAppFolderPath, async function (error) {
+                                await reader.detectCustomAlFiles();
                                 await reader.readFiles();
                             });
                         }
                         else {
+                            await reader.detectCustomAlFiles();
                             await reader.readFiles();
                         }
                     }
                 }
                 else {
                     fs.unlink(baseAppFolderPath, async function (error) {
+                        await reader.detectCustomAlFiles();
                         await reader.readFiles();
                     });
                 }
@@ -51,30 +67,35 @@ module.exports = class Reader {
         const rootPath = workspace.rootPath;
         const alPackagesPath = rootPath + "\\.alpackages";
         const alCachePath = rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        const baseAppZipPath = alCachePath + '/BaseApp.zip';
-        const baseApp2ZipPath = alCachePath + '/BaseApp2.zip';
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'BaseApp').replace(/\\/g, '/');
+        // const baseAppZipPath = alCachePath + '/BaseApp.zip';
+        // const baseApp2ZipPath = alCachePath + '/BaseApp2.zip';
+        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper').replace(/\\/g, '/');
         const appFilter = '.app';
         const reader = this;
 
         var appFiles = await reader.readDir(alPackagesPath, appFilter, this);
-        appFiles = [appFiles[0]];
+        var appPackages = [];
+        //appFiles = [appFiles[0]];
         appFiles.forEach(async element => {
             var splittedName = path.basename(element).split('_');
-            if (splittedName[0] != "Microsoft" || !splittedName[1].endsWith("Application"))
+            // if (splittedName[0] != "Microsoft" || !splittedName[1].endsWith("Application"))
+            //     return;
+            if (appPackages.indexOf(splittedName[0] + "_" + splittedName[1]) != -1)
                 return;
 
-            fs.copyFile(element, baseAppZipPath, async (err) => {
+            appPackages.push(splittedName[0] + "_" + splittedName[1]);
+
+            fs.copyFile(element, alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '.zip', async (err) => {
                 if (err) throw err;
                 console.log('Copied App File to AL Cache');
                 try {
-                    fs.readFile(baseAppZipPath, function (error, data) {
+                    fs.readFile(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '.zip', function (error, data) {
                         if (err) {
                             throw err;
                         }
 
                         JSZip.loadAsync(data).then(function (zip) {
-                            fs.unlinkSync(baseAppZipPath);
+                            fs.unlinkSync(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '.zip');
                             zip.remove('SymbolReference.json');
                             zip.remove('[Content_Types].xml');
                             zip.remove('MediaIdListing.xml');
@@ -89,28 +110,33 @@ module.exports = class Reader {
                             vscode.window.showInformationMessage("Extracting App File");
                             zip
                                 .generateNodeStream({ type: 'nodebuffer', streamFiles: false })
-                                .pipe(fs.createWriteStream(baseApp2ZipPath))
+                                .pipe(fs.createWriteStream(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip'))
                                 .on('close', async function () {
                                     console.log("Unzipping File");
                                     var AdmZip = require('adm-zip');
-                                    var admZip = new AdmZip(baseApp2ZipPath);
-                                    fs.exists(baseAppFolderPath, async function (exists) {
+                                    var admZip = new AdmZip(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip');
+                                    fs.exists(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], async function (exists) {
                                         if (!exists) {
-
-                                            fs.mkdir(baseAppFolderPath, async function (error) {
-                                                admZip.extractAllTo(baseAppFolderPath, true);
-                                                fs.unlinkSync(baseApp2ZipPath);
+                                            fs.mkdir(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], async function (error) {
+                                                admZip.extractAllTo(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], true);
+                                                fs.unlinkSync(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip');
                                                 vscode.window.showInformationMessage("Extracted App File");
 
-                                                await reader.detectAllAlFiles();
+                                                const packageName = splittedName[0] + "_" + splittedName[1];
+                                                if (reader.appPackages.find(element => element.packageName == packageName) == undefined)
+                                                    reader.appPackages.push(new AppPackage(packageName));
+                                                await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1]);
                                             });
                                         }
                                         else {
-                                            admZip.extractAllTo(baseAppFolderPath, true);
-                                            fs.unlinkSync(baseApp2ZipPath);
+                                            admZip.extractAllTo(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], true);
+                                            fs.unlinkSync(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip');
                                             vscode.window.showInformationMessage("Extracted App File");
 
-                                            await reader.detectAllAlFiles();
+                                            const packageName = splittedName[0] + "_" + splittedName[1];
+                                            if (reader.appPackages.find(element => element.packageName == packageName) == undefined)
+                                                reader.appPackages.push(new AppPackage(packageName));
+                                            await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1]);
                                         }
                                     });
                                 });
@@ -124,9 +150,64 @@ module.exports = class Reader {
         });
     }
 
-    async detectAllAlFiles() {
+    async detectCustomAlFiles() {
         const rootPath = workspace.rootPath;
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'BaseApp').replace(/\\/g, '/');
+        const alFilter = '.al';
+
+        var files = await this.readDir(rootPath, alFilter, this);
+        console.log("Found " + files.length + " Custom AL Files");
+
+        var arrLen = files.length;
+        var i = 0;
+        files.forEach(async element => {
+            var line = await firstLine(element);
+            var alObject = this.getALObject(line, element);
+            if (alObject != undefined) {
+                alObject.appPackageName = 'Custom';
+                this.alObjects.push(alObject);
+            }
+
+            i++;
+            if (i >= arrLen - 1) {
+                vscode.window.showInformationMessage("Found " + arrLen + " Custom AL Files");
+
+                this.detectAllExtensions();
+            }
+        });
+    }
+
+    async detectAllAlFiles(appPackageName) {
+        const rootPath = workspace.rootPath;
+        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper', appPackageName).replace(/\\/g, '/');
+        const alFilter = '.al';
+
+        var files2 = await this.readDir(baseAppFolderPath, alFilter, this);
+        console.log("Found " + files2.length + " AL Files of " + appPackageName.split('_')[1]);
+        var arrLen2 = files2.length;
+        var i2 = 0;
+        files2.forEach(async element => {
+            var line = await firstLine(element);
+            var alObject = this.getALObject(line, element);
+            if (alObject != undefined) {
+                alObject.appPackageName = appPackageName;
+                this.alObjects.push(alObject);
+            }
+
+            i2++;
+            if (i2 >= arrLen2 - 1) {
+                const packageName = appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1];
+                if (this.appPackages.find(element => element.packageName == packageName) == undefined)
+                    this.appPackages.push(new AppPackage(packageName));
+                vscode.window.showInformationMessage("Found " + arrLen2 + " AL Files of " + appPackageName.split('_')[1]);
+
+                this.detectAllExtensions();
+            }
+        });
+    }
+
+    async detectAllRDLCFiles() {
+        const rootPath = workspace.rootPath;
+        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper').replace(/\\/g, '/');
         const alFilter = '.al';
 
         var files = await this.readDir(rootPath, alFilter, this);
@@ -146,30 +227,13 @@ module.exports = class Reader {
                 this.detectAllExtensions();
             }
         });
-
-        var files2 = await this.readDir(baseAppFolderPath, alFilter, this);
-        console.log("Found " + files2.length + " Standard AL Files");
-        var arrLen2 = files2.length;
-        var i2 = 0;
-        files2.forEach(async element => {
-            var line = await firstLine(element);
-            var alObject = this.getALObject(line, element);
-            if (alObject != undefined)
-                this.alObjects.push(alObject);
-            i2++;
-            if (i2 >= arrLen2 - 1) {
-                vscode.window.showInformationMessage("Found " + arrLen2 + " Standard AL Files");
-
-                this.detectAllExtensions();
-            }
-        });
     }
 
     detectAllExtensions() {
         var arrLen = this.alObjects.length;
         var i = 0;
         this.alObjects.forEach(element => {
-            element.extendsID = this.findExtendsID(element, this.alObjects).extendsID;
+            element = this.findExtendsID(element);
             i++;
             if (i === arrLen - 1) {
                 console.log("All Objects linked");
@@ -210,7 +274,7 @@ module.exports = class Reader {
         });
     }
 
-    openFile(input) {
+    async openFile(input, appPackageName) {
         if (input == '' || input == undefined)
             return;
 
@@ -218,51 +282,141 @@ module.exports = class Reader {
         var longType = "";
         var type = input.substring(0, 2);
         var id = input.substring(2);
-        if (this.hasNumber(type)) {
-            type = type.substring(0, 1);
+        var alObject;
+        var cancelled = false;
+
+        if (this.hasLetter(id)) {
+            type = input.substring(0, 3);
+            id = input.substring(3);
+        }
+        else if (this.hasNumber(type)) {
+            type = input.substring(0, 1);
             id = input.substring(1);
         }
-        var alObject;
-        var filePath = "";
+
+        var tempAlObjects = this.alObjects.filter(element => element.id == id);
+        if (appPackageName != '')
+            tempAlObjects = tempAlObjects.filter(element => element.appPackageName == appPackageName);
 
         switch (type) {
             case "t":
-                alObject = this.alObjects.find(element => element.type == "table" && element.id == id);
+                alObject = tempAlObjects.find(element => element.type == "table");
                 longType = "Table";
                 break;
             case "p":
-                alObject = this.alObjects.find(element => element.type == "page" && element.id == id);
+                alObject = tempAlObjects.find(element => element.type == "page");
                 longType = "Page";
                 break;
             case "c":
-                alObject = this.alObjects.find(element => element.type == "codeunit" && element.id == id);
+                alObject = tempAlObjects.find(element => element.type == "codeunit");
                 longType = "Codeunit";
                 break;
             case "r":
-                alObject = this.alObjects.find(element => element.type == "report" && element.id == id);
+                alObject = tempAlObjects.find(element => element.type == "report");
                 longType = "Report";
                 break;
             case "x":
-                alObject = this.alObjects.find(element => element.type == "xmlport" && element.id == id);
+                alObject = tempAlObjects.find(element => element.type == "xmlport");
                 longType = "XmlPort";
                 break;
             case "e":
-                alObject = this.alObjects.find(element => element.type == "enum" && element.id == id);
+                alObject = tempAlObjects.find(element => element.type == "enum");
                 longType = "Enum";
                 break;
             case "te":
-                alObject = this.alObjects.find(element => element.extendsType == "table" && element.extendsID == id);
+                if (appPackageName == '') {
+                    const results = this.alObjects.filter(element => element.extendsType == "table" && element.extendsID == id);
+                    if (results.length <= 1)
+                        alObject = results[0];
+                    else {
+                        // Show options for multiple AL Objects
+                        var alObjectItems = []
+                        results.forEach(element => {
+                            alObjectItems.push(new ALObjectItem(element));
+                        });
+                        const selectedItem = await vscode.window.showQuickPick(alObjectItems, {});
+                        if (selectedItem == undefined)
+                            cancelled = true;
+                        else {
+                            const alObjectItem = ALObjectItem.convertToALObjectItem(selectedItem);
+                            alObject = this.alObjects.find(element =>
+                                element.type == "tableextension"
+                                && element.id == alObjectItem.id
+                                && element.appPackageName == alObjectItem.appPackageName
+                            );
+                        }
+                    }
+                }
+                longType = "TableExtension";
+                break;
+            case "ted":
+                alObject = tempAlObjects.find(element => element.type == "tableextension");
                 longType = "TableExtension";
                 break;
             case "pe":
-                alObject = this.alObjects.find(element => element.extendsType == "page" && element.extendsID == id);
+                if (appPackageName == '') {
+                    const results = this.alObjects.filter(element => element.extendsType == "page" && element.extendsID == id);
+                    if (results.length <= 1)
+                        alObject = results[0];
+                    else {
+                        // Show options for multiple AL Objects
+                        var alObjectItems = []
+                        results.forEach(element => {
+                            alObjectItems.push(new ALObjectItem(element));
+                        });
+                        const selectedItem = await vscode.window.showQuickPick(alObjectItems, {});
+                        if (selectedItem == undefined)
+                            cancelled = true;
+                        else {
+                            const alObjectItem = ALObjectItem.convertToALObjectItem(selectedItem);
+                            alObject = this.alObjects.find(element =>
+                                element.type == "pageextension"
+                                && element.id == alObjectItem.id
+                                && element.appPackageName == alObjectItem.appPackageName
+                            );
+                        }
+                    }
+                }
+                longType = "PageExtension";
+                break;
+            case "ped":
+                alObject = tempAlObjects.find(element => element.type == "pageextension");
                 longType = "PageExtension";
                 break;
             case "ee":
-                alObject = this.alObjects.find(element => element.extendsType == "enum" && element.extendsID == id);
+                if (appPackageName == '') {
+                    const results = this.alObjects.filter(element => element.extendsType == "enum" && element.extendsID == id);
+                    if (results.length <= 1)
+                        alObject = results[0];
+                    else {
+                        // Show options for multiple AL Objects
+                        var alObjectItems = []
+                        results.forEach(element => {
+                            alObjectItems.push(new ALObjectItem(element));
+                        });
+                        const selectedItem = await vscode.window.showQuickPick(alObjectItems, {});
+                        if (selectedItem == undefined)
+                            cancelled = true;
+                        else {
+                            const alObjectItem = ALObjectItem.convertToALObjectItem(selectedItem);
+                            alObject = this.alObjects.find(element =>
+                                element.type == "enumextension"
+                                && element.id == alObjectItem.id
+                                && element.appPackageName == alObjectItem.appPackageName
+                            );
+                        }
+                    }
+                }
+                longType = "EnumExtension";
+                break;
+            case "eed":
+                alObject = tempAlObjects.find(element => element.type == "enumextension");
                 longType = "EnumExtension";
                 break;
         }
+        if (cancelled)
+            return;
+
         if (alObject == undefined) {
             vscode.window.showWarningMessage("No Object found with Type " + longType + " and ID " + id);
             return;
@@ -277,6 +431,10 @@ module.exports = class Reader {
 
     hasNumber(myString) {
         return /\d/.test(myString);
+    }
+
+    hasLetter(myString) {
+        return /[a-zA-Z]/.test(myString);
     }
 
     getALObject(firstLine, pathToFile) {
@@ -308,67 +466,24 @@ module.exports = class Reader {
         if (type.endsWith("extension")) {
             startIndex = firstLine.indexOf("extends ") + "extends ".length;
             var extendsName = firstLine.substring(startIndex);
+            extendsName = extendsName.trim();
             if (extendsName.startsWith("\""))
-                extendsName = extendsName.substring(1, extendsName.length - 2);
+                extendsName = extendsName.substring(1, extendsName.length - 1);
             return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
         }
 
         return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
     }
 
-    findExtendsID(alObject, alObjects) {
+    findExtendsID(alObject) {
         if (!alObject.extension)
             return alObject;
 
-        var extendsObject = alObjects.find(element => element.type == alObject.extendsType && element.name == alObject.extendsName);
+        var extendsObject = this.alObjects.find(element => element.type == alObject.extendsType && element.name == alObject.extendsName);
         if (extendsObject == undefined)
             return alObject;
 
-        alObject.extendsID = extendsObject.id;
+        alObject.setExtendObject(extendsObject.id, extendsObject.type);
         return alObject;
-    }
-}
-
-class ALObject {
-    constructor(path, type, id, name, extendsName) {
-        this.path = path;
-        this.type = type.trim();
-        this.displayType = type[0].toUpperCase() + type.substring(1);
-        this.shortType = this.convertToShortType(this.type);
-        this.id = id;
-        this.name = name.trim();
-        this.extendsName = extendsName.trim();
-        this.extendsID = -1;
-        this.extendsType = "";
-
-        if (this.extendsName == '')
-            this.extension = false;
-        else {
-            this.extension = true;
-            this.extendsType = this.type.substring(0, this.type.indexOf("extension")).trim();
-        }
-    }
-
-    convertToShortType(type) {
-        switch (type) {
-            case "table":
-                return "t";
-            case "page":
-                return "p";
-            case "codeunit":
-                return "c";
-            case "report":
-                return "r";
-            case "xmlport":
-                return "x";
-            case "enum":
-                return "e";
-            case "tableextension":
-                return "te";
-            case "pagextension":
-                return "pe";
-            case "enumextension":
-                return "ee";
-        }
     }
 }

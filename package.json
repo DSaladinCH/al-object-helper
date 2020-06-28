@@ -48,6 +48,10 @@
 			{
 				"command": "al-object-helper.openALFile",
 				"title": "AL Helper: Open AL File"
+			},
+			{
+				"command": "al-object-helper.packageSearch",
+				"title": "AL Helper: Package Search"
 			}
 		],
 		"keybindings": [
