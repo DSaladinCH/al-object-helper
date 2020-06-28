@@ -59,7 +59,7 @@ async function activate(context) {
 		});
 		quickPick.onDidAccept(function (event) {
 			const alObjectItem = ALObjectItem.convertToALObjectItem(quickPick.selectedItems[0]);
-			if (alObjectItem.label == quickPick.value)
+			if (alObjectItem.label == quickPick.value && alObjectItem.userInputField)
 				reader.openFile(quickPick.value, '');
 			else {
 				if (alObjectItem.extension)

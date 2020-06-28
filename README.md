@@ -54,6 +54,10 @@ Just use the Object Shortcut and the ID.
 
 **Newest Releases**
 
+### 1.3.1
+
+Fixed Bug, if input is same as a Object, it doesn't find the file
+
 ### 1.3.0
 
 Added new Command "Package Search" to search only the objects of a specific package

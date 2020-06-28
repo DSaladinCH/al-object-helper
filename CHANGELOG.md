@@ -2,12 +2,16 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.3.1] - 28.06.2020
+### Fixed
+- Bug, if input is same as a Object, it doesn't find the file
+
 ## [1.3.0] - 28.06.2020
-## Added
+### Added
 - New Command "Package Search"
 - Compatibility for multiple App Packages
 
-## Changed
+### Changed
 - List View for AL Objects
 
 ## [1.2.0] - 25.06.2020
@@ -46,6 +50,7 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.3...v1.1.5
