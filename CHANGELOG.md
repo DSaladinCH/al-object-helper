@@ -2,10 +2,13 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
-## [1.2.1] - 25.06.2020
-### Changed
-- Features
-- Commands
+## [1.3.0] - 28.06.2020
+## Added
+- New Command "Package Search"
+- Compatibility for multiple App Packages
+
+## Changed
+- List View for AL Objects
 
 ## [1.2.0] - 25.06.2020
 ### Added
@@ -43,6 +46,7 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
-
+[1.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.5...v1.2.0
 [1.1.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.3...v1.1.5
+[1.1.3]: https://github.com/DSaladinCH/al-object-helper/releases/tag/1.1.3

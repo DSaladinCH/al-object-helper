@@ -9,34 +9,42 @@ So you can quickly access objects without searching for them for a long time.
 * **Open Files** easy with a shortcut
 * **Open Files** easy with their Name
 * **Standard** and **Custom** Objects
+* **Multiple Packages** are supported
+* Search for Objects in a **specific App File**
 
 You can open any AL File.
 Just use the Object Shortcut and the ID.
 
-* T = Table
-* TE = TableExtension
-* P = Page
-* PE = PageExtension
-* R = Report
-* E = Enum
-* EE = EnumExtension
-* X = Report
+### Shortcuts
+* T = Open a Table
+* TE = Open a TableExtension with the Table ID
+* TED = Open a TableExtension
+* P = Open a Page
+* PE = Open a PageExtension with the Page ID
+* PED = Open a PageExtension
+* E = Open a Enum
+* EE = Open a Enum Extension with the Enum ID
+* EED = Open a EnumExtension
+* R = Open a Report
+* X = Open a XmlPort
 
-Ex. T27 for Item Table
+## Examples
+**Ex. T27 for Item Table**
 ![Ex. T27 for Item Table](Images/vid01.gif)
 
-Ex. P21 for Customer Page
+**Ex. P21 for Customer Page**
 ![Ex. P21 for Customer Page](Images/vid02.gif)
+
 
 ## Requirements
 
 * [AL Language](https://marketplace.visualstudio.com/items?itemName=ms-dynamics-smb.al)
 
-
 ## Commands
 
 * **Open AL File**: Open AL File with Type and ID or its Object Name (Shortcut Ctrl + Alt + O)
-* **Regenerate**: Regenerate Temp Files for extension from local files and app file
+* **Regenerate**: Regenerate Temp Files for extension from local files and all app files
+* **Package Search**: Search for a App Package and select any Object of the specific App Package
 
 ## Known Issues
 
@@ -44,33 +52,40 @@ Ex. P21 for Customer Page
 
 ## Release Notes
 
-Newest Releases
+**Newest Releases**
 
-### 1.0.0
+### 1.3.0
 
-Initial release of AL Object Helper
+Added new Command "Package Search" to search only the objects of a specific package
+Added the compatibility for multiple App Packages
+Changed List View design when opening a AL File
 
-### 1.1.1
+### 1.2.0
 
-Changed git package.json Publisher
+Added functionality to show list of Objects on open File
+Changed Activation Events
+
+### 1.1.5
+
+Fixed Startup Problems
+
+### 1.1.4
+
+Added Changelog for old versions
 
 ### 1.1.2 / 1.1.3
 
 Changed minimum VS Code Version
 Fixed Regenerate
 
-### 1.1.4
+### 1.1.1
 
-Added Changelog for old versions
+Changed git package.json Publisher
 
-### 1.1.5
+### 1.0.0
 
-Fixed Startup Problems
+Initial release of AL Object Helper
 
-### 1.2.0
-
-Added functionality to show list of Objects on open File
-Changed Activation Events
 
 ### 1.2.1
 
