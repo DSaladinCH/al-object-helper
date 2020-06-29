@@ -2,6 +2,10 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.3.2] - 29.06.2020
+### Changed
+- Read next lines in a AL File, if the first line doesn't contain the Object Infos
+
 ## [1.3.1] - 28.06.2020
 ### Fixed
 - Bug, if input is same as a Object, it doesn't find the file
