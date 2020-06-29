@@ -5,6 +5,7 @@ const fs = require('fs');
 const JSZip = require('jszip');
 const firstLine = require('firstline');
 const os = require('os');
+const readline = require('readline');
 const ALObjectItem = require('./ALObjectItem');
 const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObject');
@@ -162,6 +163,18 @@ module.exports = class Reader {
         files.forEach(async element => {
             var line = await firstLine(element);
             var alObject = this.getALObject(line, element);
+            if (alObject == undefined) {
+                const fileStream = fs.createReadStream(element);
+                const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+                for await (const line of rl) {
+                    alObject = this.getALObject(line, element);
+                    if (alObject != undefined) {
+                        break;
+                    }
+                }
+            }
+
             if (alObject != undefined) {
                 alObject.appPackageName = 'Custom';
                 this.alObjects.push(alObject);
@@ -275,7 +288,7 @@ module.exports = class Reader {
     }
 
     async openFile(input, appPackageName) {
-        if (input == '' || input == undefined)
+        if (input == '' || input == undefined || typeof input !== 'string')
             return;
 
         input = input.toLowerCase();
