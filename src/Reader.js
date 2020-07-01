@@ -205,7 +205,6 @@ module.exports = class Reader {
         files.forEach(async element => {
             var line = await firstLine(element);
             var alObject = this.getALObject(line, element);
-
             if (alObject == undefined) {
                 const fileStream = fs.createReadStream(element);
                 const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
@@ -273,7 +272,6 @@ module.exports = class Reader {
         files2.forEach(async element => {
             var line = await firstLine(element);
             var alObject = this.getALObject(line, element);
-
             if (alObject == undefined) {
                 const fileStream = fs.createReadStream(element);
                 const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
@@ -285,7 +283,6 @@ module.exports = class Reader {
                     }
                 }
             }
-
             if (alObject != undefined) {
                 alObject.appPackageName = appPackageName;
                 this.alObjects.push(alObject);
