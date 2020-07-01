@@ -2,6 +2,11 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.3.4] - 01.07.2020
+### Fixed
+- Problems with extracting files, if folder didn't exist yet
+- Also find shortcut with UpperCase
+
 ## [1.3.3] - 01.07.2020
 ### Fixed
 - Network Drive Path opening Problem

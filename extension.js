@@ -135,6 +135,7 @@ function validInput(input) {
 	if (input.length <= 1)
 		return false;
 
+	input = input.toLowerCase();
 	if (startsWithAny(input, ['ted', 'ped', 'eed']) && input.length >= 4) {
 		if (hasLetter(input.substring(3)))
 			return false;

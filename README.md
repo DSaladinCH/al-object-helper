@@ -54,6 +54,11 @@ Just use the Object Shortcut and the ID.
 
 **Newest Releases**
 
+### 1.3.4
+
+Fixed Problems with extracting files, if folder didn't exist yet
+Also find shortcut with UpperCase
+
 ### 1.3.3
 
 Fixed Network Drive file opening Problem and removed some Information Messages

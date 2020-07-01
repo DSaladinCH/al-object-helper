@@ -31,9 +31,12 @@ module.exports = class Reader {
         this.appPackages = [];
         this.appPackages.push(new AppPackage('Custom'));
 
+        if (!fs.existsSync(baseAppFolderPath))
+            fs.mkdirSync(baseAppFolderPath, { recursive: true });
+
         fs.readdir(baseAppFolderPath, async function (error, files) {
             if (error)
-                this.outputChannel.appendLine(error);
+                reader.outputChannel.appendLine(error.message);
             if (checkExists && files != undefined && files.length > 0) {
                 //reader.appPackages.push(new AppPackage('Custom'));
                 files.forEach(element => {
@@ -145,7 +148,7 @@ module.exports = class Reader {
                                         if (!exists) {
                                             fs.mkdir(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], async function (error) {
                                                 if (error)
-                                                    this.outputChannel.appendLine(error);
+                                                    reader.outputChannel.appendLine(error.message);
                                                 console.log((Date.now() - start) + " - Unzipping File " + splittedName[0] + "_" + splittedName[1]);
                                                 start = Date.now();
                                                 admZip.extractAllTo(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], true);
