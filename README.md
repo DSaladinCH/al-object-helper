@@ -54,6 +54,10 @@ Just use the Object Shortcut and the ID.
 
 **Newest Releases**
 
+### 1.3.3
+
+Fixed Network Drive file opening Problem and removed some Information Messages
+
 ### 1.3.2
 
 Also read next lines in a AL File, if the first line doesn't contain the Object Infos

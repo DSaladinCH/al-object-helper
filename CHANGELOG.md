@@ -2,6 +2,13 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.3.3] - 01.07.2020
+### Fixed
+- Network Drive Path opening Problem
+
+### Removed
+- Some Information Messages
+
 ## [1.3.2] - 29.06.2020
 ### Changed
 - Read next lines in a AL File, if the first line doesn't contain the Object Infos
@@ -54,6 +61,8 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.2...v1.3.3
+[1.3.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.5...v1.2.0
