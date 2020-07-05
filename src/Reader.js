@@ -1,7 +1,8 @@
 const vscode = require('vscode');
-const { workspace } = require("vscode");
+const { workspace, ProgressLocation } = require("vscode");
 const path = require("path");
-const fs = require('fs');
+const fs = require('fs-extra');
+const del = require('del');
 const JSZip = require('jszip');
 const firstLine = require('firstline');
 const os = require('os');
@@ -10,72 +11,110 @@ const ALObjectItem = require('./ALObjectItem');
 const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObject');
 const { file } = require('jszip');
+const { worker } = require('cluster');
 
 module.exports = class Reader {
-    constructor() {
+    constructor(extensionContext) {
         this.alObjects = [];
         this.appPackages = [];
         this.appPackages.push(new AppPackage('Custom'));
         this.readLocalFiles = false;
         this.outputChannel = vscode.window.createOutputChannel("ALObjectHelper");
+        this.extensionContext = extensionContext;
+        this.rootPath = workspace.rootPath;
+        this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
+        this.baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(this.rootPath), 'ALObjectHelper').replace(/\\/g, '/');
     }
 
     generateAll(checkExists) {
-        const rootPath = workspace.rootPath;
-        const alCachePath = rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper').replace(/\\/g, '/');
         const reader = this;
-        console.log(path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper'));
         this.readLocalFiles = false;
         this.alObjects = [];
         this.appPackages = [];
         this.appPackages.push(new AppPackage('Custom'));
 
-        if (!fs.existsSync(baseAppFolderPath))
-            fs.mkdirSync(baseAppFolderPath, { recursive: true });
+        if (!fs.existsSync(this.baseAppFolderPath))
+            fs.mkdirSync(this.baseAppFolderPath, { recursive: true });
 
-        fs.readdir(baseAppFolderPath, async function (error, files) {
+        fs.readdir(this.baseAppFolderPath, async function (error, files) {
             if (error)
                 reader.outputChannel.appendLine(error.message);
             if (checkExists && files != undefined && files.length > 0) {
                 //reader.appPackages.push(new AppPackage('Custom'));
                 files.forEach(element => {
                     const appPackageName = path.basename(element);
-                    reader.appPackages.push(new AppPackage(appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1]));
+                    reader.appPackages.push(new AppPackage((appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1]).trim()));
                 });
 
                 reader.detectCustomAlFiles();
-                files.forEach(element => {
-                    reader.detectAllAlFiles(path.basename(element));
+                // files.forEach(async element => {
+                //     await reader.detectAllAlFiles(path.basename(element));
+                // });
+                vscode.window.withProgress({
+                    location: ProgressLocation.Notification,
+                    title: "Reading Objects"
+                }, async (progress, token) => {
+                    await new Promise((resolve) => {
+                        const start = async () => {
+                            for (let index = 0; index < files.length; index++) {
+                                await reader.detectAllAlFiles(path.basename(files[index]));
+                            }
+                            resolve();
+                        };
+                        start();
+                    });
+                    return true;
                 });
             }
             else {
                 if (checkExists) {
                     if (files == undefined || files.length <= 0) {
                         await reader.detectCustomAlFiles();
-                        await reader.readFiles();
+                        vscode.window.withProgress({
+                            location: ProgressLocation.Notification,
+                            title: "Reading App Files"
+                        }, async (progress, token) => {
+                            await reader.readFiles();
+                            return true;
+                        });
                     }
                     else {
                         if (files != undefined && files.length > 0) {
-                            fs.unlink(baseAppFolderPath, async function (error) {
-                                if (error)
-                                    this.outputChannel.appendLine(error);
-                                await reader.detectCustomAlFiles();
+                            await reader.detectCustomAlFiles();
+                            vscode.window.withProgress({
+                                location: ProgressLocation.Notification,
+                                title: "Reading App Files"
+                            }, async (progress, token) => {
                                 await reader.readFiles();
+                                return true;
                             });
                         }
                         else {
                             await reader.detectCustomAlFiles();
-                            await reader.readFiles();
+                            vscode.window.withProgress({
+                                location: ProgressLocation.Notification,
+                                title: "Reading App Files"
+                            }, async (progress, token) => {
+                                await reader.readFiles();
+                                return true;
+                            });
                         }
                     }
                 }
                 else {
-                    fs.unlink(baseAppFolderPath, async function (error) {
-                        if (error)
-                            this.outputChannel.appendLine(error);
-                        await reader.detectCustomAlFiles();
-                        await reader.readFiles();
+                    vscode.window.withProgress({
+                        location: ProgressLocation.Notification,
+                        title: "Deleting all temporary Files"
+                    }, async (progress, token) => {
+                        await new Promise((resolve) => {
+                            fs.emptyDir(reader.baseAppFolderPath, function (error) {
+                                reader.extensionContext.globalState.update('reloaded', true);
+                                vscode.commands.executeCommand('workbench.action.reloadWindow');
+                                resolve();
+                            });
+                        });
+
+                        return false;
                     });
                 }
             }
@@ -83,12 +122,7 @@ module.exports = class Reader {
     }
 
     async readFiles() {
-        const rootPath = workspace.rootPath;
-        const alPackagesPath = rootPath + "\\.alpackages";
-        const alCachePath = rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        // const baseAppZipPath = alCachePath + '/BaseApp.zip';
-        // const baseApp2ZipPath = alCachePath + '/BaseApp2.zip';
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper').replace(/\\/g, '/');
+        const alPackagesPath = this.rootPath + "\\.alpackages";
         const appFilter = '.app';
         const reader = this;
 
@@ -98,31 +132,48 @@ module.exports = class Reader {
         var appFiles2 = [];
         appFiles.forEach(element => {
             var splittedName = path.basename(element).split('_');
-            if (appPackages.indexOf(splittedName[0] + "_" + splittedName[1]) != -1)
-                return;
+            if (appPackages.indexOf((splittedName[0] + "_" + splittedName[1]).trim()) == -1) {
+                appPackages.push((splittedName[0] + "_" + splittedName[1]).trim());
+                appFiles2.push(element);
+            }
 
-            appPackages.push(splittedName[0] + "_" + splittedName[1]);
-            this.appPackages.push(new AppPackage(splittedName[0] + "_" + splittedName[1]));
-            appFiles2.push(element);
+            if (this.appPackages.find(element => element.packageName == (splittedName[0] + "_" + splittedName[1]).trim()) == undefined)
+                this.appPackages.push(new AppPackage((splittedName[0] + "_" + splittedName[1]).trim()));
         });
         appFiles = appFiles2;
 
-        appFiles.forEach(async element => {
-            var splittedName = path.basename(element).split('_');
-            // if (appPackages.indexOf(splittedName[0] + "_" + splittedName[1]) != -1)
-            //     return;
+        return new Promise((resolve) => {
+            const start = async () => {
+                for (let index = 0; index < appFiles.length; index++) {
+                    await this.readAppFile(appFiles[index], reader);
+                }
+                resolve();
+            };
+            start();
+        });
+    }
 
-            fs.copyFile(element, alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '.zip', async (error) => {
+    async readAppFile(appPath, reader) {
+        var splittedName = path.basename(appPath).split('_');
+        const tempAppFileZip = path.join(os.tmpdir(), splittedName[0] + "_" + splittedName[1] + '.zip');
+        const tempAppFileZip2 = path.join(os.tmpdir(), splittedName[0] + "_" + splittedName[1] + '2.zip');
+        const baseAppFolderApp = reader.baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1];
+
+        if (reader.appPackages.find(element => element.packageName == (splittedName[0] + "_" + splittedName[1]).trim()) == undefined) {
+            reader.appPackages.push(new AppPackage((splittedName[0] + "_" + splittedName[1]).trim()));
+        }
+
+        return new Promise((resolve) => {
+            fs.copyFile(appPath, tempAppFileZip, async (error) => {
                 if (error)
                     this.outputChannel.appendLine(error.message);
                 console.log('Copied App File to AL Cache');
                 try {
-                    fs.readFile(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '.zip', function (error, data) {
+                    fs.readFile(tempAppFileZip, function (error, data) {
                         if (error)
                             this.outputChannel.appendLine(error);
-                        var start = Date.now();
                         JSZip.loadAsync(data, { createFolders: true }).then(function (zip) {
-                            fs.unlinkSync(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '.zip');
+                            fs.unlinkSync(tempAppFileZip);
                             zip.remove('SymbolReference.json');
                             zip.remove('[Content_Types].xml');
                             zip.remove('MediaIdListing.xml');
@@ -133,47 +184,43 @@ module.exports = class Reader {
                             zip.remove('ProfileSymbolReferences');
                             zip.remove('addin');
                             zip.remove('logo');
-                            console.log((Date.now() - start) + " - Generating Buffer " + splittedName[0] + "_" + splittedName[1]);
-                            start = Date.now();
-                            vscode.window.showInformationMessage("Extracting App File");
+                            console.log("Generating Buffer");
+                            //vscode.window.showInformationMessage("Extracting App File");
                             zip
                                 .generateNodeStream({ type: 'nodebuffer', streamFiles: false })
-                                .pipe(fs.createWriteStream(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip'))
+                                .pipe(fs.createWriteStream(tempAppFileZip2))
                                 .on('close', async function () {
-                                    console.log((Date.now() - start) + " - Generated Buffer " + splittedName[0] + "_" + splittedName[1]);
-                                    start = Date.now();
+                                    console.log("Generated Buffer");
                                     var AdmZip = require('adm-zip');
-                                    var admZip = new AdmZip(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip');
-                                    fs.exists(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], async function (exists) {
+                                    var admZip = new AdmZip(tempAppFileZip2);
+                                    fs.exists(baseAppFolderApp, async function (exists) {
                                         if (!exists) {
-                                            fs.mkdir(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], async function (error) {
-                                                if (error)
-                                                    reader.outputChannel.appendLine(error.message);
-                                                console.log((Date.now() - start) + " - Unzipping File " + splittedName[0] + "_" + splittedName[1]);
-                                                start = Date.now();
-                                                admZip.extractAllTo(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], true);
-                                                fs.unlinkSync(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip');
+                                            fs.ensureDir(baseAppFolderApp).then(async function (error) {
+                                                console.log("Unzipping File");
+                                                admZip.extractAllTo(baseAppFolderApp, true);
+                                                fs.unlinkSync(tempAppFileZip2);
                                                 //vscode.window.showInformationMessage("Extracted App File");
-                                                console.log((Date.now() - start) + " - Extracted App File");
+                                                console.log("Extracted App File");
 
                                                 const packageName = splittedName[0] + "_" + splittedName[1];
-                                                if (reader.appPackages.find(element => element.packageName == packageName) == undefined)
-                                                    reader.appPackages.push(new AppPackage(packageName));
+                                                if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+                                                    reader.appPackages.push(new AppPackage(packageName.trim()));
                                                 await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1]);
+                                                resolve();
                                             });
                                         }
                                         else {
-                                            console.log((Date.now() - start) + " - Unzipping File " + splittedName[0] + "_" + splittedName[1]);
-                                            start = Date.now();
-                                            admZip.extractAllTo(baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1], true);
-                                            fs.unlinkSync(alCachePath + '/' + splittedName[0] + "_" + splittedName[1] + '2.zip');
+                                            console.log("Unzipping File");
+                                            admZip.extractAllTo(baseAppFolderApp, false);
+                                            fs.unlinkSync(tempAppFileZip2);
                                             //vscode.window.showInformationMessage("Extracted App File");
-                                            console.log((Date.now() - start) + " - Extracted App File");
+                                            console.log("Extracted App File");
 
                                             const packageName = splittedName[0] + "_" + splittedName[1];
-                                            if (reader.appPackages.find(element => element.packageName == packageName) == undefined)
-                                                reader.appPackages.push(new AppPackage(packageName));
+                                            if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+                                                reader.appPackages.push(new AppPackage(packageName.trim()));
                                             await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1]);
+                                            resolve();
                                         }
                                     });
                                 });
@@ -187,21 +234,66 @@ module.exports = class Reader {
         });
     }
 
-    async detectCustomAlFiles() {
-        const rootPath = workspace.rootPath;
+    async emptyDirectory(path, reader, depth = 0) {
+        return new Promise(async (resolve, reject) => {
+            return fs.readdir(path, async function (error, files) {
+                if (error)
+                    console.log(error.message);
+                // Files found
+                if (files != undefined && files.length > 0) {
+                    for (let index = 0; index < files.length; index++) {
+                        const element = files[index];
+                        const filepath = path + '/' + element;
+                        return await new Promise(() => {
+                            fs.access(filepath, fs.constants.R_OK, async function (error) {
+                                if (error)
+                                    return;
+                                return await new Promise(() => {
+                                    fs.lstat(filepath, async function (error, stats) {
+                                        if (error)
+                                            console.log(error.message);
+                                        if (stats == undefined)
+                                            return;
+
+                                        if (stats.isDirectory()) {
+                                            await new Promise(async (resolve, reject) => {
+                                                await reader.emptyDirectory(filepath, reader, depth + 1);
+                                            });
+                                            if (depth != 0)
+                                                await fs.rmdir(filepath);
+                                        }
+                                        else {
+                                            new Promise(() => {
+                                                fs.unlink(filepath);
+                                            })
+                                        }
+                                    });
+                                });
+                            });
+                        });
+                    }
+                }
+            });
+        })
+    }
+
+    async detectCustomAlFiles(deleteAll = false, showSuccessfulMessage = true) {
         const alFilter = '.al';
         const packageName = 'Custom';
 
-        var files = await this.readDir(rootPath, alFilter, this);
+        var files = await this.readDir(this.rootPath, alFilter, this);
         console.log("Found " + files.length + " Custom AL Files");
 
-        if (this.appPackages.find(element => element.packageName == packageName) == undefined)
-            this.appPackages.push(new AppPackage(packageName));
+        if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+            this.appPackages.push(new AppPackage(packageName.trim()));
 
         if (files.length == 0) {
             var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
             this.appPackages[foundIndex].processed = true;
         }
+
+        if (deleteAll)
+            this.appPackages = this.appPackages.filter(element => element.appPackageName != 'Custom');
 
         var arrLen = files.length;
         var i = 0;
@@ -222,7 +314,6 @@ module.exports = class Reader {
 
             if (alObject != undefined) {
                 alObject.appPackageName = 'Custom';
-                //alObject.path = path.relative(workspace.rootPath, alObject.path);
                 this.alObjects.push(alObject);
             }
 
@@ -234,7 +325,8 @@ module.exports = class Reader {
                 var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
                 this.appPackages[foundIndex].processed = true;
                 if (this.allPackagesFinished()) {
-                    vscode.window.showInformationMessage("AL Object Helper: Read out all AL files!");
+                    if (showSuccessfulMessage)
+                        vscode.window.showInformationMessage("AL Object Helper: All AL files were successfully read out!");
                     console.log('Read all!');
                     this.alObjects.sort(function (a, b) {
                         var nameA = a.name.toUpperCase();
@@ -254,18 +346,16 @@ module.exports = class Reader {
     }
 
     async detectAllAlFiles(appPackageName) {
-        const rootPath = workspace.rootPath;
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper', appPackageName).replace(/\\/g, '/');
         const alFilter = '.al';
         const packageName = appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1];
 
-        var files2 = await this.readDir(baseAppFolderPath, alFilter, this);
+        var files2 = await this.readDir(this.baseAppFolderPath + "/" + appPackageName, alFilter, this);
         console.log("Found " + files2.length + " AL Files of " + appPackageName.split('_')[1]);
         var arrLen2 = files2.length;
         var i2 = 0;
 
-        if (this.appPackages.find(element => element.packageName == packageName) == undefined)
-            this.appPackages.push(new AppPackage(packageName));
+        if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+            this.appPackages.push(new AppPackage(packageName.trim()));
 
         if (files2.length == 0) {
             var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
@@ -297,7 +387,7 @@ module.exports = class Reader {
                 var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
                 this.appPackages[foundIndex].processed = true;
                 if (this.allPackagesFinished()) {
-                    vscode.window.showInformationMessage("AL Object Helper: Read out all AL files!");
+                    vscode.window.showInformationMessage("AL Object Helper: All AL files were successfully read out!");
                     console.log('Read all!');
                     this.alObjects.sort(function (a, b) {
                         var nameA = a.name.toUpperCase();
@@ -317,11 +407,9 @@ module.exports = class Reader {
     }
 
     async detectAllRDLCFiles() {
-        const rootPath = workspace.rootPath;
-        const baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(rootPath), 'ALObjectHelper').replace(/\\/g, '/');
         const alFilter = '.al';
 
-        var files = await this.readDir(rootPath, alFilter, this);
+        var files = await this.readDir(this.rootPath, alFilter, this);
         console.log("Found " + files.length + " Custom AL Files");
 
         var arrLen = files.length;

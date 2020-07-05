@@ -2,6 +2,14 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.3.5] - 05.07.2020
+### Added
+- Progressbar while reading the objects
+- New Command for rereading local Files
+
+### Fixed
+- Regeneration Problems
+
 ## [1.3.4] - 01.07.2020
 ### Fixed
 - Problems with extracting files, if folder didn't exist yet
@@ -66,6 +74,7 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.4...v1.3.5
 [1.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.0...v1.3.1

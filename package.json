@@ -3,7 +3,7 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "1.3.4",
+	"version": "1.3.5",
 	"icon": "Images/alLanguageHelper.png",
 	"license": "MIT",
 	"engines": {
@@ -52,6 +52,10 @@
 			{
 				"command": "al-object-helper.packageSearch",
 				"title": "AL Helper: Package Search"
+			},
+			{
+				"command": "al-object-helper.searchLocalFiles",
+				"title": "AL Helper: Search local AL Files"
 			}
 		],
 		"keybindings": [
@@ -79,7 +83,9 @@
 	},
 	"dependencies": {
 		"adm-zip": "^0.4.16",
+		"del": "^5.1.0",
 		"firstline": "^2.0.2",
+		"fs-extra": "^9.0.1",
 		"jszip": "^3.5.0",
 		"line-reader": "^0.4.0",
 		"temp": "^0.9.1",

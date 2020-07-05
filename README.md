@@ -45,6 +45,7 @@ Just use the Object Shortcut and the ID.
 * **Open AL File**: Open AL File with Type and ID or its Object Name (Shortcut Ctrl + Alt + O)
 * **Regenerate**: Regenerate Temp Files for extension from local files and all app files
 * **Package Search**: Search for a App Package and select any Object of the specific App Package
+* **Search local AL Files**: Research all local AL Files
 
 ## Known Issues
 
@@ -53,6 +54,12 @@ Just use the Object Shortcut and the ID.
 ## Release Notes
 
 **Newest Releases**
+
+### 1.3.5
+
+- Added a Progressbar while reading the objects
+- Added a new Command for rereading local Files
+- Fixed Regeneration Problems
 
 ### 1.3.4
 

@@ -4,6 +4,9 @@ const vscode = require('vscode');
 const Reader = require('./src/Reader.js');
 const ALObjectItem = require('./src/ALObjectItem.js');
 const AppPackageItem = require('./src/AppPackageItem.js');
+const fs = require('fs-extra');
+const path = require('path');
+const QuickPickItem = require('./src/QuickPickItem.js');
 
 
 // this method is called when your extension is activated
@@ -18,15 +21,39 @@ async function activate(context) {
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
 	vscode.window.showInformationMessage("Welcome to the AL Object Helper. If you like this extension, please rate it in the Marketplace :)");
 
-	const reader = new Reader();
-	await reader.generateAll(true);
+	const reader = new Reader(context);
+	const reloaded = reader.extensionContext.globalState.get('reloaded');
+	new Promise(async () => {
+		if (reloaded != undefined && reloaded) {
+			await fs.emptyDir(reader.baseAppFolderPath);
+			reader.extensionContext.globalState.update('reloaded', false);
+		}
+		reader.generateAll(true);
+	})
 
-	let disposable = vscode.commands.registerCommand('al-object-helper.regenerate', async function () {
-		await reader.generateAll(false);
-	});
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.regenerate', async function () {
+		const showConfirm = reader.extensionContext.globalState.get('showRegenerateConfirm');
+		if (showConfirm != undefined && !showConfirm)
+			reader.generateAll(false);
+		else {
+			var quickPick = vscode.window.createQuickPick();
+			quickPick.items = [new QuickPickItem("OK"), new QuickPickItem("Cancle"), new QuickPickItem("OK, don't show again")];
+			quickPick.placeholder = "This would lead to a reload of VS Code, okay?";
+			quickPick.onDidAccept(function (event) {
+				quickPick.hide();
+				if (quickPick.selectedItems[0] == quickPick.items[0])
+					reader.generateAll(false);
+				else if (quickPick.selectedItems[0] == quickPick.items[2]) {
+					// Don't show again
+					reader.extensionContext.globalState.update('showRegenerateConfirm', false);
+					reader.generateAll(false);
+				}
+			});
+			quickPick.show();
+		}
+	}));
 
-	disposable = vscode.commands.registerCommand('al-object-helper.openALFile', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openALFile', async function () {
 		var alObjects = [];
 		reader.alObjects.forEach(element => {
 			var objectItem = new ALObjectItem(element);
@@ -70,10 +97,9 @@ async function activate(context) {
 		});
 
 		quickPick.show();
-	});
-	context.subscriptions.push(disposable);
+	}));
 
-	disposable = vscode.commands.registerCommand('al-object-helper.packageSearch', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.packageSearch', async function () {
 		var temp = [];
 		reader.appPackages.forEach(element => {
 			temp.push(new AppPackageItem(element.packageName, element.displayPackageName));
@@ -116,8 +142,11 @@ async function activate(context) {
 		});
 
 		quickPick.show();
-	});
-	context.subscriptions.push(disposable);
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.searchLocalFiles', async () => {
+		await reader.detectCustomAlFiles(true, false);
+	}));
 
 	console.log('Registered all commands');
 }
