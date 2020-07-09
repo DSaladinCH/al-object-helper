@@ -6,6 +6,9 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ### Changed
 - Improved App File reading speed
 
+### Fixed
+- Fixed local search
+
 ## [1.3.5] - 05.07.2020
 ### Added
 - Progressbar while reading the objects

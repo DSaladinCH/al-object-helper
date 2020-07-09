@@ -58,6 +58,7 @@ Just use the Object Shortcut and the ID.
 ### 1.3.6
 
 - Improved App File reading speed
+- Fixed local search
 
 ### 1.3.5
 

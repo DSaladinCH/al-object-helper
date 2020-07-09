@@ -145,7 +145,7 @@ async function activate(context) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.searchLocalFiles', async () => {
-		await reader.detectCustomAlFiles(true, false);
+		await reader.detectCustomAlFiles(undefined, true, false);
 	}));
 }
 exports.activate = activate;

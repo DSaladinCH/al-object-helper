@@ -285,7 +285,7 @@ module.exports = class Reader {
         })
     }
 
-    async detectCustomAlFiles(callback, deleteAll = false, showSuccessfulMessage = true) {
+    async detectCustomAlFiles(callback = undefined, deleteAll = false, showSuccessfulMessage = true) {
         const alFilter = '.al';
         const packageName = 'Custom';
 
@@ -295,6 +295,10 @@ module.exports = class Reader {
 
         if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
             this.appPackages.push(new AppPackage(packageName.trim()));
+        else{
+            const index = this.appPackages.findIndex(element => element.packageName == packageName.trim());
+            this.appPackages[index].processed = false;
+        }
 
         if (files.length == 0) {
             var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
@@ -302,7 +306,7 @@ module.exports = class Reader {
         }
 
         if (deleteAll)
-            this.appPackages = this.appPackages.filter(element => element.appPackageName != 'Custom');
+            this.alObjects = this.alObjects.filter(element => element.appPackageName != 'Custom');
 
         var arrLen = files.length;
         var i = 0;
@@ -351,13 +355,15 @@ module.exports = class Reader {
 
                         return 0;
                     });
-                    callback();
+                    
+                    if (callback != undefined)
+                        callback();
                 }
             }
         });
     }
 
-    async detectAllAlFiles(appPackageName, callback) {
+    async detectAllAlFiles(appPackageName, callback = undefined) {
         const alFilter = '.al';
         const packageName = appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1];
 
@@ -416,7 +422,9 @@ module.exports = class Reader {
                         return 0;
                     });
                 }
-                callback();
+
+                if (callback != undefined)
+                    callback();
             }
         });
     }
