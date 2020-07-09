@@ -55,6 +55,10 @@ Just use the Object Shortcut and the ID.
 
 **Newest Releases**
 
+### 1.3.6
+
+- Improved App File reading speed
+
 ### 1.3.5
 
 - Added a Progressbar while reading the objects
