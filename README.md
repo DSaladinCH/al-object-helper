@@ -3,6 +3,7 @@
 If you work with large AL projects, you quickly lose track of your objects.
 This extension helps you with this.
 So you can quickly access objects without searching for them for a long time.
+You can also jump to any Event Subscriber and implement any Event across all app Files with the integrated search.
 
 ## Features
 
@@ -11,6 +12,8 @@ So you can quickly access objects without searching for them for a long time.
 * **Standard** and **Custom** Objects
 * **Multiple Packages** are supported
 * Search for Objects in a **specific App File**
+* Copy any **Event Publisher** across all app Files
+* Search any **local Event Subscriber** and jump to it
 
 You can open any AL File.
 Just use the Object Shortcut and the ID.
@@ -36,9 +39,16 @@ Just use the Object Shortcut and the ID.
 ![Ex. P21 for Customer Page](Images/vid02.gif)
 
 
+## Important Infos
+
+If you use the latest version of the AL Language Extension by Microsoft, you have to remove the "AL: Find Event" keybinding to use the integrated search.
+![Remove the "AL: Find Event" keybinding](Images/vid03.gif)
+
+
 ## Requirements
 
 * [AL Language](https://marketplace.visualstudio.com/items?itemName=ms-dynamics-smb.al)
+
 
 ## Commands
 
@@ -46,6 +56,8 @@ Just use the Object Shortcut and the ID.
 * **Regenerate**: Regenerate Temp Files for extension from local files and all app files
 * **Package Search**: Search for a App Package and select any Object of the specific App Package
 * **Search local AL Files**: Research all local AL Files
+* **Copy Event**: Copy any Event (Integration Events and Triggers)
+* **Search local Event Subscriber**: Search a local Event Subscriber and jump to it
 
 ## Known Issues
 
@@ -129,6 +141,7 @@ Changed Features and Commands in README
 
 ## Shortcuts
 
-* Open AL File (`Cmd+Alt+O` on macOS or `Ctrl+Alt+O` on Windows and Linux)
+* Open AL File (`Ctrl+Alt+O` on Windows)
+* Copy Event (`Shift+Alt+E` on Windows)
 
 **Enjoy!**

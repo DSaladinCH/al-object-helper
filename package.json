@@ -4,7 +4,7 @@
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
 	"version": "1.4.0",
-	"icon": "Images/alLanguageHelper.png",
+	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {
 		"vscode": "^1.40.0"
@@ -36,7 +36,10 @@
 		"Business Central",
 		"Dynamics NAV",
 		"Helper",
-		"Fast Opener"
+		"Fast Opener",
+		"Event Publisher",
+		"Event Subscriber",
+		"Events"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -97,7 +100,6 @@
 	"dependencies": {
 		"adm-zip": "^0.4.16",
 		"clipboardy": "^2.3.0",
-		"del": "^5.1.0",
 		"firstline": "^2.0.2",
 		"fs-extra": "^9.0.1",
 		"jszip": "^3.5.0",

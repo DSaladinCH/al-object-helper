@@ -1,17 +1,15 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const fs = require('fs-extra');
+const path = require('path');
 const Reader = require('./src/Reader.js');
 const ALObjectItem = require('./src/MessageItems/ALObjectItem.js');
 const AppPackageItem = require('./src/MessageItems/AppPackageItem.js');
-const fs = require('fs-extra');
-const path = require('path');
 const QuickPickItem = require('./src/MessageItems/QuickPickItem.js');
-const { isContext } = require('vm');
 const ALEventPublisherItem = require('./src/MessageItems/ALEventPublisherItem.js');
-const clipboard = require('clipboardy');
-const ALEventSubscriber = require('./src/ALEventSubscriber.js');
 const ALEventSubscriberItem = require('./src/MessageItems/ALEventSubscriberItem.js');
+const clipboard = require('clipboardy');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed

@@ -2,20 +2,16 @@ const vscode = require('vscode');
 const { workspace, ProgressLocation } = require("vscode");
 const path = require("path");
 const fs = require('fs-extra');
-const del = require('del');
+const { resolve } = require('path');
+const os = require('os');
 const JSZip = require('jszip');
 const firstLine = require('firstline');
-const os = require('os');
 const readline = require('readline');
 const ALObjectItem = require('./MessageItems/ALObjectItem');
 const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObject');
 const ALEventPublisher = require('./ALEventPublisher');
 const ALEventSubscriber = require('./ALEventSubscriber');
-const { file } = require('jszip');
-const { worker } = require('cluster');
-const { table } = require('console');
-const { resolve } = require('path');
 
 module.exports = class Reader {
     constructor(extensionContext) {
