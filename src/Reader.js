@@ -7,11 +7,15 @@ const JSZip = require('jszip');
 const firstLine = require('firstline');
 const os = require('os');
 const readline = require('readline');
-const ALObjectItem = require('./ALObjectItem');
+const ALObjectItem = require('./MessageItems/ALObjectItem');
 const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObject');
+const ALEventPublisher = require('./ALEventPublisher');
+const ALEventSubscriber = require('./ALEventSubscriber');
 const { file } = require('jszip');
 const { worker } = require('cluster');
+const { table } = require('console');
+const { resolve } = require('path');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -23,7 +27,8 @@ module.exports = class Reader {
         this.extensionContext = extensionContext;
         this.rootPath = workspace.rootPath;
         this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        this.baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(this.rootPath), 'ALObjectHelper').replace(/\\/g, '/');
+        // this.baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(this.rootPath), 'ALObjectHelper').replace(/\\/g, '/');
+        this.baseAppFolderPath = '\\apps'.replace(/\\/g, '/');
     }
 
     generateAll(checkExists) {
@@ -46,7 +51,6 @@ module.exports = class Reader {
                     reader.appPackages.push(new AppPackage((appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1]).trim()));
                 });
 
-                reader.detectCustomAlFiles();
                 // files.forEach(async element => {
                 //     await reader.detectAllAlFiles(path.basename(element));
                 // });
@@ -56,9 +60,21 @@ module.exports = class Reader {
                 }, async (progress, token) => {
                     await new Promise((resolve) => {
                         const start = async () => {
+                            progress.report({ message: "Searching local File Objects" });
+                            await reader.detectCustomAlFiles();
+
+                            progress.report({ message: "Searching App File Objects" });
                             for (let index = 0; index < files.length; index++) {
                                 await reader.detectAllAlFiles(path.basename(files[index]));
                             }
+
+                            progress.report({ message: "Searching Event Publishers and Triggers" });
+                            await reader.detectEventPublishers(function () { });
+
+                            progress.report({ message: "Searching local Event Subscribers" });
+                            await reader.detectLocalEventSubscriber(function () { });
+
+                            reader.findEventSubscriberObjectName();
                             resolve();
                         };
                         start();
@@ -74,7 +90,7 @@ module.exports = class Reader {
                             location: ProgressLocation.Notification,
                             title: "Reading App Files"
                         }, async (progress, token) => {
-                            await reader.readFiles();
+                            await reader.readFiles(progress);
                             return true;
                         });
                     }
@@ -85,7 +101,7 @@ module.exports = class Reader {
                                 location: ProgressLocation.Notification,
                                 title: "Reading App Files"
                             }, async (progress, token) => {
-                                await reader.readFiles();
+                                await reader.readFiles(progress);
                                 return true;
                             });
                         }
@@ -95,14 +111,14 @@ module.exports = class Reader {
                                 location: ProgressLocation.Notification,
                                 title: "Reading App Files"
                             }, async (progress, token) => {
-                                await reader.readFiles();
+                                await reader.readFiles(progress);
                                 return true;
                             });
                         }
                     }
                 }
                 else {
-                    vscode.window.withProgress({
+                    await vscode.window.withProgress({
                         location: ProgressLocation.Notification,
                         title: "Deleting all temporary Files"
                     }, async (progress, token) => {
@@ -121,7 +137,7 @@ module.exports = class Reader {
         });
     }
 
-    async readFiles() {
+    async readFiles(progress) {
         const alPackagesPath = this.rootPath + "\\.alpackages";
         const appFilter = '.app';
         const reader = this;
@@ -148,7 +164,19 @@ module.exports = class Reader {
                     if (reader.allPackagesFinished()) {
                         reader.log("Finished all!");
                         reader.detectAllExtensions();
-                        resolve();
+
+                        if (progress != undefined)
+                            progress.report({ message: "Searching Event Publishers and Triggers" });
+
+                        reader.detectEventPublishers(function () {
+                            if (progress != undefined)
+                                progress.report({ message: "Searching local Event Subscribers" });
+
+                            reader.detectLocalEventSubscriber(function () {
+                                reader.findEventSubscriberObjectName();
+                                resolve();
+                            });
+                        });
                     }
                 });
             });
@@ -295,7 +323,7 @@ module.exports = class Reader {
 
         if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
             this.appPackages.push(new AppPackage(packageName.trim()));
-        else{
+        else {
             const index = this.appPackages.findIndex(element => element.packageName == packageName.trim());
             this.appPackages[index].processed = false;
         }
@@ -303,63 +331,70 @@ module.exports = class Reader {
         if (files.length == 0) {
             var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
             this.appPackages[foundIndex].processed = true;
+            if (callback != undefined)
+                callback();
+            resolve();
+            return;
         }
 
         if (deleteAll)
             this.alObjects = this.alObjects.filter(element => element.appPackageName != 'Custom');
 
-        var arrLen = files.length;
-        var i = 0;
-        files.forEach(async element => {
-            var line = await firstLine(element);
-            var alObject = this.getALObject(line, element);
-            if (alObject == undefined) {
-                const fileStream = fs.createReadStream(element);
-                const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+        return new Promise((resolve) => {
+            var arrLen = files.length;
+            var i = 0;
+            files.forEach(async element => {
+                var line = await firstLine(element);
+                var alObject = this.getALObject(line, element);
+                if (alObject == undefined) {
+                    const fileStream = fs.createReadStream(element);
+                    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
-                for await (const line of rl) {
-                    alObject = this.getALObject(line, element);
-                    if (alObject != undefined) {
-                        break;
+                    for await (const line of rl) {
+                        alObject = this.getALObject(line, element);
+                        if (alObject != undefined) {
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (alObject != undefined) {
-                alObject.appPackageName = 'Custom';
-                this.alObjects.push(alObject);
-            }
+                if (alObject != undefined) {
+                    alObject.appPackageName = 'Custom';
+                    this.alObjects.push(alObject);
+                }
 
-            i++;
-            if (i >= arrLen) {
-                vscode.window.showInformationMessage("AL Object Helper: Found " + arrLen + " Custom AL Files");
+                i++;
+                if (i >= arrLen) {
+                    this.showInformationMessage("Found " + arrLen + " Custom AL Files");
 
-                this.detectAllExtensions();
-                var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
-                this.appPackages[foundIndex].processed = true;
-                if (this.allPackagesFinished()) {
-                    if (showSuccessfulMessage)
-                        vscode.window.showInformationMessage("AL Object Helper: All AL files were successfully read out!");
-                    this.log("Read all!");
-                    this.output("Read all!");
+                    this.detectAllExtensions();
+                    var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+                    this.appPackages[foundIndex].processed = true;
+                    if (this.allPackagesFinished()) {
+                        if (showSuccessfulMessage)
+                            this.showInformationMessage("All AL files were found successfully!");
+                        this.log("Read all!");
+                        this.output("Read all!");
 
-                    this.alObjects.sort(function (a, b) {
-                        var nameA = a.name.toUpperCase();
-                        var nameB = b.name.toUpperCase();
-                        if (nameA < nameB) {
-                            return -1;
-                        }
-                        if (nameA > nameB) {
-                            return 1;
-                        }
+                        this.alObjects.sort(function (a, b) {
+                            var nameA = a.name.toUpperCase();
+                            var nameB = b.name.toUpperCase();
+                            if (nameA < nameB) {
+                                return -1;
+                            }
+                            if (nameA > nameB) {
+                                return 1;
+                            }
 
-                        return 0;
-                    });
-                    
+                            return 0;
+                        });
+                    }
+
                     if (callback != undefined)
                         callback();
+                    resolve();
                 }
-            }
+            });
         });
     }
 
@@ -379,6 +414,9 @@ module.exports = class Reader {
         if (files2.length == 0) {
             var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
             this.appPackages[foundIndex].processed = true;
+            if (callback != undefined)
+                callback();
+            return;
         }
 
         files2.forEach(async element => {
@@ -388,10 +426,32 @@ module.exports = class Reader {
                 const fileStream = fs.createReadStream(element);
                 const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
+                var searchForProperty = false;
+                var stop = false;
                 for await (const line of rl) {
-                    alObject = this.getALObject(line, element);
+                    if (!searchForProperty)
+                        alObject = this.getALObject(line, element);
+                    else {
+                        if (alObject.type == "page") {
+                            if (line.includes("SourceTable")) {
+                                var sourceTable = line.substring(line.indexOf("="));
+                                sourceTable = sourceTable.substring(0, sourceTable.length - 1).trim();
+                                if (sourceTable.startsWith("\"")) {
+                                    sourceTable = sourceTable.substring(1);
+                                    sourceTable = sourceTable.substring(0, sourceTable.length - 1);
+                                }
+                                alObject.pageSourceTable = sourceTable;
+                                searchForProperty = false;
+                                stop = true;
+                            }
+                        }
+                    }
                     if (alObject != undefined) {
-                        break;
+                        if (alObject.type == "page" && !stop)
+                            searchForProperty = true;
+
+                        if (!searchForProperty)
+                            break;
                     }
                 }
             }
@@ -405,7 +465,7 @@ module.exports = class Reader {
                 var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
                 this.appPackages[foundIndex].processed = true;
                 if (this.allPackagesFinished()) {
-                    vscode.window.showInformationMessage("AL Object Helper: All AL files were successfully read out!");
+                    this.showInformationMessage("All AL files were found successfully!");
                     this.log("Read all!");
                     this.output("Read all!");
 
@@ -445,7 +505,7 @@ module.exports = class Reader {
                 this.alObjects.push(alObject);
             i++;
             if (i >= arrLen - 1) {
-                vscode.window.showInformationMessage("Found " + arrLen + " Custom AL Files");
+                this.showInformationMessage("Found " + arrLen + " Custom AL Files");
                 this.detectAllExtensions();
             }
         });
@@ -489,7 +549,7 @@ module.exports = class Reader {
                     var alFiles = [];
                     fs.readdir(startPath, async function (error, files) {
                         if (error)
-                            this.outputChannel.appendLine(error);
+                            this.output(error);
                         for (var i = 0; i < files.length; i++) {
                             var filename = path.join(startPath, files[i]);
                             var stat = fs.lstatSync(filename);
@@ -512,7 +572,7 @@ module.exports = class Reader {
     }
 
     async openFile(input, appPackageName) {
-        this.outputChannel.appendLine("Trying to open " + input + " of " + appPackageName);
+        this.output("Trying to open " + input + " of " + appPackageName);
         if (input == '' || input == undefined || typeof input !== 'string')
             return;
 
@@ -536,7 +596,7 @@ module.exports = class Reader {
         if (appPackageName != '')
             tempAlObjects = tempAlObjects.filter(element => element.appPackageName == appPackageName);
 
-        this.outputChannel.appendLine("Searching...");
+        this.output("Searching...");
         switch (type) {
             case "t":
                 alObject = tempAlObjects.find(element => element.type == "table");
@@ -657,17 +717,17 @@ module.exports = class Reader {
             return;
 
         if (alObject == undefined) {
-            vscode.window.showWarningMessage("No Object found with Type " + longType + " and ID " + id);
+            this.showWarningMessage("No Object found with Type " + longType + " and ID " + id);
             return;
         }
 
-        this.outputChannel.appendLine("Found Object: " + alObject.id + " " + alObject.name);
+        this.output("Found Object: " + alObject.id + " " + alObject.name);
 
         vscode.workspace.openTextDocument(alObject.path).then(doc => {
             vscode.window.showTextDocument(doc);
-            vscode.window.showInformationMessage(longType + " " + id + " opened");
+            this.showInformationMessage(longType + " " + id + " opened");
         }, function (reason) {
-            this.outputChannel.appendLine("Rejected: " + reason);
+            this.output("Rejected: " + reason);
         });
     }
 
@@ -680,6 +740,10 @@ module.exports = class Reader {
         return /[a-zA-Z]/.test(myString);
     }
 
+    containsOnlyNumbers(myString) {
+        return /^[0-9]+$/.test(myString);
+    }
+
     getALObject(firstLine, pathToFile) {
         var startIndex = 0;
         var endIndex = firstLine.indexOf(' ');
@@ -689,7 +753,7 @@ module.exports = class Reader {
         startIndex = endIndex + 1;
         endIndex = firstLine.indexOf(' ', startIndex);
         var id = firstLine.substring(startIndex, endIndex);
-        if (id == '' || !this.hasNumber(id))
+        if (id == '' || !this.containsOnlyNumbers(id))
             return undefined;
         startIndex = endIndex + 1;
         endIndex = firstLine.indexOf(' ', startIndex);
@@ -730,6 +794,242 @@ module.exports = class Reader {
         return alObject;
     }
 
+    findEventSubscriberObjectName() {
+        for (let i = 0; i < this.alObjects.length; i++) {
+            const alObject = this.alObjects[i];
+
+            for (let ii = 0; ii < alObject.eventSubscriber.length; ii++) {
+                const eventSubscriber = alObject.eventSubscriber[ii];
+                if (this.containsOnlyNumbers(eventSubscriber.objectName)) {
+                    const eventALObject = this.alObjects.find(element2 => element2.type == eventSubscriber.objectType.toLowerCase() && element2.id == eventSubscriber.objectName);
+                    if (eventALObject != undefined)
+                        this.alObjects[i].eventSubscriber[ii].objectName = eventALObject.name;
+                }
+            }
+        }
+    }
+
+    detectEventPublishers(callback) {
+        return new Promise(async (resolve) => {
+            var len = this.alObjects.length;
+            if (len <= 0) {
+                callback();
+                resolve();
+                return;
+            }
+
+            for (let index = 0; index < len; index++) {
+                await this.detectEventPublisher(index);
+
+                if (index >= len - 1) {
+                    callback();
+                    resolve();
+                }
+            }
+        });
+    }
+
+    detectEventPublisher(index) {
+        return new Promise(async (resolve, reject) => {
+            const alObject = this.alObjects[index];
+            var eventType = "";
+
+            if (!(alObject instanceof ALObject))
+                reject("Wrong Type");
+
+            this.addObjectEventPublisher(index);
+            const fileStream = fs.createReadStream(alObject.path);
+            const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+            var saveNextLine = false;
+            for await (const line of rl) {
+                if (saveNextLine) {
+                    if (line.includes("[Scope") || line.includes("[Obsolete"))
+                        continue;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, line));
+                    saveNextLine = false;
+                }
+                else if (line.includes("[IntegrationEvent")) {
+                    eventType = "IntegrationEvent";
+                    saveNextLine = true;
+                }
+                else if (line.includes("[BusinessEvent")) {
+                    eventType = "BusinessEvent";
+                    saveNextLine = true;
+                }
+                else if (line.includes("field(") && alObject.type == "table") {
+                    eventType = "Trigger";
+                    const start = line.indexOf(";") + 1;
+                    var elementName = line.substring(start, line.indexOf(";", start)).trim();
+                    if (elementName.startsWith("\"")) {
+                        elementName = elementName.substring(1);
+                        elementName = elementName.substring(0, elementName.length - 1);
+                    }
+                    var functionString = `local procedure OnBeforeValidate(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; CurrFieldNo: Integer)`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnBeforeValidateEvent", elementName));
+                    functionString = `local procedure OnAfterValidate(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; CurrFieldNo: Integer)`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnAfterValidateEvent", elementName));
+                }
+                else if (line.includes("field(") && alObject.type == "page") {
+                    eventType = "Trigger";
+                    const start = line.indexOf(";") + 1;
+                    var elementName = line.substring(start, line.indexOf(")", start)).trim();
+                    if (elementName.startsWith("\"")) {
+                        elementName = elementName.substring(1);
+                        elementName = elementName.substring(0, elementName.length - 1);
+                    }
+                    var functionString = `local procedure OnBeforeValidate(var Rec: Record "${alObject.pageSourceTable}"; var xRec: Record "${alObject.name}")`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnBeforeValidateEvent", elementName));
+                    functionString = `local procedure OnAfterValidate(var Rec: Record "${alObject.pageSourceTable}"; var xRec: Record "${alObject.name}")`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnAfterValidateEvent", elementName));
+                }
+            }
+            resolve(`Found ${alObject.eventPublisher.length} Event Publishers (${alObject.name})`);
+
+            // if (index >= this.alObjects.length - 1) {
+            //     resolve();
+            // }
+        });
+    }
+
+    addObjectEventPublisher(index) {
+        const alObject = this.alObjects[index];
+        var eventType = "Trigger";
+
+        if (!(alObject instanceof ALObject))
+            return;
+
+        if (alObject.type == "table") {
+            //**************//
+            //*** DELETE ***//
+            //**************//
+            var funcString = `local procedure OnBeforeDelete(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeDeleteEvent"));
+            funcString = `local procedure OnAfterDelete(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterDeleteEvent"));
+
+            //**************//
+            //*** INSERT ***//
+            //**************//
+            funcString = `local procedure OnBeforeInsert(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeInsertEvent"));
+            funcString = `local procedure OnAfterInsert(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterInsertEvent"));
+
+            //**************//
+            //*** MODIFY ***//
+            //**************//
+            funcString = `local procedure OnBeforeModify(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeModifyEvent"));
+            funcString = `local procedure OnAfterModify(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterModifyEvent"));
+
+            //**************//
+            //*** RENAME ***//
+            //**************//
+            funcString = `local procedure OnBeforeRename(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeRenameEvent"));
+            funcString = `local procedure OnAfterRename(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterRenameEvent"));
+
+            return;
+        }
+
+        if (alObject.type == "page") {
+            //*********************//
+            //*** GETCURRRECORD ***//
+            //*********************//
+            var funcString = `local procedure OnAfterGetCurrRecord(var Rec: Record "${alObject.pageSourceTable}")`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterGetCurrRecordEvent"));
+
+            //*****************//
+            //*** GETRECORD ***//
+            //*****************//
+            var funcString = `local procedure OnAfterGetRecord(var Rec: Record "${alObject.pageSourceTable}")`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterGetRecordEvent"));
+
+            //*******************//
+            //*** ONCLOSEPAGE ***//
+            //*******************//
+            var funcString = `local procedure OnClosePage(var Rec: Record "${alObject.pageSourceTable}")`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnClosePageEvent"));
+
+            //**********************//
+            //*** ONDELETERECORD ***//
+            //**********************//
+            var funcString = `local procedure OnDeleteRecord(var Rec: Record "${alObject.pageSourceTable}"; var AllowDelete : Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnDeleteRecordEvent"));
+
+            //**********************//
+            //*** ONINSERTRECORD ***//
+            //**********************//
+            var funcString = `local procedure OnInsertRecord(var Rec: Record "${alObject.pageSourceTable}"; BelowxRec : Boolean; var xRec : Record "${alObject.pageSourceTable}"; var AllowInsert : Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnInsertRecordEvent"));
+
+            //**********************//
+            //*** ONMODIFYRECORD ***//
+            //**********************//
+            var funcString = `local procedure OnModifyRecord(var Rec: Record "${alObject.pageSourceTable}"; var xRec : Record "${alObject.pageSourceTable}"; var AllowModify : Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnModifyRecordEvent"));
+
+            //*******************//
+            //*** ONNEWRECORD ***//
+            //*******************//
+            var funcString = `local procedure OnNewRecord(var Rec: Record "${alObject.pageSourceTable}"; BelowxRec : Boolean; var xRec : Record "${alObject.pageSourceTable}")`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnNewRecordEvent"));
+
+            //******************//
+            //*** ONOPENPAGE ***//
+            //******************//
+            var funcString = `local procedure OnOpenPage(var Rec: Record "${alObject.pageSourceTable}")`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnOpenPageEvent"));
+
+            //************************//
+            //*** ONQUERYCLOSEPAGE ***//
+            //************************//
+            var funcString = `local procedure OnQueryClosePage(var Rec: Record "${alObject.pageSourceTable}"; var AllowClose : Boolean)`;
+            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnQueryClosePageEvent"));
+        }
+    }
+
+    detectLocalEventSubscriber(callback) {
+        return new Promise(async (resolve) => {
+            var len = this.alObjects.length;
+            if (len <= 0) {
+                callback();
+                resolve();
+                return;
+            }
+
+            for (let index = 0; index < len; index++) {
+                const alObject = this.alObjects[index];
+                if (alObject.appPackageName != "Custom") {
+                    if (index >= this.alObjects.length - 1) {
+                        callback();
+                        resolve();
+                    }
+                    continue;
+                }
+
+                const fileStream = fs.createReadStream(alObject.path);
+                const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+                var lineNo = 0;
+                for await (const line of rl) {
+                    lineNo += 1;
+                    if (line.includes("[EventSubscriber")) {
+                        this.alObjects[index].eventSubscriber.push(new ALEventSubscriber(line, alObject.path, lineNo));
+                    }
+                }
+
+                if (index >= this.alObjects.length - 1) {
+                    callback();
+                    resolve();
+                }
+            }
+        });
+    }
+
     log(message) {
         const prefix = "AL Object Helper: ";
         console.log(prefix + message);
@@ -737,5 +1037,13 @@ module.exports = class Reader {
 
     output(message) {
         this.outputChannel.appendLine(message);
+    }
+
+    showInformationMessage(message) {
+        vscode.window.showInformationMessage("AL Object Helper: " + message);
+    }
+
+    showWarningMessage(message) {
+        vscode.window.showWarningMessage("AL Object Helper: " + message);
     }
 }

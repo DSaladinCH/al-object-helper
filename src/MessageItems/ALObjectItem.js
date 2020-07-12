@@ -10,6 +10,7 @@ module.exports = class ALObjectItem {
         this.label = alObject.name;
         this.description = alObject.displayType + " " + alObject.id;
         this.shortType = alObject.shortType;
+        this.type = alObject.type;
         this.id = alObject.id;
         this.extension = alObject.extension;
         this.appPackageName = alObject.appPackageName;

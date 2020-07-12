@@ -9,11 +9,17 @@ module.exports = class ALObject {
         this.shortType = this.convertToShortType(this.type);
         this.id = id;
         this.name = name.trim();
+
         this.extendsName = extendsName.trim();
         this.extendsID = -1;
         this.extendsType = "";
         this.displayExtendsType = "";
+
         this.appPackageName = "";
+        this.pageSourceTable = "";
+
+        this.eventPublisher = [];
+        this.eventSubscriber = [];
 
         if (this.extendsName == '')
             this.extension = false;

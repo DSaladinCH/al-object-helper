@@ -2,6 +2,11 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.4.0] - 12.07.2020
+### Added
+- Copy Event Publisher
+- Search local Event Subscriber
+
 ## [1.3.6] - 09.07.2020
 ### Changed
 - Improved App File reading speed

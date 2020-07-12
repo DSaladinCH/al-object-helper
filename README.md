@@ -55,6 +55,11 @@ Just use the Object Shortcut and the ID.
 
 **Newest Releases**
 
+### 1.4.0
+
+- Added feature to copy any Event Publisher
+- Added feature to search any local Event Subscriber and jump to it
+
 ### 1.3.6
 
 - Improved App File reading speed

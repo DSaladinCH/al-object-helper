@@ -2,12 +2,16 @@
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const Reader = require('./src/Reader.js');
-const ALObjectItem = require('./src/ALObjectItem.js');
-const AppPackageItem = require('./src/AppPackageItem.js');
+const ALObjectItem = require('./src/MessageItems/ALObjectItem.js');
+const AppPackageItem = require('./src/MessageItems/AppPackageItem.js');
 const fs = require('fs-extra');
 const path = require('path');
-const QuickPickItem = require('./src/QuickPickItem.js');
-
+const QuickPickItem = require('./src/MessageItems/QuickPickItem.js');
+const { isContext } = require('vm');
+const ALEventPublisherItem = require('./src/MessageItems/ALEventPublisherItem.js');
+const clipboard = require('clipboardy');
+const ALEventSubscriber = require('./src/ALEventSubscriber.js');
+const ALEventSubscriberItem = require('./src/MessageItems/ALEventSubscriberItem.js');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -146,6 +150,72 @@ async function activate(context) {
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.searchLocalFiles', async () => {
 		await reader.detectCustomAlFiles(undefined, true, false);
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.copyEvent', async () => {
+		var alObjects = [];
+		for (let index = 0; index < reader.alObjects.length; index++) {
+			const element = reader.alObjects[index];
+			if (element.eventPublisher.length == 0)
+				continue;
+			var objectItem = new ALObjectItem(element);
+			alObjects.push(objectItem);
+		}
+
+		var quickPick = vscode.window.createQuickPick();
+		quickPick.items = alObjects;
+		quickPick.placeholder = "Search for a Object"
+		quickPick.matchOnDescription = true;
+		quickPick.matchOnDetail = true;
+		quickPick.onDidAccept(function (event) {
+			const alObjectItem = ALObjectItem.convertToALObjectItem(quickPick.selectedItems[0]);
+			const alObject = reader.alObjects.find(element => element.type == alObjectItem.type && element.id == alObjectItem.id && element.appPackageName == alObjectItem.appPackageName);
+			var eventPublishers = [];
+			if (alObject.eventPublisher.length == 0)
+				return;
+			for (let index = 0; index < alObject.eventPublisher.length; index++) {
+				const eventPublisher = alObject.eventPublisher[index];
+				eventPublishers.push(new ALEventPublisherItem(eventPublisher));
+			}
+
+			vscode.window.showQuickPick(eventPublishers, { placeHolder: "Select Event to Copy" }).then((value) => {
+				if (value == undefined)
+					return;
+				clipboard.writeSync(value.eventPublisher.toString());
+				vscode.window.showInformationMessage("Copied to Clipboard!");
+			});
+		});
+
+		quickPick.show();
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.searchSubscriber', async () => {
+		var eventSubscribers = [];
+		for (let index = 0; index < reader.alObjects.length; index++) {
+			const element = reader.alObjects[index];
+			if (element.eventSubscriber.length <= 0)
+				continue;
+
+			for (let index = 0; index < element.eventSubscriber.length; index++) {
+				const element2 = element.eventSubscriber[index];
+				eventSubscribers.push(new ALEventSubscriberItem(element2));
+			}
+		}
+
+		vscode.window.showQuickPick(eventSubscribers, { placeHolder: "Select the Event Subscriber to which you want to jump" }).then((value) => {
+			if (value == undefined)
+				return;
+			vscode.workspace.openTextDocument(value.eventSubscriber.path).then(doc => {
+				vscode.window.showTextDocument(doc).then(editor => {
+					var pos1 = new vscode.Position(value.eventSubscriber.lineNo, 0);
+					editor.selections = [new vscode.Selection(pos1,pos1)]; 
+					var range = new vscode.Range(pos1, pos1);
+					editor.revealRange(range);
+				});
+			}, function (reason) {
+				reader.output("Rejected: " + reason);
+			});
+		});
 	}));
 }
 exports.activate = activate;
