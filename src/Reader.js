@@ -15,6 +15,10 @@ const ALEventSubscriber = require('./ALEventSubscriber');
 
 module.exports = class Reader {
     constructor(extensionContext) {
+        this.settings = vscode.workspace.getConfiguration();
+        if (this.settings.get('alObjectHelper.savePath') == "")
+            this.updateSetting('alObjectHelper.savePath', os.tmpdir());
+
         this.alObjects = [];
         this.appPackages = [];
         this.appPackages.push(new AppPackage('Custom'));
@@ -24,7 +28,10 @@ module.exports = class Reader {
         this.rootPath = workspace.rootPath;
         this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
         // this.baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(this.rootPath), 'ALObjectHelper').replace(/\\/g, '/');
-        this.baseAppFolderPath = '\\apps'.replace(/\\/g, '/');
+        this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(this.rootPath)).replace(/\\/g, '/');
+        //this.log(this.settings.savePath);
+        //this.settings.update('savePath', 'C:\\Test');
+        //this.log(this.settings.savePath);
     }
 
     generateAll(checkExists) {
@@ -71,6 +78,9 @@ module.exports = class Reader {
                             await reader.detectLocalEventSubscriber(function () { });
 
                             reader.findEventSubscriberObjectName();
+                            reader.log("Found all Event Publishers and Event Subscribers");
+                            reader.output("Found all Event Publishers and Event Subscribers");
+                            reader.showInformationMessage("Successfully found all Event Publishers and Event Subscribers!");
                             resolve();
                         };
                         start();
@@ -181,9 +191,9 @@ module.exports = class Reader {
 
     async readAppFile(appPath, reader, callback) {
         var splittedName = path.basename(appPath).split('_');
-        const tempAppFileZip = path.join(os.tmpdir(), 'VSCode', path.basename(reader.rootPath), 'ALObjectHelper', splittedName[0] + "_" + splittedName[1] + '.zip');
-        const tempAppFileZip2 = path.join(os.tmpdir(), 'VSCode', path.basename(reader.rootPath), 'ALObjectHelper', splittedName[0] + "_" + splittedName[1] + '2.zip');
-        const baseAppFolderApp = reader.baseAppFolderPath + '/' + splittedName[0] + "_" + splittedName[1];
+        const tempAppFileZip = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1] + '.zip');
+        const tempAppFileZip2 = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1] + '2.zip');
+        const baseAppFolderApp = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1]);
 
         if (reader.appPackages.find(element => element.packageName == (splittedName[0] + "_" + splittedName[1]).trim()) == undefined) {
             reader.appPackages.push(new AppPackage((splittedName[0] + "_" + splittedName[1]).trim()));
@@ -816,12 +826,58 @@ module.exports = class Reader {
 
             for (let index = 0; index < len; index++) {
                 await this.detectEventPublisher(index);
-
                 if (index >= len - 1) {
                     callback();
                     resolve();
                 }
             }
+
+            // callback();
+            // resolve();
+            // const initialTimestamp = new Date();
+            // await Promise.all(
+            //     this.alObjects.map(async (alObject, index) => {
+            //         await this.detectEventPublisher(index);
+            //     })
+            // );
+            // console.log(
+            //     `All Completed! ${Number(new Date()) - Number(initialTimestamp)}ms.`
+            // );
+
+            // console.log("Calling first 3000");
+            // var promise1 = new Promise(async (resolve) => {
+            //     for (let index = 0; index < 3000; index++) {
+            //         await this.detectEventPublisher(index);
+            //         if (index >= 3000 - 1) {
+            //             //callback();
+            //             resolve();
+            //         }
+            //     }
+            // });
+
+            // console.log("Calling next 3000");
+            // var promise2 = new Promise(async (resolve) => {
+            //     for (let index = 3000; index < len; index++) {
+            //         await this.detectEventPublisher(index);
+            //         if (index >= len - 1) {
+            //             //callback();
+            //             resolve();
+            //         }
+            //     }
+            // });
+
+            // var promises = [];
+
+
+            // console.log("Called all functions");
+
+            // promise1
+            //     .then(result => { console.log("Promise 1 : " + result); })
+            //     .catch(error => { console.log("Promise 1 err : " + error); });
+
+            // promise2
+            //     .then(result => { console.log("Promise 2 : " + result); })
+            //     .catch(error => { console.log("Promise 2 err : " + error); });
         });
     }
 
@@ -886,6 +942,15 @@ module.exports = class Reader {
             //     resolve();
             // }
         });
+    }
+
+    allProcessed(processedArray, indexFrom, indexTo) {
+        for (let index = indexFrom; index < indexTo; index++) {
+            if (!processedArray[index])
+                return false;
+        }
+
+        return true;
     }
 
     addObjectEventPublisher(index) {
@@ -1024,6 +1089,11 @@ module.exports = class Reader {
                 }
             }
         });
+    }
+
+    updateSetting(name, value) {
+        const target = vscode.ConfigurationTarget.Global;
+        this.settings.update(name, value, target);
     }
 
     log(message) {

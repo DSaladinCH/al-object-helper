@@ -67,6 +67,11 @@ If you use the latest version of the AL Language Extension by Microsoft, you hav
 
 **Newest Releases**
 
+### 1.4.1
+
+- Added Setting for the extracted AL Files
+- CHanged logo
+
 ### 1.4.0
 
 - Added feature to copy any Event Publisher

@@ -22,7 +22,7 @@ async function activate(context) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
 	vscode.window.showInformationMessage("Welcome to the AL Object Helper. If you like this extension, please rate it in the Marketplace :)");
-
+	
 	const reader = new Reader(context);
 	const reloaded = reader.extensionContext.globalState.get('reloaded');
 	new Promise(async () => {
@@ -31,7 +31,7 @@ async function activate(context) {
 			reader.extensionContext.globalState.update('reloaded', false);
 		}
 		reader.generateAll(true);
-	})
+	});
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.regenerate', async function () {
 		const showConfirm = reader.extensionContext.globalState.get('showRegenerateConfirm');
@@ -176,7 +176,7 @@ async function activate(context) {
 				eventPublishers.push(new ALEventPublisherItem(eventPublisher));
 			}
 
-			vscode.window.showQuickPick(eventPublishers, { placeHolder: "Select Event to Copy" }).then((value) => {
+			vscode.window.showQuickPick(eventPublishers, { placeHolder: `Select Event from ${alObject.displayType} "${alObject.name}" to Copy` }).then((value) => {
 				if (value == undefined)
 					return;
 				clipboard.writeSync(value.eventPublisher.toString());

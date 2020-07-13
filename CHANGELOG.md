@@ -2,6 +2,13 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.4.1] - 13.07.2020
+### Added
+- Setting for path for extracted al Files
+
+### Changed
+- Logo
+
 ## [1.4.0] - 12.07.2020
 ### Added
 - Copy Event Publisher

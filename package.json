@@ -3,7 +3,7 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "1.4.0",
+	"version": "1.4.1",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {
@@ -79,7 +79,18 @@
 				"key": "Shift+Alt+E",
 				"when": "alExtensionActive"
 			}
-		]
+		],
+		"configuration":{
+			"type": "object",
+		"title": "AL Object Helper Configuration",
+		"properties": {
+			"alObjectHelper.savePath": {
+				"type": "string",
+				"default": "",
+				"description": "The global path for all extracted AL Files"
+			}
+		}
+		}
 	},
 	"scripts": {
 		"lint": "eslint .",
