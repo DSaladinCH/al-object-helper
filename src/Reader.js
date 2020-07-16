@@ -47,7 +47,8 @@ module.exports = class Reader {
         fs.readdir(this.baseAppFolderPath, async function (error, files) {
             if (error)
                 reader.outputChannel.appendLine(error.message);
-            if (checkExists && files != undefined && files.length > 0) {
+            var appFiles = await reader.readDir(reader.baseAppFolderPath, '.al', reader);
+            if (checkExists && files != undefined && appFiles.length > 0) {
                 //reader.appPackages.push(new AppPackage('Custom'));
                 files.forEach(element => {
                     const appPackageName = path.basename(element);
@@ -381,6 +382,7 @@ module.exports = class Reader {
                             this.showInformationMessage("All AL files were found successfully!");
                         this.log("Read all!");
                         this.output("Read all!");
+                        console.clear();
 
                         this.alObjects.sort(function (a, b) {
                             var nameA = a.name.toUpperCase();

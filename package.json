@@ -80,16 +80,16 @@
 				"when": "alExtensionActive"
 			}
 		],
-		"configuration":{
+		"configuration": {
 			"type": "object",
-		"title": "AL Object Helper Configuration",
-		"properties": {
-			"alObjectHelper.savePath": {
-				"type": "string",
-				"default": "",
-				"description": "The global path for all extracted AL Files"
+			"title": "AL Object Helper Configuration",
+			"properties": {
+				"alObjectHelper.savePath": {
+					"type": "string",
+					"default": "",
+					"description": "The global path for all extracted AL Files"
+				}
 			}
-		}
 		}
 	},
 	"scripts": {

@@ -10,6 +10,7 @@ const QuickPickItem = require('./src/MessageItems/QuickPickItem.js');
 const ALEventPublisherItem = require('./src/MessageItems/ALEventPublisherItem.js');
 const ALEventSubscriberItem = require('./src/MessageItems/ALEventSubscriberItem.js');
 const clipboard = require('clipboardy');
+const ALDefinitionProvider = require('./src/ALDefinitionProvider.js');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -32,6 +33,7 @@ async function activate(context) {
 		}
 		reader.generateAll(true);
 	});
+	vscode.languages.registerDefinitionProvider('al', new ALDefinitionProvider());
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.regenerate', async function () {
 		const showConfirm = reader.extensionContext.globalState.get('showRegenerateConfirm');
