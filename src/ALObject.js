@@ -21,6 +21,9 @@ module.exports = class ALObject {
         this.eventPublisher = [];
         this.eventSubscriber = [];
 
+        this.functions = [];
+        this.variables = [];
+
         if (this.extendsName == '')
             this.extension = false;
         else {

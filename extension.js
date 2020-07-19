@@ -33,7 +33,7 @@ async function activate(context) {
 		}
 		reader.generateAll(true);
 	});
-	vscode.languages.registerDefinitionProvider('al', new ALDefinitionProvider());
+	vscode.languages.registerDefinitionProvider('al', new ALDefinitionProvider(reader));
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.regenerate', async function () {
 		const showConfirm = reader.extensionContext.globalState.get('showRegenerateConfirm');

@@ -12,6 +12,8 @@ const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObject');
 const ALEventPublisher = require('./ALEventPublisher');
 const ALEventSubscriber = require('./ALEventSubscriber');
+const ALFunction = require('./ALFunction');
+const ALVariable = require('./ALVariable');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -73,7 +75,7 @@ module.exports = class Reader {
                             }
 
                             progress.report({ message: "Searching Event Publishers and Triggers" });
-                            await reader.detectEventPublishers(function () { });
+                            await reader.readAllDefinitions(function () { });
 
                             progress.report({ message: "Searching local Event Subscribers" });
                             await reader.detectLocalEventSubscriber(function () { });
@@ -175,7 +177,7 @@ module.exports = class Reader {
                         if (progress != undefined)
                             progress.report({ message: "Searching Event Publishers and Triggers" });
 
-                        reader.detectEventPublishers(function () {
+                        reader.readAllDefinitions(function () {
                             if (progress != undefined)
                                 progress.report({ message: "Searching local Event Subscribers" });
 
@@ -817,7 +819,7 @@ module.exports = class Reader {
         }
     }
 
-    detectEventPublishers(callback) {
+    readAllDefinitions(callback) {
         return new Promise(async (resolve) => {
             var len = this.alObjects.length;
             if (len <= 0) {
@@ -827,63 +829,16 @@ module.exports = class Reader {
             }
 
             for (let index = 0; index < len; index++) {
-                await this.detectEventPublisher(index);
+                await this.readDefinitions(index);
                 if (index >= len - 1) {
                     callback();
                     resolve();
                 }
             }
-
-            // callback();
-            // resolve();
-            // const initialTimestamp = new Date();
-            // await Promise.all(
-            //     this.alObjects.map(async (alObject, index) => {
-            //         await this.detectEventPublisher(index);
-            //     })
-            // );
-            // console.log(
-            //     `All Completed! ${Number(new Date()) - Number(initialTimestamp)}ms.`
-            // );
-
-            // console.log("Calling first 3000");
-            // var promise1 = new Promise(async (resolve) => {
-            //     for (let index = 0; index < 3000; index++) {
-            //         await this.detectEventPublisher(index);
-            //         if (index >= 3000 - 1) {
-            //             //callback();
-            //             resolve();
-            //         }
-            //     }
-            // });
-
-            // console.log("Calling next 3000");
-            // var promise2 = new Promise(async (resolve) => {
-            //     for (let index = 3000; index < len; index++) {
-            //         await this.detectEventPublisher(index);
-            //         if (index >= len - 1) {
-            //             //callback();
-            //             resolve();
-            //         }
-            //     }
-            // });
-
-            // var promises = [];
-
-
-            // console.log("Called all functions");
-
-            // promise1
-            //     .then(result => { console.log("Promise 1 : " + result); })
-            //     .catch(error => { console.log("Promise 1 err : " + error); });
-
-            // promise2
-            //     .then(result => { console.log("Promise 2 : " + result); })
-            //     .catch(error => { console.log("Promise 2 err : " + error); });
         });
     }
 
-    detectEventPublisher(index) {
+    readDefinitions(index) {
         return new Promise(async (resolve, reject) => {
             const alObject = this.alObjects[index];
             var eventType = "";
@@ -896,22 +851,66 @@ module.exports = class Reader {
             const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
             var saveNextLine = false;
+            var regexMatch;
+            var isInFunction = false;
+            var isInFunctionHeader = false;
+            var isVariableList = false;
+            //var variablePattern = /(\S*)\s?\:\s(\S*)\s(.*)\;/gmi;
+            //var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z]+)\s?(\'[^\']+\'|\"[^\"]+\"|[^\"\s]+)\;/gi;
+            var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+)\;/gi;
+            var procedurePattern = /(local\s)*(procedure)\s(\S*)\(/gi;
+            var lineCounter = 0;
+            if (alObject.id == "36" && alObject.name == "Sales Header") {
+                console.log("Yes!");
+            }
             for await (const line of rl) {
                 if (saveNextLine) {
-                    if (line.includes("[Scope") || line.includes("[Obsolete"))
+                    if (line.includes("[Scope") || line.includes("[Obsolete")) {
+                        lineCounter += 1;
                         continue;
+                    }
                     this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, line));
                     saveNextLine = false;
                 }
                 else if (line.includes("[IntegrationEvent")) {
+                    isInFunction = false;
+                    isVariableList = false;
                     eventType = "IntegrationEvent";
                     saveNextLine = true;
                 }
                 else if (line.includes("[BusinessEvent")) {
+                    isInFunction = false;
+                    isVariableList = false;
                     eventType = "BusinessEvent";
                     saveNextLine = true;
                 }
+                else if (line.includes("procedure")) {
+                    isInFunction = true;
+                    isInFunctionHeader = true;
+                    isVariableList = false;
+                    regexMatch = procedurePattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length >= 3) {
+                            // if length is 4, it's a local function
+                            var name = regexMatch[2];
+                            var local = false;
+                            if (regexMatch.length == 4) {
+                                name = regexMatch[3];
+                                local = true;
+                            }
+
+                            this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
+                        }
+                    }
+                }
+                else if (line.includes("trigger")) {
+                    isInFunction = true;
+                    isInFunctionHeader = true;
+                    isVariableList = false;
+                }
                 else if (line.includes("field(") && alObject.type == "table") {
+                    isInFunction = false;
+                    isVariableList = false;
                     eventType = "Trigger";
                     const start = line.indexOf(";") + 1;
                     var elementName = line.substring(start, line.indexOf(";", start)).trim();
@@ -925,6 +924,8 @@ module.exports = class Reader {
                     this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnAfterValidateEvent", elementName));
                 }
                 else if (line.includes("field(") && alObject.type == "page") {
+                    isInFunction = false;
+                    isVariableList = false;
                     eventType = "Trigger";
                     const start = line.indexOf(";") + 1;
                     var elementName = line.substring(start, line.indexOf(")", start)).trim();
@@ -937,8 +938,36 @@ module.exports = class Reader {
                     functionString = `local procedure OnAfterValidate(var Rec: Record "${alObject.pageSourceTable}"; var xRec: Record "${alObject.name}")`;
                     this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnAfterValidateEvent", elementName));
                 }
+                // first begin of procedure/trigger
+                else if (line.includes("begin") && isInFunctionHeader) {
+                    isInFunctionHeader = false;
+                    isVariableList = false;
+                }
+                else if (line.includes("var")) {
+                    //if (isInFunctionHeader)
+                    isVariableList = true;
+                }
+                else if (isVariableList) {
+                    regexMatch = variablePattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length >= 3) {
+                            // if length is 4, it's a local function
+                            let name = regexMatch[1];
+                            let type = regexMatch[2];
+                            let subType = "";
+                            if (regexMatch.length == 4 && regexMatch[3] != "") {
+                                subType = regexMatch[3];
+                            }
+
+                            this.alObjects[index].variables.push(new ALVariable(name, type, lineCounter, isInFunctionHeader, subType));
+                        }
+                    }
+                    variablePattern.lastIndex = 0;
+                }
+                lineCounter += 1;
             }
             resolve(`Found ${alObject.eventPublisher.length} Event Publishers (${alObject.name})`);
+            this.log(`Processed ${alObject.name}`);
 
             // if (index >= this.alObjects.length - 1) {
             //     resolve();
