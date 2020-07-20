@@ -3,38 +3,55 @@ const util = require('util');
 const { Location, Uri } = require("vscode");
 var readLine = require('readline');
 const { readlink } = require('fs');
+const { resolveSoa } = require('dns');
 
-module.exports = class ALDefinitionProvider {
+module.exports = class ALHoverProvider {
     constructor(reader) {
         this.reader = reader;
     }
 
-    provideDefinition(textDocument, position, token) {
+    provideHover(textDocument, position, token) {
         return new Promise(async (resolve) => {
+            if (!textDocument.fileName.toLowerCase().startsWith(this.reader.settings.get('alObjectHelper.savePath').toLowerCase())){
+                resolve(undefined);
+                return undefined
+            }
             var definitionLine = textDocument.lineAt(position.line).text;
 
             let message = this.navigateToVariable(textDocument.fileName, definitionLine, position);
             if (message != undefined) {
                 console.log("Go to line No: " + message.lineNo);
                 const definitionResource = vscode.Uri.file(message.Path);
-                resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
+                var hoverContent = {
+                    contents: [`${message.Name}: ${message.Type} "${message.Type2}"`]
+                };
+                resolve(hoverContent);
+                return hoverContent;
             }
 
             message = this.navigateToVariableCall(textDocument, definitionLine, position);
             if (message != undefined) {
                 console.log("Definition for: " + message.Type + " " + message.Name + " on Line No. " + message.LineNo);
                 const definitionResource = vscode.Uri.file(message.Path);
-                resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
+                var hoverContent = {
+                    contents: [`${message.Type} ${message.Name}`]
+                };
+                resolve(hoverContent);
+                return hoverContent;
             }
 
             message = this.navigateFromVariable(definitionLine, position);
             if (message != undefined) {
                 console.log("Definition for: " + message.Type + " " + message.Name);
                 const definitionResource = vscode.Uri.file(message.Path);
-                resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
+                var hoverContent = {
+                    contents: [`${message.Type} ${message.Name}`]
+                };
+                resolve(hoverContent);
+                return hoverContent;
             }
 
-            return new Location(Uri.parse(''), position);
+            return undefined;
         });
     }
 
@@ -74,6 +91,7 @@ module.exports = class ALDefinitionProvider {
             if (alObject != undefined) {
                 let message = {
                     Type: type,
+                    Type2: "",
                     Name: name,
                     Path: alObject.path,
                     LineNo: 0
@@ -118,13 +136,32 @@ module.exports = class ALDefinitionProvider {
             }
             if (variable != undefined) {
                 let message = {
-                    Type: alObject.type,
-                    Name: alObject.name,
+                    Type: variable.type,
+                    Type2: variable.subType,
+                    Name: variable.name,
                     Path: path,
                     LineNo: variable.lineNo
                 };
 
                 return message;
+            }
+        }
+        else {
+            let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
+            var variables = alObject.variables.filter(element => !element.local);
+            if (variables != undefined) {
+                let variable = variables.reverse().find(element => element.name == variableName);
+                if (variable != undefined) {
+                    let message = {
+                        Type: variable.type,
+                        Type2: variable.subType,
+                        Name: variable.name,
+                        Path: path,
+                        LineNo: variable.lineNo
+                    };
+
+                    return message;
+                }
             }
         }
     }
@@ -165,8 +202,9 @@ module.exports = class ALDefinitionProvider {
         if (functions != undefined && functions.length != 0) {
             var alFunction = functions.reverse()[0];
             let message = {
-                Type: alObject.type,
-                Name: alObject.name,
+                Type: "procedure",
+                Type2: "",
+                Name: alFunction.name,
                 Path: alObject.path,
                 LineNo: alFunction.lineNo
             };
@@ -178,7 +216,7 @@ module.exports = class ALDefinitionProvider {
     getLastProcedure(path, lineNo) {
         var alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
         var functions = alObject.functions.filter(element => element.lineNo < lineNo);
-        if (functions == undefined)
+        if (functions == undefined || functions.length == 0)
             return -1;
         return functions[functions.length - 1].lineNo;
     }

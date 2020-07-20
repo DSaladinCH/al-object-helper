@@ -859,6 +859,7 @@ module.exports = class Reader {
             //var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z]+)\s?(\'[^\']+\'|\"[^\"]+\"|[^\"\s]+)\;/gi;
             var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+)\;/gi;
             var procedurePattern = /(local\s)*(procedure)\s(\S*)\(/gi;
+            var triggerPattern = /(trigger)\s(\S*)\(/gi;
             var lineCounter = 0;
             if (alObject.id == "36" && alObject.name == "Sales Header") {
                 console.log("Yes!");
@@ -889,19 +890,17 @@ module.exports = class Reader {
                     isInFunctionHeader = true;
                     isVariableList = false;
                     regexMatch = procedurePattern.exec(line);
-                    if (regexMatch) {
-                        if (regexMatch.length >= 3) {
-                            // if length is 4, it's a local function
-                            var name = regexMatch[2];
-                            var local = false;
-                            if (regexMatch.length == 4) {
-                                name = regexMatch[3];
-                                if (regexMatch[1] != undefined){
-                                    local = true;
-                                }
+                    if (regexMatch && regexMatch.length >= 3) {
+                        // if length is 4, it's a local function
+                        var name = regexMatch[2];
+                        var local = false;
+                        if (regexMatch.length == 4) {
+                            name = regexMatch[3];
+                            if (regexMatch[1] != undefined) {
+                                local = true;
                             }
-                            this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
                         }
+                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
                     }
                     procedurePattern.lastIndex = 0;
                 }
@@ -909,6 +908,13 @@ module.exports = class Reader {
                     isInFunction = true;
                     isInFunctionHeader = true;
                     isVariableList = false;
+                    regexMatch = triggerPattern.exec(line);
+                    if (regexMatch && regexMatch.length == 3) {
+                        var name = regexMatch[2];
+                        var local = true;
+                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
+                    }
+                    triggerPattern.lastIndex = 0;
                 }
                 else if (line.includes("field(") && alObject.type == "table") {
                     isInFunction = false;
