@@ -8,78 +8,36 @@ module.exports = class ALDefinitionProvider {
     constructor(reader) {
         this.reader = reader;
     }
+
     provideDefinition(textDocument, position, token) {
         return new Promise(async (resolve) => {
-            // var definitionLine = "";
-            // var counter = 0;
-            // var readStream = readLine.createInterface({
-            //     input: (require('fs').createReadStream(textDocument.fileName))
-            // })
-            // await new Promise((resolve) => {
-            //     readStream.on('line', function (line) {
-            //         if (counter == position.line) {
-            //             definitionLine = line;
-            //             resolve();
-            //         }
-            //         counter++;
-            //     });
-            // });
-
             var definitionLine = textDocument.lineAt(position.line).text;
 
-            //console.log(textDocument);
-            let message = this.navigateToVariable(textDocument.fileName, definitionLine, position);
+            let message = this.navigateToVariableCall(textDocument, definitionLine, position);
+            if (message != undefined) {
+                console.log("Definition for: " + message.Type + " " + message.Name + " on Line No. " + message.LineNo);
+                const definitionResource = vscode.Uri.file(message.Path);
+                resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
+            }
+
+            message = this.navigateToVariable(textDocument.fileName, definitionLine, position);
             if (message != undefined) {
                 console.log("Go to line No: " + message.lineNo);
-                const definitionResource = vscode.Uri.file(textDocument.fileName);
-                resolve(new Location(definitionResource, new vscode.Position(message.lineNo, 0)));
+                const definitionResource = vscode.Uri.file(message.Path);
+                resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
             }
 
-            let message2 = this.navigateFromVariable(definitionLine, position);
-
-            if (message2 != undefined) {
-                console.log("Definition for: " + message2.Type + " " + message2.Name);
-                var alObject = this.reader.alObjects.findLast(element => element.type == message2.Type.toLowerCase() && element.name.toLowerCase() == message2.Name.toLowerCase());
-                if (alObject != undefined) {
-                    const definitionResource = vscode.Uri.file(alObject.path);
-                    resolve(new Location(definitionResource, new vscode.Position(0, 0)));
-                }
+            message = this.navigateFromVariable(definitionLine, position);
+            if (message != undefined) {
+                console.log("Definition for: " + message.Type + " " + message.Name);
+                const definitionResource = vscode.Uri.file(message.Path);
+                resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
             }
 
-            // if (/\s/.test(definitionLine[position.character])) {
-            //     return new Location(Uri.parse(''), position);
-            // }
-
-            // var firstMatchPos = 0;
-            // var secondMatchPos = 0;
-            // var match = /[^a-zA-Z0-9&\/ -]/.exec(definitionLine.substring(position.character));
-            // if (match) {
-            //     console.log("\"" + definitionLine.substr(position.character + match.index, 2) + "\"");
-            //     if (definitionLine.substring(position.character)[match.index] == '.') {
-            //         if (definitionLine.substr(position.character + match.index, 2).endsWith("\""))
-            //             secondMatchPos = position.character + match.index + 2;
-            //     }
-            //     else if (definitionLine.substring(position.character)[match.index] == '"') {
-            //         secondMatchPos = position.character + match.index + 1;
-            //     }
-            //     else
-            //         secondMatchPos = position.character + match.index;
-            // }
-
-            // const positionReversed = definitionLine.length - position.character;
-            // var definitionLineReversed = definitionLine.split("").reverse().join("");
-            // var match = /[^a-zA-Z0-9&\/ -]/.exec(definitionLineReversed.substring(positionReversed));
-            // if (match) {
-            //     console.log("\"" + definitionLine.substr(definitionLine.length - positionReversed - match.index - 1, 1) + "\"");
-            //     if (definitionLine.substr(definitionLine.length - positionReversed - match.index - 1, 1) == "\"")
-            //         firstMatchPos = definitionLine.length - positionReversed - match.index - 1;
-            //     else
-            //         firstMatchPos = definitionLine.length - positionReversed - match.index;
-            // }
-            // console.log("Definition for: " + definitionLine.substring(firstMatchPos, secondMatchPos).trim());
             return new Location(Uri.parse(''), position);
         });
     }
+
 
     navigateFromVariable(line, position) {
         let part = line;
@@ -112,13 +70,17 @@ module.exports = class ALDefinitionProvider {
             let type = found[1].replace(/record/gi, 'Table');
             let name = found[2].replace(/"/g, '');
 
-            let message = {
-                Command: 'Definition',
-                Type: type,
-                Name: name
-            };
+            var alObject = this.reader.alObjects.reverse().find(element => element.type == type.toLowerCase() && element.name.toLowerCase() == name.toLowerCase());
+            if (alObject != undefined) {
+                let message = {
+                    Type: type,
+                    Name: name,
+                    Path: alObject.path,
+                    LineNo: 0
+                };
 
-            return message;
+                return message;
+            }
         }
 
         return undefined;
@@ -137,29 +99,12 @@ module.exports = class ALDefinitionProvider {
             }
         }
         var variableName = line.substring(match.index, match.index + match[0].length);
+        return this.getVariableDefinition(path, variableName, position.line)
+    }
 
-        //indexes.push([match.index, match.index + match[0].length]);
-
-        // var leftText, rightText;
-        // leftText = line.substring(0, position.character);
-        // rightText = line.substring(position.character);
-
-        // var startPos = 0, endPos = 0;
-
-        // var regexMatch = /[^a-zA-Z0-9&\/ -]/.exec(rightText);
-        // if (regexMatch) {
-        //     endPos = position.character + regexMatch.index
-        // }
-
-        // leftText = leftText.split("").reverse().join("");
-        // var regexMatch = /[^a-zA-Z0-9&\/ -]/.exec(leftText);
-        // if (regexMatch) {
-        //     startPos = leftText.length - regexMatch.index;
-        // }
-
-        // var variableName = line.substring(startPos, endPos).trim();
-        let variableStartLineNo = this.getLastProcedure(path, position.line);
-        let variableEndLineNo = position.line;
+    getVariableDefinition(path, variableName, lineNo) {
+        let variableStartLineNo = this.getLastProcedure(path, lineNo);
+        let variableEndLineNo = lineNo;
         if (variableStartLineNo != -1) {
             let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
             let variables = alObject.variables.filter(element => element.lineNo > variableStartLineNo && element.lineNo < variableEndLineNo);
@@ -167,18 +112,66 @@ module.exports = class ALDefinitionProvider {
                 variables = alObject.variables.filter(element => !element.local);
             }
             let variable = variables.reverse().find(element => element.name == variableName);
-            if (variable == undefined){
+            if (variable == undefined) {
                 variables = alObject.variables.filter(element => !element.local);
                 variable = variables.reverse().find(element => element.name == variableName);
             }
             if (variable != undefined) {
                 let message = {
-                    Command: 'Definition',
-                    lineNo: variable.lineNo
+                    Type: alObject.type,
+                    Name: alObject.name,
+                    Path: path,
+                    LineNo: variable.lineNo
                 };
 
                 return message;
             }
+        }
+    }
+
+    /*
+        Jump to a Function or Field Definition in a other File (From a Variable)
+        Ex. Customer."No." -> Jump to the Field No. in the Customer Table, because Customer is a Record Variable of Customer
+    */
+    navigateToVariableCall(textDocument, line, position) {
+        var r = /((\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\.(\"[^\"\r\n\t]+\"|[a-z0-9\_]+))/gmi;
+        var match;
+        match = r.exec(line);
+        if (match == null)
+            return undefined;
+
+        if (!(position.character > match.index && position.character < match.index + match[0].length)) {
+            let len = match.length - 2;
+            while (match = r.exec(line)) {
+                if (position.character > match.index && position.character < match.index + match[0].length) {
+                    break;
+                }
+            }
+        }
+        //var variableName = line.substring(match.index, match.index + match[0].length);
+        var secondVariableName = match[3];
+        let message = this.getVariableDefinition(textDocument.fileName, match[2], position.line);
+        let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == textDocument.fileName.toLowerCase());
+        let variable = alObject.variables.find(element => element.lineNo == message.LineNo);
+
+        var definitionLine = textDocument.lineAt(variable.lineNo).text;
+        var index = definitionLine.indexOf(":");
+        index = this.regexIndexOf(definitionLine, /[a-z]/gi, index) + 1;
+
+        message = this.navigateFromVariable(definitionLine, new vscode.Position(variable.lineNo, index));
+        // Parent Object
+        alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == message.Path.toLowerCase());
+        var functions = alObject.functions.filter(element => element.name == secondVariableName && !element.local);
+        if (functions != undefined && functions.length != 0) {
+            var alFunction = functions.reverse()[0];
+            let message = {
+                Type: alObject.type,
+                Name: alObject.name,
+                Path: alObject.path,
+                LineNo: alFunction.lineNo
+            };
+
+            return message;
         }
     }
 
@@ -188,5 +181,10 @@ module.exports = class ALDefinitionProvider {
         if (functions == undefined)
             return -1;
         return functions[functions.length - 1].lineNo;
+    }
+
+    regexIndexOf(value, regex, startpos) {
+        var indexOf = value.substring(startpos || 0).search(regex);
+        return (indexOf >= 0) ? (indexOf + (startpos || 0)) : indexOf;
     }
 }

@@ -896,12 +896,14 @@ module.exports = class Reader {
                             var local = false;
                             if (regexMatch.length == 4) {
                                 name = regexMatch[3];
-                                local = true;
+                                if (regexMatch[1] != undefined){
+                                    local = true;
+                                }
                             }
-
                             this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
                         }
                     }
+                    procedurePattern.lastIndex = 0;
                 }
                 else if (line.includes("trigger")) {
                     isInFunction = true;
@@ -968,10 +970,6 @@ module.exports = class Reader {
             }
             resolve(`Found ${alObject.eventPublisher.length} Event Publishers (${alObject.name})`);
             this.log(`Processed ${alObject.name}`);
-
-            // if (index >= this.alObjects.length - 1) {
-            //     resolve();
-            // }
         });
     }
 
