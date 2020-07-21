@@ -23,6 +23,7 @@ module.exports = class ALObject {
 
         this.functions = [];
         this.variables = [];
+        this.fields = [];
 
         if (this.extendsName == '')
             this.extension = false;

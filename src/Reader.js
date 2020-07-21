@@ -14,6 +14,8 @@ const ALEventPublisher = require('./ALEventPublisher');
 const ALEventSubscriber = require('./ALEventSubscriber');
 const ALFunction = require('./ALFunction');
 const ALVariable = require('./ALVariable');
+const ALTableField = require('./ALTableField');
+const ALPageField = require('./ALPageField');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -29,11 +31,7 @@ module.exports = class Reader {
         this.extensionContext = extensionContext;
         this.rootPath = workspace.rootPath;
         this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        // this.baseAppFolderPath = path.join(os.tmpdir(), 'VSCode', path.basename(this.rootPath), 'ALObjectHelper').replace(/\\/g, '/');
         this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(this.rootPath)).replace(/\\/g, '/');
-        //this.log(this.settings.savePath);
-        //this.settings.update('savePath', 'C:\\Test');
-        //this.log(this.settings.savePath);
     }
 
     generateAll(checkExists) {
@@ -857,9 +855,11 @@ module.exports = class Reader {
             var isVariableList = false;
             //var variablePattern = /(\S*)\s?\:\s(\S*)\s(.*)\;/gmi;
             //var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z]+)\s?(\'[^\']+\'|\"[^\"]+\"|[^\"\s]+)\;/gi;
-            var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+)\;/gi;
+            var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+|)\;/gi;
             var procedurePattern = /(local\s)*(procedure)\s(\S*)\(/gi;
             var triggerPattern = /(trigger)\s(\S*)\(/gi;
+            var tableFieldPattern = /field\(([0-9]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\;\s?([a-z0-9\[\]]+|Enum (\"[^\"]+\"|[a-z0-9\_]+))\)/gi;
+            var pageFieldPattern = /field\((\"[^\"]+\"|[a-z0-9\_]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\)/gi;
             var lineCounter = 0;
             if (alObject.id == "36" && alObject.name == "Sales Header") {
                 console.log("Yes!");
@@ -873,7 +873,8 @@ module.exports = class Reader {
                     this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, line));
                     saveNextLine = false;
                 }
-                else if (line.includes("[IntegrationEvent")) {
+
+                if (line.includes("[IntegrationEvent")) {
                     isInFunction = false;
                     isVariableList = false;
                     eventType = "IntegrationEvent";
@@ -900,7 +901,7 @@ module.exports = class Reader {
                                 local = true;
                             }
                         }
-                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
+                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, line, local));
                     }
                     procedurePattern.lastIndex = 0;
                 }
@@ -912,7 +913,7 @@ module.exports = class Reader {
                     if (regexMatch && regexMatch.length == 3) {
                         var name = regexMatch[2];
                         var local = true;
-                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, local));
+                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, line, local));
                     }
                     triggerPattern.lastIndex = 0;
                 }
@@ -920,6 +921,19 @@ module.exports = class Reader {
                     isInFunction = false;
                     isVariableList = false;
                     eventType = "Trigger";
+
+                    regexMatch = tableFieldPattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length == 5) {
+                            let id = regexMatch[1];
+                            let name = regexMatch[2];
+                            let type = regexMatch[3];
+
+                            this.alObjects[index].fields.push(new ALTableField(id, name, type, lineCounter));
+                        }
+                    }
+                    tableFieldPattern.lastIndex = 0;
+
                     const start = line.indexOf(";") + 1;
                     var elementName = line.substring(start, line.indexOf(";", start)).trim();
                     if (elementName.startsWith("\"")) {
@@ -935,6 +949,18 @@ module.exports = class Reader {
                     isInFunction = false;
                     isVariableList = false;
                     eventType = "Trigger";
+
+                    regexMatch = pageFieldPattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length == 4) {
+                            let name = regexMatch[1];
+                            let fieldName = regexMatch[2];
+
+                            this.alObjects[index].fields.push(new ALPageField(name, fieldName, lineCounter));
+                        }
+                    }
+                    pageFieldPattern.lastIndex = 0;
+
                     const start = line.indexOf(";") + 1;
                     var elementName = line.substring(start, line.indexOf(")", start)).trim();
                     if (elementName.startsWith("\"")) {

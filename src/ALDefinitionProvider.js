@@ -13,9 +13,9 @@ module.exports = class ALDefinitionProvider {
         return new Promise(async (resolve) => {
             var definitionLine = textDocument.lineAt(position.line).text;
 
-            let message = this.navigateToVariable(textDocument.fileName, definitionLine, position);
+            let message = this.navigateToDefinition(textDocument.fileName, definitionLine, position);
             if (message != undefined) {
-                console.log("Go to line No: " + message.lineNo);
+                console.log("Go to line No: " + message.LineNo);
                 const definitionResource = vscode.Uri.file(message.Path);
                 resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
             }
@@ -34,7 +34,8 @@ module.exports = class ALDefinitionProvider {
                 resolve(new Location(definitionResource, new vscode.Position(message.LineNo, 0)));
             }
 
-            return new Location(Uri.parse(''), position);
+            resolve(undefined);
+            return undefined;
         });
     }
 
@@ -86,7 +87,7 @@ module.exports = class ALDefinitionProvider {
         return undefined;
     }
 
-    navigateToVariable(path, line, position) {
+    navigateToDefinition(path, line, position) {
         var r = /(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)/gmi;
         var match;
         match = r.exec(line);
@@ -98,8 +99,20 @@ module.exports = class ALDefinitionProvider {
                 }
             }
         }
+        if (match == null || match == undefined || match.length == 0)
+            return undefined;
         var variableName = line.substring(match.index, match.index + match[0].length);
-        return this.getVariableDefinition(path, variableName, position.line)
+        let message = this.getVariableDefinition(path, variableName, position.line);
+        if (message != undefined)
+            return message;
+
+        message = this.getFunctionDefinition(path, variableName);
+        if (message != undefined)
+            return message;
+
+        message = this.getFieldDefinition(path, variableName);
+        if (message != undefined)
+            return message;
     }
 
     getVariableDefinition(path, variableName, lineNo) {
@@ -108,14 +121,17 @@ module.exports = class ALDefinitionProvider {
         if (variableStartLineNo != -1) {
             let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
             let variables = alObject.variables.filter(element => element.lineNo > variableStartLineNo && element.lineNo < variableEndLineNo);
+
             if (variables == undefined || variables.length == 0) {
                 variables = alObject.variables.filter(element => !element.local);
             }
+
             let variable = variables.reverse().find(element => element.name == variableName);
             if (variable == undefined) {
                 variables = alObject.variables.filter(element => !element.local);
                 variable = variables.reverse().find(element => element.name == variableName);
             }
+
             if (variable != undefined) {
                 let message = {
                     Type: alObject.type,
@@ -126,6 +142,38 @@ module.exports = class ALDefinitionProvider {
 
                 return message;
             }
+        }
+    }
+
+    getFunctionDefinition(path, variableName) {
+        let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
+        let alFunction = alObject.functions.find(element => element.name == variableName);
+
+        if (alFunction != undefined) {
+            let message = {
+                Type: alObject.type,
+                Name: alObject.name,
+                Path: path,
+                LineNo: alFunction.lineNo
+            };
+
+            return message;
+        }
+    }
+
+    getFieldDefinition(path, variableName) {
+        let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
+        let field = alObject.fields.find(element => element.name == variableName);
+
+        if (field != undefined) {
+            let message = {
+                Type: alObject.type,
+                Name: alObject.name,
+                Path: path,
+                LineNo: field.lineNo
+            };
+
+            return message;
         }
     }
 
@@ -148,7 +196,8 @@ module.exports = class ALDefinitionProvider {
                 }
             }
         }
-        //var variableName = line.substring(match.index, match.index + match[0].length);
+        if (match == null || match == undefined || match.length == 0)
+            return undefined;
         var secondVariableName = match[3];
         let message = this.getVariableDefinition(textDocument.fileName, match[2], position.line);
         let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == textDocument.fileName.toLowerCase());
@@ -161,6 +210,7 @@ module.exports = class ALDefinitionProvider {
         message = this.navigateFromVariable(definitionLine, new vscode.Position(variable.lineNo, index));
         // Parent Object
         alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == message.Path.toLowerCase());
+
         var functions = alObject.functions.filter(element => element.name == secondVariableName && !element.local);
         if (functions != undefined && functions.length != 0) {
             var alFunction = functions.reverse()[0];
@@ -169,6 +219,18 @@ module.exports = class ALDefinitionProvider {
                 Name: alObject.name,
                 Path: alObject.path,
                 LineNo: alFunction.lineNo
+            };
+
+            return message;
+        }
+
+        var field = alObject.fields.find(element => element.name == secondVariableName);
+        if (field != undefined) {
+            let message = {
+                Type: alObject.type,
+                Name: alObject.name,
+                Path: alObject.path,
+                LineNo: field.lineNo
             };
 
             return message;

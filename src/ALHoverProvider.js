@@ -12,7 +12,7 @@ module.exports = class ALHoverProvider {
 
     provideHover(textDocument, position, token) {
         return new Promise(async (resolve) => {
-            if (!textDocument.fileName.toLowerCase().startsWith(this.reader.settings.get('alObjectHelper.savePath').toLowerCase())){
+            if (!textDocument.fileName.toLowerCase().startsWith(this.reader.settings.get('alObjectHelper.savePath').toLowerCase())) {
                 resolve(undefined);
                 return undefined
             }
@@ -20,10 +20,8 @@ module.exports = class ALHoverProvider {
 
             let message = this.navigateToVariable(textDocument.fileName, definitionLine, position);
             if (message != undefined) {
-                console.log("Go to line No: " + message.lineNo);
-                const definitionResource = vscode.Uri.file(message.Path);
                 var hoverContent = {
-                    contents: [`${message.Name}: ${message.Type} "${message.Type2}"`]
+                    contents: [{ language: 'al', value: message.DisplayContent }]
                 };
                 resolve(hoverContent);
                 return hoverContent;
@@ -31,10 +29,8 @@ module.exports = class ALHoverProvider {
 
             message = this.navigateToVariableCall(textDocument, definitionLine, position);
             if (message != undefined) {
-                console.log("Definition for: " + message.Type + " " + message.Name + " on Line No. " + message.LineNo);
-                const definitionResource = vscode.Uri.file(message.Path);
                 var hoverContent = {
-                    contents: [`${message.Type} ${message.Name}`]
+                    contents: [{ language: 'al', value: message.DisplayContent }]
                 };
                 resolve(hoverContent);
                 return hoverContent;
@@ -42,10 +38,8 @@ module.exports = class ALHoverProvider {
 
             message = this.navigateFromVariable(definitionLine, position);
             if (message != undefined) {
-                console.log("Definition for: " + message.Type + " " + message.Name);
-                const definitionResource = vscode.Uri.file(message.Path);
                 var hoverContent = {
-                    contents: [`${message.Type} ${message.Name}`]
+                    contents: [{ language: 'al', value: message.DisplayContent }]
                 };
                 resolve(hoverContent);
                 return hoverContent;
@@ -94,7 +88,8 @@ module.exports = class ALHoverProvider {
                     Type2: "",
                     Name: name,
                     Path: alObject.path,
-                    LineNo: 0
+                    LineNo: 0,
+                    DisplayContent: `${type} ${name}`
                 };
 
                 return message;
@@ -116,8 +111,22 @@ module.exports = class ALHoverProvider {
                 }
             }
         }
+
+        if (match == null || match == undefined || match.length == 0)
+            return undefined;
         var variableName = line.substring(match.index, match.index + match[0].length);
-        return this.getVariableDefinition(path, variableName, position.line)
+
+        let message = this.getVariableDefinition(path, variableName, position.line);
+        if (message != undefined)
+            return message;
+
+        message = this.getFunctionDefinition(path, variableName);
+        if (message != undefined)
+            return message;
+
+        message = this.getFieldDefinition(path, variableName);
+        if (message != undefined)
+            return message;
     }
 
     getVariableDefinition(path, variableName, lineNo) {
@@ -135,12 +144,21 @@ module.exports = class ALHoverProvider {
                 variable = variables.reverse().find(element => element.name == variableName);
             }
             if (variable != undefined) {
+                var displayContent = `${variable.name}: ${variable.type}`;
+                if (variable.subType != "") {
+                    if (variable.subType.startsWith("\""))
+                        displayContent += ` ${variable.subType}`;
+                    else
+                        displayContent += ` "${variable.subType}"`;
+                }
+
                 let message = {
                     Type: variable.type,
                     Type2: variable.subType,
                     Name: variable.name,
                     Path: path,
-                    LineNo: variable.lineNo
+                    LineNo: variable.lineNo,
+                    DisplayContent: displayContent
                 };
 
                 return message;
@@ -152,17 +170,81 @@ module.exports = class ALHoverProvider {
             if (variables != undefined) {
                 let variable = variables.reverse().find(element => element.name == variableName);
                 if (variable != undefined) {
+                    var displayContent = `${variable.name}: ${variable.type}`;
+                    if (variable.subType != "") {
+                        if (variable.subType.startsWith("\""))
+                            displayContent += ` ${variable.subType}`;
+                        else
+                            displayContent += ` "${variable.subType}"`;
+                    }
+
                     let message = {
                         Type: variable.type,
                         Type2: variable.subType,
                         Name: variable.name,
                         Path: path,
-                        LineNo: variable.lineNo
+                        LineNo: variable.lineNo,
+                        DisplayContent: displayContent
                     };
 
                     return message;
                 }
             }
+        }
+    }
+
+    getFunctionDefinition(path, variableName) {
+        let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
+        let alFunction = alObject.functions.find(element => element.name == variableName);
+
+        if (alFunction != undefined) {
+            var parameters = "";
+            if (alFunction.parameters.length != 0) {
+                for (let index = 0; index < alFunction.parameters.length; index++) {
+                    const element = alFunction.parameters[index];
+                    if (element.isVar)
+                        parameters += "var ";
+                    parameters += `${element.name}: ${element.type}`;
+                    if (element.subType != "") {
+                        if (element.subType.startsWith("\""))
+                            parameters += " " + element.subType;
+                        else
+                            parameters += ` "${element.subType}"`;
+                    }
+                    if (index < alFunction.parameters.length - 1)
+                        parameters += "; ";
+                }
+            }
+
+            var displayContent = `procedure ${alFunction.name}(${parameters})`;
+            let message = {
+                Type: "procedure",
+                Type2: "",
+                Name: alFunction.name,
+                Path: path,
+                LineNo: alFunction.lineNo,
+                DisplayContent: displayContent
+            };
+
+            return message;
+        }
+    }
+
+    getFieldDefinition(path, variableName) {
+        let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
+        let field = alObject.fields.find(element => element.name == variableName);
+
+        if (field != undefined) {
+            let message = {
+                Type: "field",
+                Type2: "",
+                Name: field.name,
+                Path: path,
+                LineNo: field.lineNo,
+                DisplayContent: `field ${field.name}`
+            };
+
+            return message;
         }
     }
 
@@ -185,7 +267,8 @@ module.exports = class ALHoverProvider {
                 }
             }
         }
-        //var variableName = line.substring(match.index, match.index + match[0].length);
+        if (match == null || match == undefined || match.length == 0)
+            return undefined;
         var secondVariableName = match[3];
         let message = this.getVariableDefinition(textDocument.fileName, match[2], position.line);
         let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == textDocument.fileName.toLowerCase());
@@ -198,15 +281,50 @@ module.exports = class ALHoverProvider {
         message = this.navigateFromVariable(definitionLine, new vscode.Position(variable.lineNo, index));
         // Parent Object
         alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == message.Path.toLowerCase());
+
         var functions = alObject.functions.filter(element => element.name == secondVariableName && !element.local);
         if (functions != undefined && functions.length != 0) {
             var alFunction = functions.reverse()[0];
+            var parameters = "";
+            if (alFunction.parameters.length != 0) {
+                for (let index = 0; index < alFunction.parameters.length; index++) {
+                    const element = alFunction.parameters[index];
+                    if (element.isVar)
+                        parameters += "var ";
+                    parameters += `${element.name}: ${element.type}`;
+                    if (element.subType != "") {
+                        if (element.subType.startsWith("\""))
+                            parameters += " " + element.subType;
+                        else
+                            parameters += ` "${element.subType}"`;
+                        if (index < alFunction.parameters.length - 1)
+                            parameters += "; ";
+                    }
+                }
+            }
+
+            var displayContent = `procedure ${alFunction.name}(${parameters})`;
             let message = {
                 Type: "procedure",
                 Type2: "",
                 Name: alFunction.name,
                 Path: alObject.path,
-                LineNo: alFunction.lineNo
+                LineNo: alFunction.lineNo,
+                DisplayContent: displayContent
+            };
+
+            return message;
+        }
+
+        var field = alObject.fields.find(element => element.name == secondVariableName);
+        if (field != undefined) {
+            let message = {
+                Type: "field",
+                Type2: "",
+                Name: field.name,
+                Path: alObject.path,
+                LineNo: field.lineNo,
+                DisplayContent: `field ${field.name}`
             };
 
             return message;
