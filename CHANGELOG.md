@@ -2,6 +2,11 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.0] - 24.07.2020
+### Added
+- Definition Provider for all AL Files
+- Hover Provider for all AL Files
+
 ## [1.4.1] - 13.07.2020
 ### Added
 - Setting for path for extracted al Files
@@ -93,6 +98,7 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.5.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.5...v1.4.0
 [1.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.4...v1.3.5
 [1.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.2...v1.3.3

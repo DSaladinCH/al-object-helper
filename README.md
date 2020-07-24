@@ -5,6 +5,10 @@ This extension helps you with this.
 So you can quickly access objects without searching for them for a long time.
 You can also jump to any Event Subscriber and implement any Event across all app Files with the integrated search.
 
+With the latest version it is possible to jump to definition within an AL file.
+This is a new feature and may still contain errors. Possibly there are also definitions which have not yet been implemented.
+Please report these in the Git Repository.
+
 ## Features
 
 * **Open Files** easy with a shortcut
@@ -14,6 +18,8 @@ You can also jump to any Event Subscriber and implement any Event across all app
 * Search for Objects in a **specific App File**
 * Copy any **Event Publisher** across all app Files
 * Search any **local Event Subscriber** and jump to it
+* Open the **Definition** of AL Variables, Functions and Fields inside a AL File (App AL Files)
+* **Hover** on AL Variables, Functions and Fields inside a AL File (App AL Files)
 
 You can open any AL File.
 Just use the Object Shortcut and the ID.
@@ -43,6 +49,9 @@ Just use the Object Shortcut and the ID.
 
 If you use the latest version of the AL Language Extension by Microsoft, you have to remove the "AL: Find Event" keybinding to use the integrated search.
 ![Remove the "AL: Find Event" keybinding](Images/vid03.gif)
+With the latest version it is possible to jump to definition within an AL file.
+This is a new feature and may still contain errors. Possibly there are also definitions which have not yet been implemented.
+Please report these in the Git Repository.
 
 
 ## Requirements
@@ -67,10 +76,14 @@ If you use the latest version of the AL Language Extension by Microsoft, you hav
 
 **Newest Releases**
 
+### 1.5.0
+- Added Definition Provider for all AL Files
+- Added Hover Provider for all AL Files
+
 ### 1.4.1
 
 - Added Setting for the extracted AL Files
-- CHanged logo
+- Changed logo
 
 ### 1.4.0
 

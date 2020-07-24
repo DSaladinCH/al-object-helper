@@ -43,7 +43,7 @@ async function activate(context) {
 			reader.generateAll(false);
 		else {
 			var quickPick = vscode.window.createQuickPick();
-			quickPick.items = [new QuickPickItem("OK"), new QuickPickItem("Cancle"), new QuickPickItem("OK, don't show again")];
+			quickPick.items = [new QuickPickItem("OK"), new QuickPickItem("Cancel"), new QuickPickItem("OK, don't show again")];
 			quickPick.placeholder = "This would lead to a reload of VS Code, okay?";
 			quickPick.onDidAccept(function (event) {
 				quickPick.hide();
