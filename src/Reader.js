@@ -842,6 +842,7 @@ module.exports = class Reader {
             const tasks = ranges.map((v) => this.readDefinitionsRange(v.start, v.end));
             await Promise.all(tasks);
             this.log("Finished in " + (Date.now() - start) + " ms");
+            this.output("Finished in " + (Date.now() - start) + " ms");
             callback();
             resolve();
         });
