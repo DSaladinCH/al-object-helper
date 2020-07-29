@@ -2,6 +2,10 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.1] - 29.07.2020
+### Improved
+- Huge Performance Improvement on initialization of searching AL Symbols
+
 ## [1.5.0] - 24.07.2020
 ### Added
 - Definition Provider for all AL Files

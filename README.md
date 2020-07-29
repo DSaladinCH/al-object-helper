@@ -76,6 +76,9 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.5.1
+- Huge Performance Improvement
+
 ### 1.5.0
 - Added Definition Provider for all AL Files
 - Added Hover Provider for all AL Files
