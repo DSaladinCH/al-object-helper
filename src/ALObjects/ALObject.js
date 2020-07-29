@@ -1,5 +1,8 @@
 module.exports = class ALObject {
     constructor(path, type, id, name, extendsName, secondPath = '') {
+        if (path == undefined && type == undefined && id == undefined && name == undefined && extendsName == undefined && secondPath == '')
+            return;
+
         this.path = path;
         this.secondPath = secondPath;
         this.type = type.trim();

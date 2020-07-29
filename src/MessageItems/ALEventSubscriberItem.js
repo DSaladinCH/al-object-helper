@@ -1,4 +1,4 @@
-const ALEventSubscriber = require("../ALEventSubscriber");
+const ALEventSubscriber = require("../ALObjects/ALEventSubscriber");
 
 module.exports = class ALEventSubscriberItem {
     constructor(eventSubscriber) {

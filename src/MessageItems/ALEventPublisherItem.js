@@ -1,4 +1,4 @@
-const ALEventPublisher = require("../ALEventPublisher");
+const ALEventPublisher = require("../ALObjects/ALEventPublisher");
 
 module.exports = class ALEventPublisherItem {
     constructor(eventPublisher) {

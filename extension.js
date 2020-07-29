@@ -24,7 +24,7 @@ async function activate(context) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
 	vscode.window.showInformationMessage("Welcome to the AL Object Helper. If you like this extension, please rate it in the Marketplace :)");
-	
+
 	const reader = new Reader(context);
 	const reloaded = reader.extensionContext.globalState.get('reloaded');
 	new Promise(async () => {
