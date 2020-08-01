@@ -4,6 +4,7 @@ const { Location, Uri } = require("vscode");
 var readLine = require('readline');
 const { readlink } = require('fs');
 const { resolveSoa } = require('dns');
+const { idText } = require('typescript');
 
 module.exports = class ALHoverProvider {
     constructor(reader) {
@@ -19,24 +20,13 @@ module.exports = class ALHoverProvider {
             var definitionLine = textDocument.lineAt(position.line).text;
 
             let message = this.navigateToVariable(textDocument.fileName, definitionLine, position);
-            if (message != undefined) {
-                var hoverContent = {
-                    contents: [{ language: 'al', value: message.DisplayContent }]
-                };
-                resolve(hoverContent);
-                return hoverContent;
-            }
 
-            message = this.navigateToVariableCall(textDocument, definitionLine, position);
-            if (message != undefined) {
-                var hoverContent = {
-                    contents: [{ language: 'al', value: message.DisplayContent }]
-                };
-                resolve(hoverContent);
-                return hoverContent;
-            }
+            if (message == undefined)
+                message = this.navigateToVariableCall(textDocument, definitionLine, position);
 
-            message = this.navigateFromVariable(definitionLine, position);
+            if (message == undefined)
+                message = this.navigateFromVariable(definitionLine, position);
+
             if (message != undefined) {
                 var hoverContent = {
                     contents: [{ language: 'al', value: message.DisplayContent }]
@@ -114,9 +104,33 @@ module.exports = class ALHoverProvider {
 
         if (match == null || match == undefined || match.length == 0)
             return undefined;
+        const alObject = this.reader.alObjects.find(a => a.path.toLowerCase() == path.toLowerCase());
         var variableName = line.substring(match.index, match.index + match[0].length);
+        let message;
 
-        let message = this.getVariableDefinition(path, variableName, position.line);
+        if (variableName == "Rec" || variableName == "xRec") {
+            if (alObject.type == "table") {
+                message = this.getObjectDefinition(path, variableName);
+            }
+            else if (alObject.type == "page") {
+                var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == alObject.pageSourceTable);
+                message = this.getObjectDefinition(tableAlObject.path, variableName);
+            }
+            else if (alObject.type == "tableextension") {
+                var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.id == alObject.extendsID);
+                message = this.getObjectDefinition(tableAlObject.path, variableName);
+            }
+            else if (alObject.type == "pageextension") {
+                var pageAlObject = this.reader.alObjects.find(a => a.type == "page" && a.id == alObject.extendsID);
+                var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == pageAlObject.pageSourceTable);
+                message = this.getObjectDefinition(tableAlObject.path, variableName);
+            }
+
+            if (message != undefined)
+                return message;
+        }
+
+        message = this.getVariableDefinition(path, variableName, position.line);
         if (message != undefined)
             return message;
 
@@ -161,6 +175,18 @@ module.exports = class ALHoverProvider {
                     DisplayContent: displayContent
                 };
 
+                if (variable.type == "Record") {
+                    var tableName = variable.subType;
+                    if (tableName.startsWith("\"")){
+                        tableName = tableName.substring(1);
+                        tableName = tableName.substring(0, tableName.length - 1);
+                    }
+                    var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == tableName);
+                    if (tableAlObject != undefined){
+                        return this.getObjectDefinition(tableAlObject.path, variable.name, !variable.local);
+                    }
+                }
+
                 return message;
             }
         }
@@ -186,6 +212,18 @@ module.exports = class ALHoverProvider {
                         LineNo: variable.lineNo,
                         DisplayContent: displayContent
                     };
+
+                    if (variable.type == "Record") {
+                        var tableName = variable.subType;
+                        if (tableName.startsWith("\"")){
+                            tableName = tableName.substring(1);
+                            tableName = tableName.substring(0, tableName.length - 1);
+                        }
+                        var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == tableName);
+                        if (tableAlObject != undefined){
+                            return this.getObjectDefinition(tableAlObject.path, variable.name, !variable.local);
+                        }
+                    }
 
                     return message;
                 }
@@ -243,6 +281,47 @@ module.exports = class ALHoverProvider {
                 LineNo: field.lineNo,
                 DisplayContent: `field ${field.name}`
             };
+
+            return message;
+        }
+    }
+
+    getObjectDefinition(path, variableName, isGlobal = true) {
+        var alObject = this.reader.alObjects.find(a => a.path.toLowerCase() == path.toLowerCase());
+
+        if (alObject != undefined) {
+            let objectName = alObject.name;
+            if (objectName.startsWith("\"")){
+                objectName = objectName.substring(1);
+                objectName = objectName.substring(0, objectName.length - 1);
+            }
+            let message = {
+                Type: alObject.type,
+                Type2: "",
+                Name: alObject.name,
+                Path: path,
+                LineNo: 0,
+                DisplayContent: `${alObject.type} ${objectName}`
+            };
+
+            if (alObject.type == "table") {
+                if (isGlobal)
+                    message.DisplayContent = `(global) ${variableName}: Record ${objectName}`;
+                else
+                    message.DisplayContent = `(local) ${variableName}: Record ${objectName}`;
+
+                for (let index = 0; index < alObject.fields.length; index++) {
+                    const element = alObject.fields[index];
+                    message.DisplayContent += "\n";
+                    message.DisplayContent += element.id;
+                    message.DisplayContent += " - ";
+                    message.DisplayContent += element.name;
+                    for (let index = element.name.length + element.id.length + 3; index < 50; index++) {
+                        message.DisplayContent += " ";
+                    }
+                    message.DisplayContent += element.type;
+                }
+            }
 
             return message;
         }

@@ -9,14 +9,13 @@ const firstLine = require('firstline');
 const readline = require('readline');
 const ALObjectItem = require('./MessageItems/ALObjectItem');
 const AppPackage = require('./AppPackage');
-const ALObject = require('./ALObjects/ALObject');
-const ALEventPublisher = require('./ALObjects/ALEventPublisher');
-const ALEventSubscriber = require('./ALObjects/ALEventSubscriber');
-const ALFunction = require('./ALObjects/ALFunction');
-const ALVariable = require('./ALObjects/ALVariable');
-const ALTableField = require('./ALObjects/ALTableField');
-const ALPageField = require('./ALObjects/ALPageField');
-const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const ALObject = require('./ALObject');
+const ALEventPublisher = require('./ALEventPublisher');
+const ALEventSubscriber = require('./ALEventSubscriber');
+const ALFunction = require('./ALFunction');
+const ALVariable = require('./ALVariable');
+const ALTableField = require('./ALTableField');
+const ALPageField = require('./ALPageField');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -73,16 +72,16 @@ module.exports = class Reader {
                                 await reader.detectAllAlFiles(path.basename(files[index]));
                             }
 
-                            progress.report({ message: "Searching AL Symbols" });
+                            progress.report({ message: "Searching Event Publishers and Triggers" });
                             await reader.readAllDefinitions(function () { });
 
                             progress.report({ message: "Searching local Event Subscribers" });
                             await reader.detectLocalEventSubscriber(function () { });
 
                             reader.findEventSubscriberObjectName();
-                            reader.log("Found all AL Symbols, Event Publishers and Event Subscribers");
-                            reader.output("Found all AL Symbols, Event Publishers and Event Subscribers");
-                            reader.showInformationMessage("Successfully found all AL Symbols, Event Publishers and Event Subscribers!");
+                            reader.log("Found all Event Publishers and Event Subscribers");
+                            reader.output("Found all Event Publishers and Event Subscribers");
+                            reader.showInformationMessage("Successfully found all Event Publishers and Event Subscribers!");
                             resolve();
                         };
                         start();
@@ -174,7 +173,7 @@ module.exports = class Reader {
                         reader.detectAllExtensions();
 
                         if (progress != undefined)
-                            progress.report({ message: "Searching AL Symbols" });
+                            progress.report({ message: "Searching Event Publishers and Triggers" });
 
                         reader.readAllDefinitions(function () {
                             if (progress != undefined)
@@ -754,41 +753,79 @@ module.exports = class Reader {
     }
 
     getALObject(firstLine, pathToFile) {
-        var startIndex = 0;
-        var endIndex = firstLine.indexOf(' ');
-        var type = firstLine.substring(startIndex, endIndex);
-        if (type == '')
+        var alObjectPattern = /([a-z]+)\s([0-9]+)\s([a-z0-9\_]+|\"[^\"]+\")(\sextends\s([a-z0-9\_]+|\"[^\"]+\")|[\s\{]?|)[\s\{]?/gi;
+        var matches = alObjectPattern.exec(firstLine);
+
+        if (matches == null)
             return undefined;
-        startIndex = endIndex + 1;
-        endIndex = firstLine.indexOf(' ', startIndex);
-        var id = firstLine.substring(startIndex, endIndex);
-        if (id == '' || !this.containsOnlyNumbers(id))
-            return undefined;
-        startIndex = endIndex + 1;
-        endIndex = firstLine.indexOf(' ', startIndex);
-        if (firstLine[startIndex] == '"') {
-            startIndex += 1;
-            endIndex = firstLine.indexOf('"', startIndex);
+
+        if (matches.length == 6) {
+            // No Extension
+            if (matches[5] == undefined){
+                var type = matches[1];
+                var id = matches[2];
+                var name = matches[3];
+                if (name.startsWith("\"")){
+                    name = name.substring(1);
+                    name = name.substring(0, name.length - 1);
+                }
+                return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
+            }
+            // Extension
+            else{
+                var type = matches[1];
+                var id = matches[2];
+                var name = matches[3];
+                if (name.startsWith("\"")){
+                    name = name.substring(1);
+                    name = name.substring(0, name.length - 1);
+                }
+                var extendsName = matches[5];
+                if (extendsName.startsWith("\"")){
+                    extendsName = extendsName.substring(1);
+                    extendsName = extendsName.substring(0, extendsName.length - 1);
+                }
+                return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
+            }
         }
-        var name = "";
-        if (endIndex == -1)
-            name = firstLine.substring(startIndex)
-        else
-            name = firstLine.substring(startIndex, endIndex);
 
-        if (name == '')
-            return undefined;
+        return undefined;
 
-        if (type.endsWith("extension")) {
-            startIndex = firstLine.indexOf("extends ") + "extends ".length;
-            var extendsName = firstLine.substring(startIndex);
-            extendsName = extendsName.trim();
-            if (extendsName.startsWith("\""))
-                extendsName = extendsName.substring(1, extendsName.length - 1);
-            return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
-        }
+        // var startIndex = 0;
+        // var endIndex = firstLine.indexOf(' ');
+        // var type = firstLine.substring(startIndex, endIndex);
+        // if (type == '')
+        //     return undefined;
+        // startIndex = endIndex + 1;
+        // endIndex = firstLine.indexOf(' ', startIndex);
+        // var id = firstLine.substring(startIndex, endIndex);
+        // if (id == '' || !this.containsOnlyNumbers(id))
+        //     return undefined;
+        // startIndex = endIndex + 1;
+        // endIndex = firstLine.indexOf(' ', startIndex);
+        // if (firstLine[startIndex] == '"') {
+        //     startIndex += 1;
+        //     endIndex = firstLine.indexOf('"', startIndex);
+        // }
+        // var name = "";
+        // if (endIndex == -1)
+        //     name = firstLine.substring(startIndex)
+        // else
+        //     name = firstLine.substring(startIndex, endIndex);
 
-        return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
+        // if (name == '')
+        //     return undefined;
+
+        // if (type.endsWith("extension")) {
+        //     startIndex = firstLine.indexOf("extends ") + "extends ".length;
+        //     var extendsName = firstLine.substring(startIndex);
+        //     extendsName = extendsName.trim();
+        //     if (extendsName.startsWith("\""))
+        //         extendsName = extendsName.substring(1, extendsName.length - 1);
+        //     return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
+        // }
+
+        // return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
     }
 
     findExtendsID(alObject) {
@@ -803,10 +840,13 @@ module.exports = class Reader {
         return alObject;
     }
 
-    convertToAlObject(obj){
+<<<<<<< Updated upstream
+=======
+    convertToAlObject(obj) {
         return Object.assign(new ALObject(), obj);
     }
 
+>>>>>>> Stashed changes
     findEventSubscriberObjectName() {
         for (let i = 0; i < this.alObjects.length; i++) {
             const alObject = this.alObjects[i];
@@ -831,40 +871,183 @@ module.exports = class Reader {
                 return;
             }
 
-            var start = Date.now();
-            var numberPerRange = 400;
-            var ranges = [];
-            for (let index = 0; index < Math.floor(len / numberPerRange); index++) {
-                ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
+            for (let index = 0; index < len; index++) {
+                await this.readDefinitions(index);
+                if (index >= len - 1) {
+                    callback();
+                    resolve();
+                }
             }
-            ranges.push({ start: Math.floor(len / numberPerRange) * numberPerRange, end: len, finished: false });
-
-            const tasks = ranges.map((v) => this.readDefinitionsRange(v.start, v.end));
-            await Promise.all(tasks);
-            this.log("Finished in " + (Date.now() - start) + " ms");
-            callback();
-            resolve();
         });
     }
 
-    readDefinitionsRange(startIndex, endIndex) {
-        return new Promise(async (resolve) => {
-            const worker = new Worker(path.resolve(__dirname, 'ALSymbolsWorker.js'), { workerData: { alObjects: this.alObjects, start: startIndex, end: endIndex } });
-            worker.on('message', (value) => {
-                if (typeof value === 'string' || value instanceof String) {
-                    console.log(value);
-                }
-                else {
-                    for (let index = value.start; index < value.end; index++) {
-                        this.alObjects[index] = value.alObjects[index];
+    readDefinitions(index) {
+        return new Promise(async (resolve, reject) => {
+            const alObject = this.alObjects[index];
+            var eventType = "";
+
+            if (!(alObject instanceof ALObject))
+                reject("Wrong Type");
+
+            this.addObjectEventPublisher(index);
+            const fileStream = fs.createReadStream(alObject.path);
+            const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+            var saveNextLine = false;
+            var regexMatch;
+            var isInFunction = false;
+            var isInFunctionHeader = false;
+            var isVariableList = false;
+            //var variablePattern = /(\S*)\s?\:\s(\S*)\s(.*)\;/gmi;
+            //var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z]+)\s?(\'[^\']+\'|\"[^\"]+\"|[^\"\s]+)\;/gi;
+            var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+|)\;/gi;
+            var procedurePattern = /(local\s)*(procedure)\s(\S*)\(/gi;
+            var triggerPattern = /(trigger)\s(\S*)\(/gi;
+            var tableFieldPattern = /field\(([0-9]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\;\s?([a-z0-9\[\]]+|Enum (\"[^\"]+\"|[a-z0-9\_]+))\)/gi;
+            var pageFieldPattern = /field\((\"[^\"]+\"|[a-z0-9\_]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\)/gi;
+            var lineCounter = 0;
+            if (alObject.id == "36" && alObject.name == "Sales Header") {
+                console.log("Yes!");
+            }
+            for await (const line of rl) {
+                if (saveNextLine) {
+                    if (line.includes("[Scope") || line.includes("[Obsolete")) {
+                        lineCounter += 1;
+                        continue;
                     }
-                    resolve();
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, line));
+                    saveNextLine = false;
                 }
-            });
-            worker.on('error', (error) => {
-                console.log(error);
-            })
-        })
+
+                if (line.includes("[IntegrationEvent")) {
+                    isInFunction = false;
+                    isVariableList = false;
+                    eventType = "IntegrationEvent";
+                    saveNextLine = true;
+                }
+                else if (line.includes("[BusinessEvent")) {
+                    isInFunction = false;
+                    isVariableList = false;
+                    eventType = "BusinessEvent";
+                    saveNextLine = true;
+                }
+                else if (line.includes("procedure")) {
+                    isInFunction = true;
+                    isInFunctionHeader = true;
+                    isVariableList = false;
+                    regexMatch = procedurePattern.exec(line);
+                    if (regexMatch && regexMatch.length >= 3) {
+                        // if length is 4, it's a local function
+                        var name = regexMatch[2];
+                        var local = false;
+                        if (regexMatch.length == 4) {
+                            name = regexMatch[3];
+                            if (regexMatch[1] != undefined) {
+                                local = true;
+                            }
+                        }
+                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, line, local));
+                    }
+                    procedurePattern.lastIndex = 0;
+                }
+                else if (line.includes("trigger")) {
+                    isInFunction = true;
+                    isInFunctionHeader = true;
+                    isVariableList = false;
+                    regexMatch = triggerPattern.exec(line);
+                    if (regexMatch && regexMatch.length == 3) {
+                        var name = regexMatch[2];
+                        var local = true;
+                        this.alObjects[index].functions.push(new ALFunction(name, lineCounter, line, local));
+                    }
+                    triggerPattern.lastIndex = 0;
+                }
+                else if (line.includes("field(") && alObject.type == "table") {
+                    isInFunction = false;
+                    isVariableList = false;
+                    eventType = "Trigger";
+
+                    regexMatch = tableFieldPattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length == 5) {
+                            let id = regexMatch[1];
+                            let name = regexMatch[2];
+                            let type = regexMatch[3];
+
+                            this.alObjects[index].fields.push(new ALTableField(id, name, type, lineCounter));
+                        }
+                    }
+                    tableFieldPattern.lastIndex = 0;
+
+                    const start = line.indexOf(";") + 1;
+                    var elementName = line.substring(start, line.indexOf(";", start)).trim();
+                    if (elementName.startsWith("\"")) {
+                        elementName = elementName.substring(1);
+                        elementName = elementName.substring(0, elementName.length - 1);
+                    }
+                    var functionString = `local procedure OnBeforeValidate(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; CurrFieldNo: Integer)`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnBeforeValidateEvent", elementName));
+                    functionString = `local procedure OnAfterValidate(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; CurrFieldNo: Integer)`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnAfterValidateEvent", elementName));
+                }
+                else if (line.includes("field(") && alObject.type == "page") {
+                    isInFunction = false;
+                    isVariableList = false;
+                    eventType = "Trigger";
+
+                    regexMatch = pageFieldPattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length == 4) {
+                            let name = regexMatch[1];
+                            let fieldName = regexMatch[2];
+
+                            this.alObjects[index].fields.push(new ALPageField(name, fieldName, lineCounter));
+                        }
+                    }
+                    pageFieldPattern.lastIndex = 0;
+
+                    const start = line.indexOf(";") + 1;
+                    var elementName = line.substring(start, line.indexOf(")", start)).trim();
+                    if (elementName.startsWith("\"")) {
+                        elementName = elementName.substring(1);
+                        elementName = elementName.substring(0, elementName.length - 1);
+                    }
+                    var functionString = `local procedure OnBeforeValidate(var Rec: Record "${alObject.pageSourceTable}"; var xRec: Record "${alObject.name}")`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnBeforeValidateEvent", elementName));
+                    functionString = `local procedure OnAfterValidate(var Rec: Record "${alObject.pageSourceTable}"; var xRec: Record "${alObject.name}")`;
+                    this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, functionString, "OnAfterValidateEvent", elementName));
+                }
+                // first begin of procedure/trigger
+                else if (line.includes("begin") && isInFunctionHeader) {
+                    isInFunctionHeader = false;
+                    isVariableList = false;
+                }
+                else if (line.includes("var")) {
+                    //if (isInFunctionHeader)
+                    isVariableList = true;
+                }
+                else if (isVariableList) {
+                    regexMatch = variablePattern.exec(line);
+                    if (regexMatch) {
+                        if (regexMatch.length >= 3) {
+                            // if length is 4, it's a local function
+                            let name = regexMatch[1];
+                            let type = regexMatch[2];
+                            let subType = "";
+                            if (regexMatch.length == 4 && regexMatch[3] != "") {
+                                subType = regexMatch[3];
+                            }
+
+                            this.alObjects[index].variables.push(new ALVariable(name, type, lineCounter, isInFunctionHeader, subType));
+                        }
+                    }
+                    variablePattern.lastIndex = 0;
+                }
+                lineCounter += 1;
+            }
+            resolve(`Found ${alObject.eventPublisher.length} Event Publishers (${alObject.name})`);
+            this.log(`Processed ${alObject.name}`);
+        });
     }
 
     allProcessed(processedArray, indexFrom, indexTo) {
@@ -874,106 +1057,6 @@ module.exports = class Reader {
         }
 
         return true;
-    }
-
-    addObjectEventPublisher(index) {
-        const alObject = this.alObjects[index];
-        var eventType = "Trigger";
-
-        if (!(alObject instanceof ALObject))
-            return;
-
-        if (alObject.type == "table") {
-            //**************//
-            //*** DELETE ***//
-            //**************//
-            var funcString = `local procedure OnBeforeDelete(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeDeleteEvent"));
-            funcString = `local procedure OnAfterDelete(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterDeleteEvent"));
-
-            //**************//
-            //*** INSERT ***//
-            //**************//
-            funcString = `local procedure OnBeforeInsert(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeInsertEvent"));
-            funcString = `local procedure OnAfterInsert(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterInsertEvent"));
-
-            //**************//
-            //*** MODIFY ***//
-            //**************//
-            funcString = `local procedure OnBeforeModify(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeModifyEvent"));
-            funcString = `local procedure OnAfterModify(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterModifyEvent"));
-
-            //**************//
-            //*** RENAME ***//
-            //**************//
-            funcString = `local procedure OnBeforeRename(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeRenameEvent"));
-            funcString = `local procedure OnAfterRename(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterRenameEvent"));
-
-            return;
-        }
-
-        if (alObject.type == "page") {
-            //*********************//
-            //*** GETCURRRECORD ***//
-            //*********************//
-            var funcString = `local procedure OnAfterGetCurrRecord(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterGetCurrRecordEvent"));
-
-            //*****************//
-            //*** GETRECORD ***//
-            //*****************//
-            var funcString = `local procedure OnAfterGetRecord(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterGetRecordEvent"));
-
-            //*******************//
-            //*** ONCLOSEPAGE ***//
-            //*******************//
-            var funcString = `local procedure OnClosePage(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnClosePageEvent"));
-
-            //**********************//
-            //*** ONDELETERECORD ***//
-            //**********************//
-            var funcString = `local procedure OnDeleteRecord(var Rec: Record "${alObject.pageSourceTable}"; var AllowDelete : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnDeleteRecordEvent"));
-
-            //**********************//
-            //*** ONINSERTRECORD ***//
-            //**********************//
-            var funcString = `local procedure OnInsertRecord(var Rec: Record "${alObject.pageSourceTable}"; BelowxRec : Boolean; var xRec : Record "${alObject.pageSourceTable}"; var AllowInsert : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnInsertRecordEvent"));
-
-            //**********************//
-            //*** ONMODIFYRECORD ***//
-            //**********************//
-            var funcString = `local procedure OnModifyRecord(var Rec: Record "${alObject.pageSourceTable}"; var xRec : Record "${alObject.pageSourceTable}"; var AllowModify : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnModifyRecordEvent"));
-
-            //*******************//
-            //*** ONNEWRECORD ***//
-            //*******************//
-            var funcString = `local procedure OnNewRecord(var Rec: Record "${alObject.pageSourceTable}"; BelowxRec : Boolean; var xRec : Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnNewRecordEvent"));
-
-            //******************//
-            //*** ONOPENPAGE ***//
-            //******************//
-            var funcString = `local procedure OnOpenPage(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnOpenPageEvent"));
-
-            //************************//
-            //*** ONQUERYCLOSEPAGE ***//
-            //************************//
-            var funcString = `local procedure OnQueryClosePage(var Rec: Record "${alObject.pageSourceTable}"; var AllowClose : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnQueryClosePageEvent"));
-        }
     }
 
     detectLocalEventSubscriber(callback) {

@@ -1,8 +1,7 @@
+const util = require('util');
+
 module.exports = class ALObject {
     constructor(path, type, id, name, extendsName, secondPath = '') {
-        if (path == undefined && type == undefined && id == undefined && name == undefined && extendsName == undefined && secondPath == '')
-            return;
-
         this.path = path;
         this.secondPath = secondPath;
         this.type = type.trim();
@@ -65,5 +64,13 @@ module.exports = class ALObject {
             case "reportlayout":
                 return "rl";
         }
+    }
+
+    [util.inspect.custom](depth, options) {
+        return this.toString();
+    }
+
+    toString(){
+        return `${this.type} ${this.id} - ${this.name}`;
     }
 }
