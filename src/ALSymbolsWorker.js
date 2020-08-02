@@ -22,11 +22,11 @@ async function readDefinitions(alObjects, index) {
     return await new Promise(async (resolve) => {
         const alObject = alObjects[index];
         var eventType = "";
-            
+
         addObjectEventPublisher(index);
         const fileStream = fs.createReadStream(alObject.path);
         const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-        
+
         var saveNextLine = false;
         var regexMatch;
         var isInFunction = false;
@@ -39,6 +39,7 @@ async function readDefinitions(alObjects, index) {
         var triggerPattern = /(trigger)\s(\S*)\(/gi;
         var tableFieldPattern = /field\(([0-9]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\;\s?([a-z0-9\[\]]+|Enum (\"[^\"]+\"|[a-z0-9\_]+))\)/gi;
         var pageFieldPattern = /field\((\"[^\"]+\"|[a-z0-9\_]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\)/gi;
+        var pageSourceTablePattern = /(?:SourceTable)\s?\=\s?([a-z0-9\_]+|\"[^\"]+\")\;/gi;
         var lineCounter = 0;
 
         var start = Date.now();
@@ -175,6 +176,17 @@ async function readDefinitions(alObjects, index) {
                     }
                 }
                 variablePattern.lastIndex = 0;
+            }
+            else if (line.includes("SourceTable") && alObject.type == "page") {
+                regexMatch = pageSourceTablePattern.exec(line);
+                if (regexMatch) {
+                    if (regexMatch.length == 2) {
+                        let tableName = regexMatch[1];
+                        var alTable = workerData.alObjects.find(a => a.type == "table" && a.name == tableName);
+                        if (alTable != undefined)
+                            alObjects[index].pageSourceTable = alTable.name;
+                    }
+                }
             }
             lineCounter += 1;
         }

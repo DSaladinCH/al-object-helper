@@ -2,6 +2,13 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.2] - 02.08.2020
+### Added
+- Definition for Rec and xRec
+
+### Fixed
+- Buges
+
 ## [1.5.1] - 29.07.2020
 ### Improved
 - Huge Performance Improvement on initialization of searching AL Symbols
@@ -102,6 +109,8 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.5.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.1...v1.5.2
+[1.5.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.5...v1.4.0
 [1.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.4...v1.3.5

@@ -76,6 +76,10 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.5.2
+- Added Definition for Rec and xRec
+- Fixed Bugs
+
 ### 1.5.1
 - Huge Performance Improvement
 

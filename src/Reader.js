@@ -740,7 +740,6 @@ module.exports = class Reader {
         });
     }
 
-
     hasNumber(myString) {
         return /\d/.test(myString);
     }
@@ -754,41 +753,79 @@ module.exports = class Reader {
     }
 
     getALObject(firstLine, pathToFile) {
-        var startIndex = 0;
-        var endIndex = firstLine.indexOf(' ');
-        var type = firstLine.substring(startIndex, endIndex);
-        if (type == '')
+        var alObjectPattern = /^([a-z]+)\s([0-9]+)\s([a-z0-9\_]+|\"[^\"]+\")(\sextends\s([a-z0-9\_]+|\"[^\"]+\")|[\s\{]?|)[\s\{]?/gi;
+        var matches = alObjectPattern.exec(firstLine);
+
+        if (matches == null)
             return undefined;
-        startIndex = endIndex + 1;
-        endIndex = firstLine.indexOf(' ', startIndex);
-        var id = firstLine.substring(startIndex, endIndex);
-        if (id == '' || !this.containsOnlyNumbers(id))
-            return undefined;
-        startIndex = endIndex + 1;
-        endIndex = firstLine.indexOf(' ', startIndex);
-        if (firstLine[startIndex] == '"') {
-            startIndex += 1;
-            endIndex = firstLine.indexOf('"', startIndex);
+
+        if (matches.length == 6) {
+            // No Extension
+            if (matches[5] == undefined) {
+                var type = matches[1];
+                var id = matches[2];
+                var name = matches[3];
+                if (name.startsWith("\"")) {
+                    name = name.substring(1);
+                    name = name.substring(0, name.length - 1);
+                }
+                return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
+            }
+            // Extension
+            else {
+                var type = matches[1];
+                var id = matches[2];
+                var name = matches[3];
+                if (name.startsWith("\"")) {
+                    name = name.substring(1);
+                    name = name.substring(0, name.length - 1);
+                }
+                var extendsName = matches[5];
+                if (extendsName.startsWith("\"")) {
+                    extendsName = extendsName.substring(1);
+                    extendsName = extendsName.substring(0, extendsName.length - 1);
+                }
+                return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
+            }
         }
-        var name = "";
-        if (endIndex == -1)
-            name = firstLine.substring(startIndex)
-        else
-            name = firstLine.substring(startIndex, endIndex);
 
-        if (name == '')
-            return undefined;
+        return undefined;
 
-        if (type.endsWith("extension")) {
-            startIndex = firstLine.indexOf("extends ") + "extends ".length;
-            var extendsName = firstLine.substring(startIndex);
-            extendsName = extendsName.trim();
-            if (extendsName.startsWith("\""))
-                extendsName = extendsName.substring(1, extendsName.length - 1);
-            return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
-        }
+        // var startIndex = 0;
+        // var endIndex = firstLine.indexOf(' ');
+        // var type = firstLine.substring(startIndex, endIndex);
+        // if (type == '')
+        //     return undefined;
+        // startIndex = endIndex + 1;
+        // endIndex = firstLine.indexOf(' ', startIndex);
+        // var id = firstLine.substring(startIndex, endIndex);
+        // if (id == '' || !this.containsOnlyNumbers(id))
+        //     return undefined;
+        // startIndex = endIndex + 1;
+        // endIndex = firstLine.indexOf(' ', startIndex);
+        // if (firstLine[startIndex] == '"') {
+        //     startIndex += 1;
+        //     endIndex = firstLine.indexOf('"', startIndex);
+        // }
+        // var name = "";
+        // if (endIndex == -1)
+        //     name = firstLine.substring(startIndex)
+        // else
+        //     name = firstLine.substring(startIndex, endIndex);
 
-        return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
+        // if (name == '')
+        //     return undefined;
+
+        // if (type.endsWith("extension")) {
+        //     startIndex = firstLine.indexOf("extends ") + "extends ".length;
+        //     var extendsName = firstLine.substring(startIndex);
+        //     extendsName = extendsName.trim();
+        //     if (extendsName.startsWith("\""))
+        //         extendsName = extendsName.substring(1, extendsName.length - 1);
+        //     return new ALObject(pathToFile, type.toLowerCase(), id, name, extendsName);
+        // }
+
+        // return new ALObject(pathToFile, type.toLowerCase(), id, name, '');
     }
 
     findExtendsID(alObject) {
@@ -801,10 +838,6 @@ module.exports = class Reader {
 
         alObject.setExtendObject(extendsObject.id, extendsObject.type);
         return alObject;
-    }
-
-    convertToAlObject(obj){
-        return Object.assign(new ALObject(), obj);
     }
 
     findEventSubscriberObjectName() {
@@ -875,106 +908,6 @@ module.exports = class Reader {
         }
 
         return true;
-    }
-
-    addObjectEventPublisher(index) {
-        const alObject = this.alObjects[index];
-        var eventType = "Trigger";
-
-        if (!(alObject instanceof ALObject))
-            return;
-
-        if (alObject.type == "table") {
-            //**************//
-            //*** DELETE ***//
-            //**************//
-            var funcString = `local procedure OnBeforeDelete(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeDeleteEvent"));
-            funcString = `local procedure OnAfterDelete(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterDeleteEvent"));
-
-            //**************//
-            //*** INSERT ***//
-            //**************//
-            funcString = `local procedure OnBeforeInsert(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeInsertEvent"));
-            funcString = `local procedure OnAfterInsert(var Rec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterInsertEvent"));
-
-            //**************//
-            //*** MODIFY ***//
-            //**************//
-            funcString = `local procedure OnBeforeModify(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeModifyEvent"));
-            funcString = `local procedure OnAfterModify(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterModifyEvent"));
-
-            //**************//
-            //*** RENAME ***//
-            //**************//
-            funcString = `local procedure OnBeforeRename(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnBeforeRenameEvent"));
-            funcString = `local procedure OnAfterRename(var Rec: Record "${alObject.name}"; var xRec: Record "${alObject.name}"; RunTrigger: Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterRenameEvent"));
-
-            return;
-        }
-
-        if (alObject.type == "page") {
-            //*********************//
-            //*** GETCURRRECORD ***//
-            //*********************//
-            var funcString = `local procedure OnAfterGetCurrRecord(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterGetCurrRecordEvent"));
-
-            //*****************//
-            //*** GETRECORD ***//
-            //*****************//
-            var funcString = `local procedure OnAfterGetRecord(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnAfterGetRecordEvent"));
-
-            //*******************//
-            //*** ONCLOSEPAGE ***//
-            //*******************//
-            var funcString = `local procedure OnClosePage(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnClosePageEvent"));
-
-            //**********************//
-            //*** ONDELETERECORD ***//
-            //**********************//
-            var funcString = `local procedure OnDeleteRecord(var Rec: Record "${alObject.pageSourceTable}"; var AllowDelete : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnDeleteRecordEvent"));
-
-            //**********************//
-            //*** ONINSERTRECORD ***//
-            //**********************//
-            var funcString = `local procedure OnInsertRecord(var Rec: Record "${alObject.pageSourceTable}"; BelowxRec : Boolean; var xRec : Record "${alObject.pageSourceTable}"; var AllowInsert : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnInsertRecordEvent"));
-
-            //**********************//
-            //*** ONMODIFYRECORD ***//
-            //**********************//
-            var funcString = `local procedure OnModifyRecord(var Rec: Record "${alObject.pageSourceTable}"; var xRec : Record "${alObject.pageSourceTable}"; var AllowModify : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnModifyRecordEvent"));
-
-            //*******************//
-            //*** ONNEWRECORD ***//
-            //*******************//
-            var funcString = `local procedure OnNewRecord(var Rec: Record "${alObject.pageSourceTable}"; BelowxRec : Boolean; var xRec : Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnNewRecordEvent"));
-
-            //******************//
-            //*** ONOPENPAGE ***//
-            //******************//
-            var funcString = `local procedure OnOpenPage(var Rec: Record "${alObject.pageSourceTable}")`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnOpenPageEvent"));
-
-            //************************//
-            //*** ONQUERYCLOSEPAGE ***//
-            //************************//
-            var funcString = `local procedure OnQueryClosePage(var Rec: Record "${alObject.pageSourceTable}"; var AllowClose : Boolean)`;
-            this.alObjects[index].eventPublisher.push(new ALEventPublisher(alObject, eventType, funcString, "OnQueryClosePageEvent"));
-        }
     }
 
     detectLocalEventSubscriber(callback) {
