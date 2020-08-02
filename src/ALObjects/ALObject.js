@@ -2,6 +2,7 @@ const util = require('util');
 
 module.exports = class ALObject {
     constructor(path, type, id, name, extendsName, secondPath = '') {
+        //***** Object Properies *****//
         this.path = path;
         this.secondPath = secondPath;
         this.type = type.trim();
@@ -11,21 +12,30 @@ module.exports = class ALObject {
         this.shortType = this.convertToShortType(this.type);
         this.id = id;
         this.name = name.trim();
+        this.appPackageName = "";
+        //***** Object Properies *****//
 
+        //***** Object Variables *****//
+        this.functions = [];
+        this.variables = [];
+        this.fields = [];
+        //***** Object Variables *****//
+
+        //***** Extension Properties *****//
         this.extendsName = extendsName.trim();
         this.extendsID = -1;
         this.extendsType = "";
         this.displayExtendsType = "";
+        //***** Extension Properties *****//
 
-        this.appPackageName = "";
+        //***** Page Properties *****//
         this.pageSourceTable = "";
+        //***** Page Properties *****//
 
+        //***** Events *****//
         this.eventPublisher = [];
         this.eventSubscriber = [];
-
-        this.functions = [];
-        this.variables = [];
-        this.fields = [];
+        //***** Events *****//
 
         if (this.extendsName == '')
             this.extension = false;
