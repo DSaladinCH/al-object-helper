@@ -2,12 +2,16 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.3] - 03.08.2020
+### Fixed
+- Bugs
+
 ## [1.5.2] - 02.08.2020
 ### Added
 - Definition for Rec and xRec
 
 ### Fixed
-- Buges
+- Bugs
 
 ## [1.5.1] - 29.07.2020
 ### Improved
