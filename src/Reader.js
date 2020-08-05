@@ -956,7 +956,7 @@ module.exports = class Reader {
         if (!(alObject instanceof ALObject))
             return;
         this.alObjects.push(alObject);
-        this.htmlTableBody += `           <tr>\n`
+        this.htmlTableBody += `           <tr ondblclick="objectTableSelected(this)">\n`
         this.htmlTableBody += `               <td class="columnType">${alObject.displayType}</td>\n`
         this.htmlTableBody += `               <td class="columnID">${alObject.id}</td>\n`
         this.htmlTableBody += `               <td class="columnName">${alObject.name}</td>\n`
@@ -966,9 +966,10 @@ module.exports = class Reader {
             this.htmlTableBody += `               <td class="columnPublisherName"></td>\n`
         }
         else {
-            this.htmlTableBody += `               <td class="columnPackageName">${alObject.appPackageName.split('_')[0]}</td>\n`
-            this.htmlTableBody += `               <td class="columnPublisherName">${alObject.appPackageName.split('_')[1]}</td>\n`
+            this.htmlTableBody += `               <td class="columnPackageName">${alObject.appPackageName.split('_')[1]}</td>\n`
+            this.htmlTableBody += `               <td class="columnPublisherName">${alObject.appPackageName.split('_')[0]}</td>\n`
         }
+        this.htmlTableBody += `               <td class="columnNon">${alObject.path}</td>\n`
         this.htmlTableBody += `           </tr>\n`
     }
 

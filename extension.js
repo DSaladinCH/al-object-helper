@@ -221,15 +221,26 @@ async function activate(context) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.alObjectDesigner', async () => {
-		const panel = vscode.window.createWebviewPanel('ALObjectDesigner', 'AL Object Designer', 
-		{ 
-			viewColumn: vscode.ViewColumn.Active 
-		}, 
-		{ 
-			enableScripts: true
-		});
+		const panel = vscode.window.createWebviewPanel('ALObjectDesigner', 'AL Object Designer',
+			{
+				viewColumn: vscode.ViewColumn.Active
+			},
+			{
+				enableScripts: true,
+				retainContextWhenHidden: true
+			});
 		reader.objectDesignerPanel = panel;
 		panel.webview.html = await reader.getWebviewContent();
+		panel.webview.onDidReceiveMessage(async (message) => {
+			if (message.startsWith("open")) {
+				const path = message.substring(5);
+				vscode.workspace.openTextDocument(path).then(doc => {
+					vscode.window.showTextDocument(doc);
+				}, function (reason) {
+					this.output("Rejected: " + reason);
+				});
+			}
+		});
 	}));
 }
 exports.activate = activate;
