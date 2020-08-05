@@ -210,7 +210,7 @@ async function activate(context) {
 			vscode.workspace.openTextDocument(value.eventSubscriber.path).then(doc => {
 				vscode.window.showTextDocument(doc).then(editor => {
 					var pos1 = new vscode.Position(value.eventSubscriber.lineNo, 0);
-					editor.selections = [new vscode.Selection(pos1,pos1)]; 
+					editor.selections = [new vscode.Selection(pos1, pos1)];
 					var range = new vscode.Range(pos1, pos1);
 					editor.revealRange(range);
 				});
@@ -218,6 +218,18 @@ async function activate(context) {
 				reader.output("Rejected: " + reason);
 			});
 		});
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.alObjectDesigner', async () => {
+		const panel = vscode.window.createWebviewPanel('ALObjectDesigner', 'AL Object Designer', 
+		{ 
+			viewColumn: vscode.ViewColumn.Active 
+		}, 
+		{ 
+			enableScripts: true
+		});
+		reader.objectDesignerPanel = panel;
+		panel.webview.html = await reader.getWebviewContent();
 	}));
 }
 exports.activate = activate;

@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const { workspace, ProgressLocation } = require("vscode");
 const path = require("path");
 const fs = require('fs-extra');
+const utils = require('./utils');
 const { resolve } = require('path');
 const os = require('os');
 const JSZip = require('jszip');
@@ -10,12 +11,7 @@ const readline = require('readline');
 const ALObjectItem = require('./MessageItems/ALObjectItem');
 const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObjects/ALObject');
-const ALEventPublisher = require('./ALObjects/ALEventPublisher');
 const ALEventSubscriber = require('./ALObjects/ALEventSubscriber');
-const ALFunction = require('./ALObjects/ALFunction');
-const ALVariable = require('./ALObjects/ALVariable');
-const ALTableField = require('./ALObjects/ALTableField');
-const ALPageField = require('./ALObjects/ALPageField');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
 module.exports = class Reader {
@@ -33,6 +29,8 @@ module.exports = class Reader {
         this.rootPath = workspace.rootPath;
         this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
         this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(this.rootPath)).replace(/\\/g, '/');
+        this.htmlTableBody = "";
+        this.objectDesignerPanel = undefined;
     }
 
     generateAll(checkExists) {
@@ -69,9 +67,13 @@ module.exports = class Reader {
                             await reader.detectCustomAlFiles();
 
                             progress.report({ message: "Searching App File Objects" });
+                            console.time("FindALFiles");
+                            var promises = [];
                             for (let index = 0; index < files.length; index++) {
                                 await reader.detectAllAlFiles(path.basename(files[index]));
+                                //promises.push(await reader.detectAllAlFiles(path.basename(files[index])));
                             }
+                            //await Promise.all(promises);
 
                             progress.report({ message: "Searching AL Symbols" });
                             await reader.readAllDefinitions(function () { });
@@ -368,7 +370,8 @@ module.exports = class Reader {
 
                 if (alObject != undefined) {
                     alObject.appPackageName = 'Custom';
-                    this.alObjects.push(alObject);
+                    this.addAlObject(alObject);
+                    //this.alObjects.push(alObject);
                 }
 
                 i++;
@@ -428,55 +431,38 @@ module.exports = class Reader {
             return;
         }
 
-        files2.forEach(async element => {
+        var start = Date.now();
+        for (let index = 0; index < files2.length; index++) {
+            const element = files2[index];
             var line = await firstLine(element);
             var alObject = this.getALObject(line, element);
             if (alObject == undefined) {
                 const fileStream = fs.createReadStream(element);
                 const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
-                var searchForProperty = false;
-                var stop = false;
                 for await (const line of rl) {
-                    if (!searchForProperty)
-                        alObject = this.getALObject(line, element);
-                    else {
-                        if (alObject.type == "page") {
-                            if (line.includes("SourceTable")) {
-                                var sourceTable = line.substring(line.indexOf("="));
-                                sourceTable = sourceTable.substring(0, sourceTable.length - 1).trim();
-                                if (sourceTable.startsWith("\"")) {
-                                    sourceTable = sourceTable.substring(1);
-                                    sourceTable = sourceTable.substring(0, sourceTable.length - 1);
-                                }
-                                alObject.pageSourceTable = sourceTable;
-                                searchForProperty = false;
-                                stop = true;
-                            }
-                        }
-                    }
-                    if (alObject != undefined) {
-                        if (alObject.type == "page" && !stop)
-                            searchForProperty = true;
+                    alObject = this.getALObject(line, element);
 
-                        if (!searchForProperty)
-                            break;
+                    if (alObject != undefined) {
+                        break;
                     }
                 }
             }
             if (alObject != undefined) {
                 alObject.appPackageName = appPackageName;
-                this.alObjects.push(alObject);
+                this.addAlObject(alObject);
+                //this.alObjects.push(alObject);
             }
-
             i2++;
             if (i2 >= arrLen2) {
                 var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
                 this.appPackages[foundIndex].processed = true;
+                console.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
                 if (this.allPackagesFinished()) {
                     this.showInformationMessage("All AL files were found successfully!");
                     this.log("Read all!");
                     this.output("Read all!");
+                    console.timeEnd("FindALFiles");
 
                     this.alObjects.sort(function (a, b) {
                         var nameA = a.name.toUpperCase();
@@ -495,7 +481,7 @@ module.exports = class Reader {
                 if (callback != undefined)
                     callback();
             }
-        });
+        };
     }
 
     async detectAllRDLCFiles() {
@@ -511,7 +497,8 @@ module.exports = class Reader {
             var line = await firstLine(element);
             var alObject = this.getALObject(line, element);
             if (alObject != undefined)
-                this.alObjects.push(alObject);
+                this.addAlObject(alObject);
+            //this.alObjects.push(alObject);
             i++;
             if (i >= arrLen - 1) {
                 this.showInformationMessage("Found " + arrLen + " Custom AL Files");
@@ -946,6 +933,43 @@ module.exports = class Reader {
                 }
             }
         });
+    }
+
+    async getWebviewContent() {
+        const htmlOnDiskPath = vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'Panel', 'html', 'objectDesigner.html'));
+        const cssOnDiskPath = vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'Panel', 'css', 'objectDesigner.css'));
+        const jsOnDiskPath = vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'Panel', 'js', 'objectDesigner.js'));
+        const objectDesignerHtml = this.objectDesignerPanel.webview.asWebviewUri(htmlOnDiskPath);
+        const objectDesignerCss = this.objectDesignerPanel.webview.asWebviewUri(cssOnDiskPath);
+        const objectDesignerJs = this.objectDesignerPanel.webview.asWebviewUri(jsOnDiskPath);
+
+        var html = await utils.read(htmlOnDiskPath.fsPath);
+        html = html.replace('{{tableBody}}', this.htmlTableBody);
+        //console.log(objectDesignerCss.path);
+        html = html.replace('{{objectDesignerCss}}', objectDesignerCss);
+        html = html.replace('{{objectDesignerJs}}', objectDesignerJs);
+
+        return html;
+    }
+
+    addAlObject(alObject) {
+        if (!(alObject instanceof ALObject))
+            return;
+        this.alObjects.push(alObject);
+        this.htmlTableBody += `           <tr>\n`
+        this.htmlTableBody += `               <td class="columnType">${alObject.displayType}</td>\n`
+        this.htmlTableBody += `               <td class="columnID">${alObject.id}</td>\n`
+        this.htmlTableBody += `               <td class="columnName">${alObject.name}</td>\n`
+        this.htmlTableBody += `               <td class="columnExtends">${alObject.displayExtendsType} ${alObject.extendsName}</td>\n`
+        if (alObject.appPackageName == 'Custom') {
+            this.htmlTableBody += `               <td class="columnPackageName">${alObject.appPackageName}</td>\n`
+            this.htmlTableBody += `               <td class="columnPublisherName"></td>\n`
+        }
+        else {
+            this.htmlTableBody += `               <td class="columnPackageName">${alObject.appPackageName.split('_')[0]}</td>\n`
+            this.htmlTableBody += `               <td class="columnPublisherName">${alObject.appPackageName.split('_')[1]}</td>\n`
+        }
+        this.htmlTableBody += `           </tr>\n`
     }
 
     updateSetting(name, value) {

@@ -1,0 +1,70 @@
+table {
+  border-spacing: 0;
+  font-size: medium;
+}
+
+.objectDesignerTable {
+    margin-top: 10px;
+}
+
+.columnID {
+  width: 1%;
+}
+
+.columnType {
+  width: 1%;
+}
+
+.columnName {
+  width: 3%;
+}
+
+.columnExtends {
+  width: 3%;
+}
+
+.columnPackageName {
+  width: 1%;
+}
+
+.columnPublisherName {
+  width: 1%;
+}
+
+.columnPublisherName {
+  width: 1%;
+}
+
+th {
+  text-align: left;
+}
+
+td {
+  padding: 0;
+}
+
+.lineHeader {
+  height: 25px;
+  vertical-align: top;
+  border-style: solid;
+  /* border-left: 20px solid transparent;
+    border-right: 20px solid transparent; */
+  border-bottom: 2px solid #2000af;
+}
+
+.lineHeader:hover {
+    background-color: var(--vscode-editor-background);
+}
+
+.lineHeaderBottom {
+  height: 10px;
+}
+
+tr {
+    height: 25px;
+}
+
+tr:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}

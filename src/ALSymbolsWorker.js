@@ -23,7 +23,7 @@ async function readDefinitions(alObjects, index) {
         const alObject = alObjects[index];
         var eventType = "";
 
-        addObjectEventPublisher(index);
+        addObjectEventPublisher(alObjects, index);
         const fileStream = fs.createReadStream(alObject.path);
         const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
@@ -198,9 +198,9 @@ async function readDefinitions(alObjects, index) {
 function addObjectEventPublisher(alObjects, index) {
     const alObject = alObjects[index];
     var eventType = "Trigger";
-
-    if (!(alObject instanceof ALObject))
-        return;
+    
+    //if (!(alObject instanceof ALObject))
+        //return;
 
     if (alObject.type == "table") {
         //**************//
