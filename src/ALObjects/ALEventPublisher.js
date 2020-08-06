@@ -2,8 +2,9 @@ const ALObject = require("./ALObject");
 
 module.exports = class ALEventPublisher {
     constructor(alObject, eventType, functionString, eventName, elementName) {
-        if (!(alObject instanceof ALObject))
-            return;
+        if (!(alObject instanceof ALObject)){
+            return Object.assign(this, alObject);
+        }
         this.eventType = eventType;
 
         var start = functionString.indexOf("procedure ");

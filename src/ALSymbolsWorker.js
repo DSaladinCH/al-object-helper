@@ -20,10 +20,10 @@ Promise.all(promises).then((value) => {
 
 async function readDefinitions(alObjects, index) {
     return await new Promise(async (resolve) => {
-        const alObject = alObjects[index];
+        const alObject = new ALObject(alObjects[index]);
         var eventType = "";
 
-        addObjectEventPublisher(index);
+        addObjectEventPublisher(alObjects, index);
         const fileStream = fs.createReadStream(alObject.path);
         const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
@@ -196,11 +196,11 @@ async function readDefinitions(alObjects, index) {
 }
 
 function addObjectEventPublisher(alObjects, index) {
-    const alObject = alObjects[index];
+    const alObject = new ALObject(alObjects[index]);
     var eventType = "Trigger";
-
-    if (!(alObject instanceof ALObject))
-        return;
+    
+    //if (!(alObject instanceof ALObject))
+        //return;
 
     if (alObject.type == "table") {
         //**************//

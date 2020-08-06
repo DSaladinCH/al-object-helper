@@ -1,5 +1,8 @@
 module.exports = class ALEventSubscriber {
     constructor(functionString, path, lineNo) {
+        if (typeof functionString != "string"){
+            return Object.assign(this, functionString);
+        }
         this.path = path;
         this.lineNo = lineNo;
         this.functionString = functionString;

@@ -76,6 +76,9 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.5.4
+- Fixed Event search problem
+
 ### 1.5.3
 - Fixed Bugs
 
