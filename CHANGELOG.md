@@ -2,6 +2,10 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.4] - 06.08.2020
+### Fixed
+- Event search Problem
+
 ## [1.5.3] - 03.08.2020
 ### Fixed
 - Bugs
