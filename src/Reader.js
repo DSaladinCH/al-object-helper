@@ -13,6 +13,9 @@ const AppPackage = require('./AppPackage');
 const ALObject = require('./ALObjects/ALObject');
 const ALEventSubscriber = require('./ALObjects/ALEventSubscriber');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const ALEventPublisher = require('./ALObjects/ALEventPublisher');
+const ALTableField = require('./ALObjects/ALTableField');
+const ALPageField = require('./ALObjects/ALPageField');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -877,7 +880,25 @@ module.exports = class Reader {
                 }
                 else {
                     for (let index = value.start; index < value.end; index++) {
-                        this.alObjects[index] = value.alObjects[index];
+                        var alObject = new ALObject(value.alObjects[index]);
+                        for (let index = 0; index < alObject.eventPublisher.length; index++) {
+                            alObject.eventPublisher[index] = new ALEventPublisher(alObject.eventPublisher[index]);
+                        }
+                        for (let index = 0; index < alObject.eventSubscriber.length; index++) {
+                            alObject.eventSubscriber[index] = new ALEventSubscriber(alObject.eventSubscriber[index]);
+                        }
+                        if (alObject.type == "table")
+                            for (let index = 0; index < alObject.fields.length; index++) {
+                                alObject.fields[index] = new ALTableField(alObject.fields[index]);
+                            }
+                        else if (alObject.type == "page")
+                            for (let index = 0; index < alObject.fields.length; index++) {
+                                alObject.fields[index] = new ALPageField(alObject.fields[index]);
+                            }
+                        for (let index = 0; index < alObject.functions.length; index++) {
+                            alObject.functions[index] = new ALPageField(alObject.functions[index]);
+                        }
+                        this.alObjects[index] = alObject;
                     }
                     resolve();
                 }

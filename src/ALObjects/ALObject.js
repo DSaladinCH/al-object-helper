@@ -2,6 +2,9 @@ const util = require('util');
 
 module.exports = class ALObject {
     constructor(path, type, id, name, extendsName, secondPath = '') {
+        if (typeof path != "string") {
+            return Object.assign(this, path);
+        }
         //***** Object Properies *****//
         this.path = path;
         this.secondPath = secondPath;
@@ -80,7 +83,7 @@ module.exports = class ALObject {
         return this.toString();
     }
 
-    toString(){
+    toString() {
         return `${this.type} ${this.id} - ${this.name}`;
     }
 }

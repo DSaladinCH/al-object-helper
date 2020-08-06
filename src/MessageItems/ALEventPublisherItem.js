@@ -2,8 +2,8 @@ const ALEventPublisher = require("../ALObjects/ALEventPublisher");
 
 module.exports = class ALEventPublisherItem {
     constructor(eventPublisher) {
-        // if (!(eventPublisher instanceof ALEventPublisher))
-        //     return;
+        if (!(eventPublisher instanceof ALEventPublisher))
+            return;
         this.label = eventPublisher.displayEventName;
         this.eventPublisher = eventPublisher;
     }
