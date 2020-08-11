@@ -47,8 +47,10 @@ module.exports = class Reader {
             fs.mkdirSync(this.baseAppFolderPath, { recursive: true });
 
         fs.readdir(this.baseAppFolderPath, async function (error, files) {
-            if (error)
-                reader.outputChannel.appendLine(error.message);
+            if (error){
+                reader.output(error.message);
+                reader.log(error.message);
+            }
             var appFiles = await reader.readDir(reader.baseAppFolderPath, '.al', reader);
             if (checkExists && files != undefined && appFiles.length > 0) {
                 //reader.appPackages.push(new AppPackage('Custom'));
@@ -70,7 +72,6 @@ module.exports = class Reader {
                             await reader.detectCustomAlFiles();
 
                             progress.report({ message: "Searching App File Objects" });
-                            console.time("FindALFiles");
                             var promises = [];
                             for (let index = 0; index < files.length; index++) {
                                 await reader.detectAllAlFiles(path.basename(files[index]));
@@ -137,6 +138,10 @@ module.exports = class Reader {
                     }, async (progress, token) => {
                         await new Promise((resolve) => {
                             fs.emptyDir(reader.baseAppFolderPath, function (error) {
+                                if (error){
+                                    reader.output(error.message);
+                                    reader.log(error.message);
+                                }
                                 reader.extensionContext.globalState.update('reloaded', true);
                                 vscode.commands.executeCommand('workbench.action.reloadWindow');
                                 resolve();
@@ -207,15 +212,19 @@ module.exports = class Reader {
         }
 
         fs.copyFile(appPath, tempAppFileZip, async (error) => {
-            if (error)
-                reader.outputChannel.appendLine(error.message);
+            if (error){
+                reader.output(error.message);
+                reader.log(error.message);
+            }
 
             reader.log("Copied App File to AL Cache");
             reader.output("Copied App File to AL Cache");
             try {
                 fs.readFile(tempAppFileZip, function (error, data) {
-                    if (error)
-                        reader.outputChannel.appendLine(error);
+                    if (error){
+                        reader.output(error.message);
+                        reader.log(error.message);
+                    }
                     JSZip.loadAsync(data, { createFolders: true }).then(function (zip) {
                         fs.unlinkSync(tempAppFileZip);
                         zip.remove('SymbolReference.json');
@@ -286,8 +295,10 @@ module.exports = class Reader {
     async emptyDirectory(path, reader, depth = 0) {
         return new Promise(async (resolve, reject) => {
             return fs.readdir(path, async function (error, files) {
-                if (error)
+                if (error){
+                    reader.output(error.message);
                     reader.log(error.message);
+                }
                 // Files found
                 if (files != undefined && files.length > 0) {
                     for (let index = 0; index < files.length; index++) {
@@ -295,12 +306,17 @@ module.exports = class Reader {
                         const filepath = path + '/' + element;
                         return await new Promise(() => {
                             fs.access(filepath, fs.constants.R_OK, async function (error) {
-                                if (error)
+                                if (error){
+                                    reader.output(error.message);
+                                    reader.log(error.message);
                                     return;
+                                }
                                 return await new Promise(() => {
                                     fs.lstat(filepath, async function (error, stats) {
-                                        if (error)
+                                        if (error){
+                                            reader.output(error.message);
                                             reader.log(error.message);
+                                        }
                                         if (stats == undefined)
                                             return;
 
@@ -465,7 +481,6 @@ module.exports = class Reader {
                     this.showInformationMessage("All AL files were found successfully!");
                     this.log("Read all!");
                     this.output("Read all!");
-                    console.timeEnd("FindALFiles");
 
                     this.alObjects.sort(function (a, b) {
                         var nameA = a.name.toUpperCase();
@@ -547,8 +562,10 @@ module.exports = class Reader {
                     var length = 0;
                     var alFiles = [];
                     fs.readdir(startPath, async function (error, files) {
-                        if (error)
-                            this.output(error);
+                        if (error){
+                            this.output(error.message);
+                            this.log(error.message);
+                        }
                         for (var i = 0; i < files.length; i++) {
                             var filename = path.join(startPath, files[i]);
                             var stat = fs.lstatSync(filename);
@@ -904,7 +921,8 @@ module.exports = class Reader {
                 }
             });
             worker.on('error', (error) => {
-                console.log(error);
+                this.output(error.message);
+                this.log(error.message);
             })
         })
     }
