@@ -467,7 +467,7 @@ module.exports = class Reader {
         await Promise.all(tasks);
         var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
         this.appPackages[foundIndex].processed = true;
-        console.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
+        this.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
         if (this.allPackagesFinished()) {
             this.showInformationMessage("All AL files were found successfully!");
             this.log("Read all!");
