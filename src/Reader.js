@@ -16,6 +16,7 @@ const { Worker, isMainThread, parentPort, workerData } = require('worker_threads
 const ALEventPublisher = require('./ALObjects/ALEventPublisher');
 const ALTableField = require('./ALObjects/ALTableField');
 const ALPageField = require('./ALObjects/ALPageField');
+const ALFunction = require('./ALObjects/ALFunction');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -455,7 +456,7 @@ module.exports = class Reader {
         }
 
         var start = Date.now();
-        var numberPerRange = 1000;
+        var numberPerRange = 800;
         var ranges = [];
         for (let index = 0; index < Math.floor(files2.length / numberPerRange); index++) {
             ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
@@ -931,7 +932,7 @@ module.exports = class Reader {
             }
 
             var start = Date.now();
-            var numberPerRange = 400;
+            var numberPerRange = 800;
             var ranges = [];
             for (let index = 0; index < Math.floor(len / numberPerRange); index++) {
                 ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
@@ -972,7 +973,7 @@ module.exports = class Reader {
                                 alObject.fields[index] = new ALPageField(alObject.fields[index]);
                             }
                         for (let index = 0; index < alObject.functions.length; index++) {
-                            alObject.functions[index] = new ALPageField(alObject.functions[index]);
+                            alObject.functions[index] = new ALFunction(alObject.functions[index]);
                         }
                         this.alObjects[index] = alObject;
                     }
