@@ -466,7 +466,7 @@ module.exports = class Reader {
         await Promise.all(tasks);
         var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
         this.appPackages[foundIndex].processed = true;
-        console.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
+        this.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
         if (this.allPackagesFinished()) {
             this.showInformationMessage("All AL files were found successfully!");
             this.log("Read all!");
@@ -931,7 +931,8 @@ module.exports = class Reader {
             }
 
             var start = Date.now();
-            var numberPerRange = 400;
+            //var numberPerRange = 400;
+            var numberPerRange = 800;
             var ranges = [];
             for (let index = 0; index < Math.floor(len / numberPerRange); index++) {
                 ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
