@@ -76,6 +76,9 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.5.6
+- Fixed hovering in AL Files
+
 ### 1.5.5
 - Improved Performance on reading Files
 
