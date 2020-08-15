@@ -69,6 +69,10 @@
 			{
 				"command": "al-object-helper.searchSubscriber",
 				"title": "AL Helper: Search local Event Subscriber"
+			},
+			{
+				"command": "al-object-helper.alObjectDesigner",
+				"title": "AL Helper: AL Object Designer"
 			}
 		],
 		"keybindings": [
