@@ -16,6 +16,7 @@ const { Worker, isMainThread, parentPort, workerData } = require('worker_threads
 const ALEventPublisher = require('./ALObjects/ALEventPublisher');
 const ALTableField = require('./ALObjects/ALTableField');
 const ALPageField = require('./ALObjects/ALPageField');
+const ALFunction = require('./ALObjects/ALFunction');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -56,8 +57,10 @@ module.exports = class Reader {
         this.alRunTimeVersion = fs.readJSONSync(this.appJsonPath).runtime;
 
         fs.readdir(this.baseAppFolderPath, async function (error, files) {
-            if (error)
-                reader.outputChannel.appendLine(error.message);
+            if (error) {
+                reader.output(error.message);
+                reader.log(error.message);
+            }
             var appFiles = await reader.readDir(reader.baseAppFolderPath, '.al', reader);
 
             // Read all existing AL Files
@@ -80,7 +83,6 @@ module.exports = class Reader {
                             await reader.detectCustomAlFiles();
 
                             progress.report({ message: "Searching App File Objects" });
-                            console.time("FindALFiles");
                             var promises = [];
                             for (let index = 0; index < files.length; index++) {
                                 await reader.detectAllAlFiles(path.basename(files[index]));
@@ -149,6 +151,10 @@ module.exports = class Reader {
                     }, async (progress, token) => {
                         await new Promise((resolve) => {
                             fs.emptyDir(reader.baseAppFolderPath, function (error) {
+                                if (error) {
+                                    reader.output(error.message);
+                                    reader.log(error.message);
+                                }
                                 reader.extensionContext.globalState.update('reloaded', true);
                                 vscode.commands.executeCommand('workbench.action.reloadWindow');
                                 resolve();
@@ -223,15 +229,19 @@ module.exports = class Reader {
         }
 
         fs.copyFile(appPath, tempAppFileZip, async (error) => {
-            if (error)
-                reader.outputChannel.appendLine(error.message);
+            if (error) {
+                reader.output(error.message);
+                reader.log(error.message);
+            }
 
             reader.log("Copied App File to AL Cache");
             reader.output("Copied App File to AL Cache");
             try {
                 fs.readFile(tempAppFileZip, function (error, data) {
-                    if (error)
-                        reader.outputChannel.appendLine(error);
+                    if (error) {
+                        reader.output(error.message);
+                        reader.log(error.message);
+                    }
                     JSZip.loadAsync(data, { createFolders: true }).then(function (zip) {
                         fs.unlinkSync(tempAppFileZip);
                         zip.remove('SymbolReference.json');
@@ -333,8 +343,10 @@ module.exports = class Reader {
     async emptyDirectory(path, reader, depth = 0) {
         return new Promise(async (resolve, reject) => {
             return fs.readdir(path, async function (error, files) {
-                if (error)
+                if (error) {
+                    reader.output(error.message);
                     reader.log(error.message);
+                }
                 // Files found
                 if (files != undefined && files.length > 0) {
                     for (let index = 0; index < files.length; index++) {
@@ -342,12 +354,17 @@ module.exports = class Reader {
                         const filepath = path + '/' + element;
                         return await new Promise(() => {
                             fs.access(filepath, fs.constants.R_OK, async function (error) {
-                                if (error)
+                                if (error) {
+                                    reader.output(error.message);
+                                    reader.log(error.message);
                                     return;
+                                }
                                 return await new Promise(() => {
                                     fs.lstat(filepath, async function (error, stats) {
-                                        if (error)
+                                        if (error) {
+                                            reader.output(error.message);
                                             reader.log(error.message);
+                                        }
                                         if (stats == undefined)
                                             return;
 
@@ -472,6 +489,10 @@ module.exports = class Reader {
 
         if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
             this.appPackages.push(new AppPackage(packageName.trim()));
+        else {
+            var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+            this.appPackages[foundIndex].processed = false;
+        }
 
         if (files2.length == 0) {
             var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
@@ -482,56 +503,110 @@ module.exports = class Reader {
         }
 
         var start = Date.now();
-        for (let index = 0; index < files2.length; index++) {
-            const element = files2[index];
-            var line = await firstLine(element);
-            var alObject = this.getALObject(line, element);
-            if (alObject == undefined) {
-                const fileStream = fs.createReadStream(element);
-                const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+        var numberPerRange = 800;
+        var ranges = [];
+        for (let index = 0; index < Math.floor(files2.length / numberPerRange); index++) {
+            ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
+        }
+        ranges.push({ start: Math.floor(files2.length / numberPerRange) * numberPerRange, end: files2.length, finished: false });
 
-                for await (const line of rl) {
-                    alObject = this.getALObject(line, element);
+        const tasks = ranges.map((v) => this.detectAlFilesRange(appPackageName, files2, v.start, v.end));
+        await Promise.all(tasks);
+        var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+        this.appPackages[foundIndex].processed = true;
+        this.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
+        if (this.allPackagesFinished()) {
+            this.showInformationMessage("All AL files were found successfully!");
+            this.log("Read all!");
+            this.output("Read all!");
 
-                    if (alObject != undefined) {
-                        break;
+            this.alObjects.sort(function (a, b) {
+                var nameA = a.name.toUpperCase();
+                var nameB = b.name.toUpperCase();
+                if (nameA < nameB) {
+                    return -1;
+                }
+                if (nameA > nameB) {
+                    return 1;
+                }
+
+                return 0;
+            });
+        }
+
+        if (callback != undefined)
+            callback();
+
+        // for (let index = 0; index < files2.length; index++) {
+        //     const element = files2[index];
+        //     var line = await firstLine(element);
+        //     var alObject = this.getALObject(line, element);
+        //     if (alObject == undefined) {
+        //         const fileStream = fs.createReadStream(element);
+        //         const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+        //         for await (const line of rl) {
+        //             alObject = this.getALObject(line, element);
+
+        //             if (alObject != undefined) {
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //     if (alObject != undefined) {
+        //         alObject.appPackageName = appPackageName;
+        //         this.addAlObject(alObject);
+        //         //this.alObjects.push(alObject);
+        //     }
+        //     i2++;
+        //     if (i2 >= arrLen2) {
+        //         var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+        //         this.appPackages[foundIndex].processed = true;
+        //         console.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
+        //         if (this.allPackagesFinished()) {
+        //             this.showInformationMessage("All AL files were found successfully!");
+        //             this.log("Read all!");
+        //             this.output("Read all!");
+
+        //             this.alObjects.sort(function (a, b) {
+        //                 var nameA = a.name.toUpperCase();
+        //                 var nameB = b.name.toUpperCase();
+        //                 if (nameA < nameB) {
+        //                     return -1;
+        //                 }
+        //                 if (nameA > nameB) {
+        //                     return 1;
+        //                 }
+
+        //                 return 0;
+        //             });
+        //         }
+
+        //         if (callback != undefined)
+        //             callback();
+        //     }
+        // };
+    }
+
+    async detectAlFilesRange(appPackageName, files, startIndex, endIndex) {
+        return new Promise(async (resolve) => {
+            const worker = new Worker(path.resolve(__dirname, 'ALDetectFilesWorker.js'), { workerData: { files: files, appPackageName: appPackageName, start: startIndex, end: endIndex } });
+            worker.on('message', (value) => {
+                if (typeof value === 'string' || value instanceof String) {
+                    console.log(value);
+                }
+                else {
+                    for (let index = 0; index < value.length; index++) {
+                        this.addAlObject(new ALObject(value[index]));
                     }
+                    resolve();
                 }
-            }
-            if (alObject != undefined) {
-                alObject.appPackageName = appPackageName;
-                this.addAlObject(alObject);
-                //this.alObjects.push(alObject);
-            }
-            i2++;
-            if (i2 >= arrLen2) {
-                var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
-                this.appPackages[foundIndex].processed = true;
-                console.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
-                if (this.allPackagesFinished()) {
-                    this.showInformationMessage("All AL files were found successfully!");
-                    this.log("Read all!");
-                    this.output("Read all!");
-                    console.timeEnd("FindALFiles");
-
-                    this.alObjects.sort(function (a, b) {
-                        var nameA = a.name.toUpperCase();
-                        var nameB = b.name.toUpperCase();
-                        if (nameA < nameB) {
-                            return -1;
-                        }
-                        if (nameA > nameB) {
-                            return 1;
-                        }
-
-                        return 0;
-                    });
-                }
-
-                if (callback != undefined)
-                    callback();
-            }
-        };
+            });
+            worker.on('error', (error) => {
+                this.output(error.message);
+                this.log(error.message);
+            })
+        })
     }
 
     async detectAllRDLCFiles() {
@@ -595,8 +670,8 @@ module.exports = class Reader {
                     var alFiles = [];
                     fs.readdir(startPath, async function (error, files) {
                         if (error) {
-                            reader.output(error.message);
-                            reader.log(error.message);
+                            this.output(error.message);
+                            this.log(error.message);
                         }
                         for (var i = 0; i < files.length; i++) {
                             var filename = path.join(startPath, files[i]);
@@ -904,7 +979,7 @@ module.exports = class Reader {
             }
 
             var start = Date.now();
-            var numberPerRange = 400;
+            var numberPerRange = 800;
             var ranges = [];
             for (let index = 0; index < Math.floor(len / numberPerRange); index++) {
                 ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
@@ -945,7 +1020,7 @@ module.exports = class Reader {
                                 alObject.fields[index] = new ALPageField(alObject.fields[index]);
                             }
                         for (let index = 0; index < alObject.functions.length; index++) {
-                            alObject.functions[index] = new ALPageField(alObject.functions[index]);
+                            alObject.functions[index] = new ALFunction(alObject.functions[index]);
                         }
                         this.alObjects[index] = alObject;
                     }
@@ -953,7 +1028,8 @@ module.exports = class Reader {
                 }
             });
             worker.on('error', (error) => {
-                console.log(error);
+                this.output(error.message);
+                this.log(error.message);
             })
         })
     }
