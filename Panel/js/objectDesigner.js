@@ -2,7 +2,7 @@ var vscode;
 var filterType = "";
 var oldFilter = "";
 
-function myFunction() {
+function filterList() {
     var input, filter, table, tr, td, i, txtValue, onlyNumbers;
     // @ts-ignore
     input = document.getElementById("myInput");

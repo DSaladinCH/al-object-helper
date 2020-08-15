@@ -90,6 +90,10 @@ tr {
   height: 25px;
 }
 
+tr.active {
+  background-color: var(--vscode-list-focusBackground);
+}
+
 tr:hover {
   background-color: var(--vscode-list-hoverBackground);
   color: var(--vscode-list-hoverForeground);
