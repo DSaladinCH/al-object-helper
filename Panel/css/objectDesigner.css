@@ -1,3 +1,7 @@
+.hide {
+  display: none;
+}
+
 table {
   border-spacing: 0;
   font-size: medium;
@@ -15,19 +19,21 @@ table {
   margin-top: 35px;
 }
 
-.gridItem2 {}
+.gridItem2 {
+}
 
-.objectDesignerTable {}
+.objectDesignerTable {
+}
 
 .columnType {
-  width: .5%;
+  width: 0.5%;
   padding-left: 10px;
   padding-right: 10px;
   max-width: 50px !important;
 }
 
 .columnID {
-  width: .5%;
+  width: 0.5%;
   max-width: 0px !important;
 }
 
@@ -48,7 +54,7 @@ table {
 }
 
 .columnPublisherName {
-  width: .8%;
+  width: 0.8%;
 }
 
 .columnNon {
@@ -82,6 +88,10 @@ td {
 
 tr {
   height: 25px;
+}
+
+tr.active {
+  background-color: var(--vscode-list-focusBackground);
 }
 
 tr:hover {
