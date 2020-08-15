@@ -9,6 +9,9 @@ With the latest version it is possible to jump to definition within an AL file.
 This is a new feature and may still contain errors. Possibly there are also definitions which have not yet been implemented.
 Please report these in the Git Repository.
 
+With this extension it is also possible to view BC14 AL objects.
+These files were created with Txt2AL and are intended for BC14 C/AL databases which do not contain AL files in the "Application" app file.
+
 ## Features
 
 * **Open Files** easy with a shortcut
@@ -49,6 +52,7 @@ Just use the Object Shortcut and the ID.
 
 If you use the latest version of the AL Language Extension by Microsoft, you have to remove the "AL: Find Event" keybinding to use the integrated search.
 ![Remove the "AL: Find Event" keybinding](Images/vid03.gif)
+
 With the latest version it is possible to jump to definition within an AL file.
 This is a new feature and may still contain errors. Possibly there are also definitions which have not yet been implemented.
 Please report these in the Git Repository.
@@ -75,6 +79,9 @@ Please report these in the Git Repository.
 ## Release Notes
 
 **Newest Releases**
+
+### 1.5.7
+- Added BC14 Symbols Support
 
 ### 1.5.6
 - Fixed hovering in AL Files

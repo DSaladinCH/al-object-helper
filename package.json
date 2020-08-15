@@ -3,7 +3,7 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "1.5.6",
+	"version": "1.5.7",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {
