@@ -2,6 +2,10 @@ const ALVariable = require("./ALVariable");
 
 module.exports = class ALFunction {
     constructor(name, lineNo, line = "", local = false) {
+        if (typeof name != "string") {
+            return Object.assign(this, name);
+        }
+
         this.name = name;
         this.lineNo = lineNo;
         this.local = local;

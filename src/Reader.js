@@ -16,6 +16,7 @@ const { Worker, isMainThread, parentPort, workerData } = require('worker_threads
 const ALEventPublisher = require('./ALObjects/ALEventPublisher');
 const ALTableField = require('./ALObjects/ALTableField');
 const ALPageField = require('./ALObjects/ALPageField');
+const ALFunction = require('./ALObjects/ALFunction');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -30,10 +31,14 @@ module.exports = class Reader {
         this.outputChannel = vscode.window.createOutputChannel("ALObjectHelper");
         this.extensionContext = extensionContext;
         this.rootPath = workspace.rootPath;
+        this.appJsonPath = path.join(this.rootPath, 'app.json');
         this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
         this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(this.rootPath)).replace(/\\/g, '/');
         this.htmlTableBody = "";
         this.objectDesignerPanel = undefined;
+        this.alRunTimeVersion = "";
+
+        this.bc14SymbolsZip = this.extensionContext.extensionPath + "\\Symbols\\Microsoft_Base Application_14.0.00000.0.zip";
     }
 
     generateAll(checkExists) {
@@ -46,14 +51,20 @@ module.exports = class Reader {
         if (!fs.existsSync(this.baseAppFolderPath))
             fs.mkdirSync(this.baseAppFolderPath, { recursive: true });
 
+        // Check if app.json exists and read it
+        if (!fs.existsSync(this.appJsonPath))
+            return;
+        this.alRunTimeVersion = fs.readJSONSync(this.appJsonPath).runtime;
+
         fs.readdir(this.baseAppFolderPath, async function (error, files) {
             if (error) {
                 reader.output(error.message);
                 reader.log(error.message);
             }
             var appFiles = await reader.readDir(reader.baseAppFolderPath, '.al', reader);
+
+            // Read all existing AL Files
             if (checkExists && files != undefined && appFiles.length > 0) {
-                //reader.appPackages.push(new AppPackage('Custom'));
                 files.forEach(element => {
                     const appPackageName = path.basename(element);
                     reader.appPackages.push(new AppPackage((appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1]).trim()));
@@ -96,6 +107,7 @@ module.exports = class Reader {
                     return true;
                 });
             }
+            // Read all app Files
             else {
                 if (checkExists) {
                     if (files == undefined || files.length <= 0) {
@@ -131,6 +143,7 @@ module.exports = class Reader {
                         }
                     }
                 }
+                // Delete all Files if don't check
                 else {
                     await vscode.window.withProgress({
                         location: ProgressLocation.Notification,
@@ -178,8 +191,12 @@ module.exports = class Reader {
 
         return new Promise((resolve) => {
             appFiles.forEach(element => {
-                this.readAppFile(element, reader, function () {
+                this.readAppFile(element, reader, async function () {
                     if (reader.allPackagesFinished()) {
+                        // BC 14
+                        if (reader.alRunTimeVersion == "3.0") {
+                            await reader.readZipFile(reader, ["Microsoft", "Base Application"], reader.bc14SymbolsZip, false);
+                        }
                         reader.log("Finished all!");
                         reader.detectAllExtensions();
 
@@ -245,41 +262,47 @@ module.exports = class Reader {
                             .on('close', async function () {
                                 reader.log("Generated Buffer");
                                 reader.output("Generated Buffer of " + splittedName[0] + "_" + splittedName[1]);
-                                var AdmZip = require('adm-zip');
-                                var admZip = new AdmZip(tempAppFileZip2);
+                                // var AdmZip = require('adm-zip');
+                                // var admZip = new AdmZip(tempAppFileZip2);
 
                                 fs.exists(baseAppFolderApp, async function (exists) {
                                     if (!exists) {
                                         fs.ensureDir(baseAppFolderApp).then(async function (error) {
-                                            reader.log("Unzipping File");
-                                            reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
-                                            admZip.extractAllTo(baseAppFolderApp, true);
-                                            fs.unlinkSync(tempAppFileZip2);
-                                            reader.log("Extracted App File");
-                                            reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
-
-                                            const packageName = splittedName[0] + "_" + splittedName[1];
-                                            if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                                                reader.appPackages.push(new AppPackage(packageName.trim()));
-                                            await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                                            await reader.readZipFile(reader, splittedName, tempAppFileZip2, true, function () {
                                                 callback();
                                             });
+                                            // reader.log("Unzipping File");
+                                            // reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
+                                            // admZip.extractAllTo(baseAppFolderApp, true);
+                                            // fs.unlinkSync(tempAppFileZip2);
+                                            // reader.log("Extracted App File");
+                                            // reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
+
+                                            // const packageName = splittedName[0] + "_" + splittedName[1];
+                                            // if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+                                            //     reader.appPackages.push(new AppPackage(packageName.trim()));
+                                            // await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                                            //     callback();
+                                            // });
                                         });
                                     }
                                     else {
-                                        reader.log("Unzipping File");
-                                        reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
-                                        admZip.extractAllTo(baseAppFolderApp, false);
-                                        fs.unlinkSync(tempAppFileZip2);
-                                        reader.log("Extracted App File");
-                                        reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
-
-                                        const packageName = splittedName[0] + "_" + splittedName[1];
-                                        if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                                            reader.appPackages.push(new AppPackage(packageName.trim()));
-                                        await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                                        await reader.readZipFile(reader, splittedName, tempAppFileZip2, true, function () {
                                             callback();
                                         });
+                                        // reader.log("Unzipping File");
+                                        // reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
+                                        // admZip.extractAllTo(baseAppFolderApp, false);
+                                        // fs.unlinkSync(tempAppFileZip2);
+                                        // reader.log("Extracted App File");
+                                        // reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
+
+                                        // const packageName = splittedName[0] + "_" + splittedName[1];
+                                        // if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+                                        //     reader.appPackages.push(new AppPackage(packageName.trim()));
+                                        // await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                                        //     callback();
+                                        // });
                                     }
                                 });
                             });
@@ -289,6 +312,31 @@ module.exports = class Reader {
             catch (err) {
                 reader.log(err);
             }
+        });
+    }
+
+    async readZipFile(reader, splittedName, zipPath, deleteZip, callback) {
+        return await new Promise(async (resolve) => {
+            const baseAppFolderApp = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1]);
+            var AdmZip = require('adm-zip');
+            var admZip = new AdmZip(zipPath);
+
+            reader.log("Unzipping File");
+            reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
+            admZip.extractAllTo(baseAppFolderApp, false);
+            if (deleteZip)
+                fs.unlinkSync(zipPath);
+            reader.log("Extracted App File");
+            reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
+
+            const packageName = splittedName[0] + "_" + splittedName[1];
+            if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+                reader.appPackages.push(new AppPackage(packageName.trim()));
+            await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                if (callback != undefined)
+                    callback();
+                resolve();
+            });
         });
     }
 
@@ -455,7 +503,7 @@ module.exports = class Reader {
         }
 
         var start = Date.now();
-        var numberPerRange = 1000;
+        var numberPerRange = 800;
         var ranges = [];
         for (let index = 0; index < Math.floor(files2.length / numberPerRange); index++) {
             ranges.push({ start: index * numberPerRange, end: (index + 1) * numberPerRange, finished: false });
@@ -931,7 +979,6 @@ module.exports = class Reader {
             }
 
             var start = Date.now();
-            //var numberPerRange = 400;
             var numberPerRange = 800;
             var ranges = [];
             for (let index = 0; index < Math.floor(len / numberPerRange); index++) {
@@ -973,7 +1020,7 @@ module.exports = class Reader {
                                 alObject.fields[index] = new ALPageField(alObject.fields[index]);
                             }
                         for (let index = 0; index < alObject.functions.length; index++) {
-                            alObject.functions[index] = new ALPageField(alObject.functions[index]);
+                            alObject.functions[index] = new ALFunction(alObject.functions[index]);
                         }
                         this.alObjects[index] = alObject;
                     }
