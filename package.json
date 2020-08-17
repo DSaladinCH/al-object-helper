@@ -69,6 +69,14 @@
 			{
 				"command": "al-object-helper.searchSubscriber",
 				"title": "AL Helper: Search local Event Subscriber"
+			},
+			{
+				"command": "al-object-helper.alObjectDesigner",
+				"title": "AL Helper: AL Object Designer"
+			},
+			{
+				"command": "al-object-helper.openExtension",
+				"title": "AL Helper: Open Extension Object"
 			}
 		],
 		"keybindings": [
@@ -92,6 +100,14 @@
 					"description": "The global path for all extracted AL Files"
 				}
 			}
+		},
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "al-object-helper.openExtension",
+					"when": "isExtendedObject"
+				}
+			]
 		}
 	},
 	"scripts": {

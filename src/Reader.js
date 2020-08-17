@@ -48,6 +48,12 @@ module.exports = class Reader {
         this.appPackages = [];
         this.appPackages.push(new AppPackage('Custom'));
 
+        //Test
+        // var AdmZip = require('adm-zip');
+        // var admZip2 = new AdmZip("C:\\temp\\Test\\Microsoft_System.zip");
+        // admZip2.extractAllTo("C:\\temp\\Test\\System", true)
+        //console.log(admZip2.getEntries().length + " Entries found");
+
         if (!fs.existsSync(this.baseAppFolderPath))
             fs.mkdirSync(this.baseAppFolderPath, { recursive: true });
 
@@ -89,6 +95,8 @@ module.exports = class Reader {
                                 //promises.push(await reader.detectAllAlFiles(path.basename(files[index])));
                             }
                             //await Promise.all(promises);
+
+                            reader.detectAllExtensions();
 
                             progress.report({ message: "Searching AL Symbols" });
                             await reader.readAllDefinitions(function () { });
@@ -242,6 +250,7 @@ module.exports = class Reader {
                         reader.output(error.message);
                         reader.log(error.message);
                     }
+                    var start = Date.now();
                     JSZip.loadAsync(data, { createFolders: true }).then(function (zip) {
                         fs.unlinkSync(tempAppFileZip);
                         zip.remove('SymbolReference.json');
@@ -254,26 +263,48 @@ module.exports = class Reader {
                         zip.remove('ProfileSymbolReferences');
                         zip.remove('addin');
                         zip.remove('logo');
+                        console.log(splittedName[0] + "_" + splittedName[1] + " - " + (Date.now() - start) + " ms (Removing Files/Folders in ZIP)");
+                        start = Date.now();
                         reader.log("Generating Buffer");
                         reader.output("Generating Buffer of " + splittedName[0] + "_" + splittedName[1]);
                         zip
                             .generateNodeStream({ type: 'nodebuffer', streamFiles: false })
                             .pipe(fs.createWriteStream(tempAppFileZip2))
                             .on('close', async function () {
+                                console.log(splittedName[0] + "_" + splittedName[1] + " - " + (Date.now() - start) + " ms (Saved new ZIP File)");
+                                start = Date.now();
                                 reader.log("Generated Buffer");
                                 reader.output("Generated Buffer of " + splittedName[0] + "_" + splittedName[1]);
-                                // var AdmZip = require('adm-zip');
-                                // var admZip = new AdmZip(tempAppFileZip2);
+                                var AdmZip = require('adm-zip');
+                                var admZip = new AdmZip(tempAppFileZip2);
 
                                 fs.exists(baseAppFolderApp, async function (exists) {
                                     if (!exists) {
                                         fs.ensureDir(baseAppFolderApp).then(async function (error) {
-                                            await reader.readZipFile(reader, splittedName, tempAppFileZip2, true, function () {
+                                            await reader.readZipFile(reader, splittedName, tempAppFileZip2, true, async function () {
                                                 callback();
+                                                // reader.log("Unzipping File");
+                                                // reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
+                                                // admZip.extractAllTo(baseAppFolderApp, true);
+                                                // fs.unlinkSync(tempAppFileZip2);
+                                                // reader.log("Extracted App File");
+                                                // reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
+
+                                                // const packageName = splittedName[0] + "_" + splittedName[1];
+                                                // if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
+                                                //     reader.appPackages.push(new AppPackage(packageName.trim()));
+                                                // await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                                                //     callback();
+                                                // });
                                             });
+                                        });
+                                    }
+                                    else {
+                                        await reader.readZipFile(reader, splittedName, tempAppFileZip2, true, async function () {
+                                            callback();
                                             // reader.log("Unzipping File");
                                             // reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
-                                            // admZip.extractAllTo(baseAppFolderApp, true);
+                                            // admZip.extractAllTo(baseAppFolderApp, false);
                                             // fs.unlinkSync(tempAppFileZip2);
                                             // reader.log("Extracted App File");
                                             // reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
@@ -285,25 +316,7 @@ module.exports = class Reader {
                                             //     callback();
                                             // });
                                         });
-                                    }
-                                    else {
-                                        await reader.readZipFile(reader, splittedName, tempAppFileZip2, true, function () {
-                                            callback();
-                                        });
-                                        // reader.log("Unzipping File");
-                                        // reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
-                                        // admZip.extractAllTo(baseAppFolderApp, false);
-                                        // fs.unlinkSync(tempAppFileZip2);
-                                        // reader.log("Extracted App File");
-                                        // reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
-
-                                        // const packageName = splittedName[0] + "_" + splittedName[1];
-                                        // if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                                        //     reader.appPackages.push(new AppPackage(packageName.trim()));
-                                        // await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
-                                        //     callback();
-                                        // });
-                                    }
+                                    };
                                 });
                             });
                     });
