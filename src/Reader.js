@@ -683,8 +683,8 @@ module.exports = class Reader {
                     var alFiles = [];
                     fs.readdir(startPath, async function (error, files) {
                         if (error) {
-                            this.output(error.message);
-                            this.log(error.message);
+                            reader.output(error.message);
+                            reader.log(error.message);
                         }
                         for (var i = 0; i < files.length; i++) {
                             var filename = path.join(startPath, files[i]);
