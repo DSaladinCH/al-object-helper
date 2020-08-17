@@ -71,6 +71,7 @@ Please report these in the Git Repository.
 * **Search local AL Files**: Research all local AL Files
 * **Copy Event**: Copy any Event (Integration Events and Triggers)
 * **Search local Event Subscriber**: Search a local Event Subscriber and jump to it
+* **Open Extended Object**: Quick open the extended Object in an extension Object
 
 ## Known Issues
 
@@ -79,6 +80,10 @@ Please report these in the Git Repository.
 ## Release Notes
 
 **Newest Releases**
+
+### 1.5.8
+- Added new functionallity to open the extended Object from an extension Object
+- Changed BC14 Symbols File Names
 
 ### 1.5.7
 - Added BC14 Symbols Support

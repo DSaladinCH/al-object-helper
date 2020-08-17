@@ -278,7 +278,7 @@ async function activate(context) {
 		vscode.commands.executeCommand('setContext', 'isExtendedObject', false);
 	});
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openExtension', () => {
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openExtendedObject', () => {
 		if (!isExtendedObject)
 			return;
 
