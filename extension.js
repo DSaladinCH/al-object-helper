@@ -12,6 +12,7 @@ const ALEventSubscriberItem = require('./src/MessageItems/ALEventSubscriberItem.
 const clipboard = require('clipboardy');
 const ALDefinitionProvider = require('./src/ALDefinitionProvider.js');
 const ALHoverProvider = require('./src/ALHoverProvider.js');
+const ALObject = require('./src/ALObjects/ALObject.js');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -25,6 +26,8 @@ async function activate(context) {
 	console.log('Congratulations, your extension "al-object-helper" is now active!');
 	vscode.window.showInformationMessage("Welcome to the AL Object Helper. If you like this extension, please rate it in the Marketplace :)");
 
+	var isExtendedObject = false;
+	var extendedObjectPath = "";
 	const reader = new Reader(context);
 	const reloaded = reader.extensionContext.globalState.get('reloaded');
 	new Promise(async () => {
@@ -240,6 +243,49 @@ async function activate(context) {
 					this.output("Rejected: " + reason);
 				});
 			}
+		});
+	}));
+
+	vscode.window.onDidChangeActiveTextEditor((textEditor) => {
+		//console.log("Opened: " + textEditor.document.fileName);
+		isExtendedObject = false;
+		vscode.commands.executeCommand('setContext', 'isExtendedObject', false);
+
+		var filePath = textEditor.document.fileName;
+		if (path.extname(filePath).toLowerCase() != '.al')
+			return;
+
+		const alObject = reader.alObjects.find(o => o.path.toUpperCase() == filePath.toUpperCase());
+		if (alObject == undefined)
+			return;
+
+		if (!alObject.extension)
+			return;
+
+		const extendedObj = reader.alObjects.find(o => o.type == alObject.extendsType && o.id == alObject.extendsID);
+		if (extendedObj == undefined)
+			return;
+
+		extendedObjectPath = extendedObj.path;
+		isExtendedObject = true;
+		vscode.commands.executeCommand('setContext', 'isExtendedObject', true);
+	});
+	
+	vscode.workspace.onDidCloseTextDocument((document) => {
+		//console.log("Closed: " + document.fileName);
+		extendedObjectPath = "";
+		isExtendedObject = false;
+		vscode.commands.executeCommand('setContext', 'isExtendedObject', false);
+	});
+
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openExtendedObject', () => {
+		if (!isExtendedObject)
+			return;
+
+		vscode.workspace.openTextDocument(extendedObjectPath).then(doc => {
+			vscode.window.showTextDocument(doc);
+		}, function (reason) {
+			this.output("Rejected: " + reason);
 		});
 	}));
 }

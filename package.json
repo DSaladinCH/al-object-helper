@@ -3,7 +3,7 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "1.5.7",
+	"version": "1.5.8",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {
@@ -69,6 +69,14 @@
 			{
 				"command": "al-object-helper.searchSubscriber",
 				"title": "AL Helper: Search local Event Subscriber"
+			},
+			{
+				"command": "al-object-helper.alObjectDesigner",
+				"title": "AL Helper: AL Object Designer"
+			},
+			{
+				"command": "al-object-helper.openExtendedObject",
+				"title": "AL Helper: Open Extended Object"
 			}
 		],
 		"keybindings": [
@@ -92,6 +100,14 @@
 					"description": "The global path for all extracted AL Files"
 				}
 			}
+		},
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "al-object-helper.openExtendedObject",
+					"when": "isExtendedObject"
+				}
+			]
 		}
 	},
 	"scripts": {

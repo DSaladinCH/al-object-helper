@@ -2,6 +2,13 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.8] - 17.08.2020
+### Added
+- Open Extended Object from an Extension Object
+
+### Changed
+- BC14 Symbols File Names
+
 ## [1.5.7] - 16.08.2020
 ### Added
 - BC14 Symbols Support
