@@ -44,6 +44,18 @@ module.exports = class Reader {
         this.appPackages = [];
         this.appPackages.push(new AppPackage('Custom'));
 
+        //Test
+        // const note7z = require('node-7z');
+        // const zipArchiv = new note7z();
+        // const zipProgress = zipArchiv.extractFull("C:\\temp\\Test\\Microsoft_System.zip", "C:\\temp\\Test\\System", {});
+        // zipProgress.finally(() => {
+        //     console.log("Finisheeeed!");
+        // });
+        // var AdmZip = require('adm-zip');
+        // var admZip2 = new AdmZip("C:\\temp\\Test\\Microsoft_System.zip");
+        // admZip2.extractAllTo("C:\\temp\\Test\\System", true)
+        //console.log(admZip2.getEntries().length + " Entries found");
+
         if (!fs.existsSync(this.baseAppFolderPath))
             fs.mkdirSync(this.baseAppFolderPath, { recursive: true });
 
