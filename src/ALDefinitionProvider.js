@@ -11,6 +11,10 @@ module.exports = class ALDefinitionProvider {
 
     provideDefinition(textDocument, position, token) {
         return new Promise(async (resolve) => {
+            if (!textDocument.fileName.toLowerCase().startsWith(this.reader.settings.get('alObjectHelper.savePath').toLowerCase())) {
+                resolve(undefined);
+                return undefined
+            }
             var definitionLine = textDocument.lineAt(position.line).text;
 
             let message = this.navigateToDefinition(textDocument.fileName, definitionLine, position);
