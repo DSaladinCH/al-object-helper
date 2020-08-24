@@ -2,6 +2,10 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.5.9] - 24.08.2020
+### Fixed
+- Some Bugs on EventPublishers and Definition Provider
+
 ## [1.5.8] - 17.08.2020
 ### Added
 - Open Extended Object from an Extension Object
