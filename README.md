@@ -81,6 +81,9 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.6.0
+- Improved performance on unzipping App Files
+
 ### 1.5.9
 - Fixed some Bugs on EventPublishers and Definition Provider
 
