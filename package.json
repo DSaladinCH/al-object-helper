@@ -71,10 +71,6 @@
 				"title": "AL Helper: Search local Event Subscriber"
 			},
 			{
-				"command": "al-object-helper.alObjectDesigner",
-				"title": "AL Helper: AL Object Designer"
-			},
-			{
 				"command": "al-object-helper.openExtendedObject",
 				"title": "AL Helper: Open Extended Object"
 			}
