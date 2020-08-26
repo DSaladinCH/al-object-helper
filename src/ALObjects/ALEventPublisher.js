@@ -31,13 +31,14 @@ module.exports = class ALEventPublisher {
                 this.elementName.replace(/[^0-9a-z]/gi, ''));
             this.displayEventName += this.elementName.replace(/[^0-9a-z]/gi, '');
         }
+        this.functionString = functionString.replace(/\.\//g, '');
         this.objectType = alObject.type;
         this.displayObjectType = alObject.displayType;
         this.objectName = alObject.name;
     }
 
     toString() {
-        return `[EventSubscriber(ObjectType::${this.displayObjectType}, Database::"${this.objectName}", '${this.eventName}', '${this.elementName}', false, false)]\n` +
+        return `[EventSubscriber(ObjectType::${this.displayObjectType}, ${this.displayObjectType}::"${this.objectName}", '${this.eventName}', '${this.elementName}', false, false)]\n` +
             `\t${this.functionString}\n` +
             `\tbegin\n` +
             `\tend;`;

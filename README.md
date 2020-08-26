@@ -81,6 +81,12 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.6.0
+- Improved performance on unzipping App Files
+
+### 1.5.9
+- Fixed some Bugs on EventPublishers and Definition Provider
+
 ### 1.5.8
 - Added new functionallity to open the extended Object from an extension Object
 - Changed BC14 Symbols File Names

@@ -1,9 +1,6 @@
 const vscode = require('vscode');
 const util = require('util');
-const { Location, Uri } = require("vscode");
 var readLine = require('readline');
-const { readlink } = require('fs');
-const { resolveSoa } = require('dns');
 
 module.exports = class ALHoverProvider {
     constructor(reader) {
