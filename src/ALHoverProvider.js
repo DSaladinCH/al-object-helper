@@ -1,6 +1,8 @@
 const vscode = require('vscode');
 const util = require('util');
 var readLine = require('readline');
+const ALFunction = require('./ALObjects/ALFunction');
+const { MessageChannel } = require('worker_threads');
 
 module.exports = class ALHoverProvider {
     constructor(reader) {
@@ -137,6 +139,10 @@ module.exports = class ALHoverProvider {
         message = this.getFieldDefinition(path, variableName);
         if (message != undefined)
             return message;
+
+        message = this.getProcedureParameterDefinition(path, variableName, position.line);
+        if (message != undefined)
+            return message;
     }
 
     getVariableDefinition(path, variableName, lineNo) {
@@ -144,7 +150,8 @@ module.exports = class ALHoverProvider {
         let variableEndLineNo = lineNo;
         if (variableStartLineNo != -1) {
             let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
-            let variables = alObject.variables.filter(element => element.lineNo > variableStartLineNo && element.lineNo < variableEndLineNo);
+            let alFunction = alObject.functions.find(element => element.lineNo == variableStartLineNo);
+            let variables = alObject.variables.filter(element => element.lineNo >= variableStartLineNo && element.lineNo <= variableEndLineNo);
             if (variables == undefined || variables.length == 0) {
                 variables = alObject.variables.filter(element => !element.local);
             }
@@ -173,16 +180,44 @@ module.exports = class ALHoverProvider {
 
                 if (variable.type == "Record") {
                     var tableName = variable.subType;
-                    if (tableName.startsWith("\"")){
+                    if (tableName.startsWith("\"")) {
                         tableName = tableName.substring(1);
                         tableName = tableName.substring(0, tableName.length - 1);
                     }
                     var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == tableName);
-                    if (tableAlObject != undefined){
+                    if (tableAlObject != undefined) {
                         return this.getObjectDefinition(tableAlObject.path, variable.name, !variable.local);
                     }
                 }
 
+                return message;
+            }
+            if (alFunction != undefined) {
+                if (!(alFunction instanceof ALFunction))
+                    return undefined;
+                let parameter = alFunction.parameters.find(element => element.name == variableName);
+                if (parameter == undefined)
+                    return undefined;
+
+                if (parameter.isVar)
+                    var displayContent = `var ${parameter.name}: ${parameter.type}`;
+                else
+                    var displayContent = `${parameter.name}: ${parameter.type}`;
+                    
+                if (parameter.subType != "") {
+                    if (parameter.subType.startsWith("\""))
+                        displayContent += ` ${parameter.subType}`;
+                    else
+                        displayContent += ` "${parameter.subType}"`;
+                }
+                let message = {
+                    Type: parameter.type,
+                    Type2: parameter.subType,
+                    Name: parameter.name,
+                    Path: path,
+                    LineNo: parameter.lineNo,
+                    DisplayContent: displayContent
+                };
                 return message;
             }
         }
@@ -211,12 +246,12 @@ module.exports = class ALHoverProvider {
 
                     if (variable.type == "Record") {
                         var tableName = variable.subType;
-                        if (tableName.startsWith("\"")){
+                        if (tableName.startsWith("\"")) {
                             tableName = tableName.substring(1);
                             tableName = tableName.substring(0, tableName.length - 1);
                         }
                         var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == tableName);
-                        if (tableAlObject != undefined){
+                        if (tableAlObject != undefined) {
                             return this.getObjectDefinition(tableAlObject.path, variable.name, !variable.local);
                         }
                     }
@@ -282,12 +317,16 @@ module.exports = class ALHoverProvider {
         }
     }
 
+    getProcedureParameterDefinition(path, variableName, lineNo) {
+
+    }
+
     getObjectDefinition(path, variableName, isGlobal = true) {
         var alObject = this.reader.alObjects.find(a => a.path.toLowerCase() == path.toLowerCase());
 
         if (alObject != undefined) {
             let objectName = alObject.name;
-            if (objectName.startsWith("\"")){
+            if (objectName.startsWith("\"")) {
                 objectName = objectName.substring(1);
                 objectName = objectName.substring(0, objectName.length - 1);
             }
