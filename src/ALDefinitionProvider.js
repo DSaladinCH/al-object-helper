@@ -3,6 +3,7 @@ const util = require('util');
 const { Location, Uri } = require("vscode");
 var readLine = require('readline');
 const { readlink } = require('fs');
+const ALFunction = require('./ALObjects/ALFunction');
 
 module.exports = class ALDefinitionProvider {
     constructor(reader) {
@@ -124,6 +125,7 @@ module.exports = class ALDefinitionProvider {
         let variableEndLineNo = lineNo;
         if (variableStartLineNo != -1) {
             let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
+            let alFunction = alObject.functions.find(element => element.lineNo == variableStartLineNo);
             let variables = alObject.variables.filter(element => element.lineNo > variableStartLineNo && element.lineNo < variableEndLineNo);
 
             if (variables == undefined || variables.length == 0) {
@@ -144,6 +146,22 @@ module.exports = class ALDefinitionProvider {
                     LineNo: variable.lineNo
                 };
 
+                return message;
+            }
+
+            if (alFunction != undefined) {
+                if (!(alFunction instanceof ALFunction))
+                    return undefined;
+                let parameter = alFunction.parameters.find(element => element.name == variableName);
+                if (parameter == undefined)
+                    return undefined;
+                
+                let message = {
+                    Type: alObject.type,
+                    Name: alObject.name,
+                    Path: path,
+                    LineNo: parameter.lineNo
+                };
                 return message;
             }
         }
