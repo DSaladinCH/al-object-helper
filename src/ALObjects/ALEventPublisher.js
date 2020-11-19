@@ -2,7 +2,7 @@ const ALObject = require("./ALObject");
 
 module.exports = class ALEventPublisher {
     constructor(alObject, eventType, functionString, eventName, elementName) {
-        if (!(alObject instanceof ALObject)){
+        if (!(alObject instanceof ALObject)) {
             return Object.assign(this, alObject);
         }
         this.eventType = eventType;
@@ -14,7 +14,7 @@ module.exports = class ALEventPublisher {
         var end = functionString.indexOf("(", start);
         this.eventName = functionString.substring(start, end);
         this.displayEventName = this.eventName;
-        
+
         if (eventName != undefined) {
             this.displayEventName = this.eventName;
             this.eventName = eventName;
@@ -38,6 +38,12 @@ module.exports = class ALEventPublisher {
     }
 
     toString() {
+        if (this.objectType == "table")
+            return `[EventSubscriber(ObjectType::${this.displayObjectType}, Database::"${this.objectName}", '${this.eventName}', '${this.elementName}', false, false)]\n` +
+                `\t${this.functionString}\n` +
+                `\tbegin\n` +
+                `\tend;`;
+                
         return `[EventSubscriber(ObjectType::${this.displayObjectType}, ${this.displayObjectType}::"${this.objectName}", '${this.eventName}', '${this.elementName}', false, false)]\n` +
             `\t${this.functionString}\n` +
             `\tbegin\n` +
