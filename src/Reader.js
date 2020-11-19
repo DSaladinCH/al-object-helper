@@ -308,34 +308,6 @@ module.exports = class Reader {
                         }
 
                         var start = Date.now();
-                        // if (Object.keys(contents.files).length > 1000) {
-                        //     var items = [];
-                        //     items[0] = Math.ceil(Object.keys(contents.files).length / 3);
-                        //     items[1] = Math.ceil(Object.keys(contents.files).length / 3) * 2;
-                        //     items[2] = Object.keys(contents.files).length;
-
-                        //     const subscriptions = [];
-                        //     subscriptions[0] = reader.saveFiles(zip, Object.keys(contents.files).slice(0, items[2]), baseAppFolderApp, reader);
-                        //     // subscriptions[0] = reader.saveFiles(zip, Object.keys(contents.files).slice(0, items[0]), baseAppFolderApp, reader);
-                        //     // subscriptions[1] = reader.saveFiles(zip, Object.keys(contents.files).slice(items[0] + 1, items[1]), baseAppFolderApp, reader);
-                        //     // subscriptions[2] = reader.saveFiles(zip, Object.keys(contents.files).slice(items[1] + 1, items[2]), baseAppFolderApp, reader);
-                        //     await Promise.all(subscriptions);
-
-                        //     if (deleteZip)
-                        //         fs.unlinkSync(zipPath);
-                        //     reader.log("Extracted App File in " + (Date.now() - start) + "ms");
-                        //     reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
-
-                        //     const packageName = splittedName[0] + "_" + splittedName[1];
-                        //     if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                        //         reader.appPackages.push(new AppPackage(packageName.trim()));
-                        //     await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
-                        //         if (callback != undefined)
-                        //             callback();
-                        //         resolve();
-                        //         return;
-                        //     });
-                        // }
 
                         Object.keys(contents.files).forEach(function (fileName, index) {
                             files[index] = false;
@@ -355,35 +327,6 @@ module.exports = class Reader {
                                 callback();
                             resolve();
                         });
-
-                        // Object.keys(contents.files).forEach(function (filename, index) {
-                        //     zip.file(filename).async('nodebuffer').then(async function (content) {
-                        //         var destPath = path.join(baseAppFolderApp, filename);
-                        //         var dirname = path.dirname(destPath);
-
-                        //         await reader.createOnNotExist(dirname);
-
-                        //         files[index] = false;
-                        //         fs.writeFile(destPath, content, async function (err) {
-                        //             files[index] = true;
-                        //             if (!files.includes(false)) {
-                        //                 if (deleteZip)
-                        //                     fs.unlinkSync(zipPath);
-                        //                 reader.log("Extracted App File in " + (Date.now() - start) + "ms");
-                        //                 reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
-
-                        //                 const packageName = splittedName[0] + "_" + splittedName[1];
-                        //                 if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                        //                     reader.appPackages.push(new AppPackage(packageName.trim()));
-                        //                 await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
-                        //                     if (callback != undefined)
-                        //                         callback();
-                        //                     resolve();
-                        //                 });
-                        //             };
-                        //         });
-                        //     });
-                        // });
                     });
                 }
             });
@@ -408,7 +351,6 @@ module.exports = class Reader {
                         alreadyCreatedPaths.push(dirname);
                         await reader.createOnNotExist(dirname);
                     }
-                    // await reader.createOnNotExist(dirname);
 
                     fs.writeFile(destPath, content, async function (err) {
                         files[index] = true;
