@@ -3,11 +3,11 @@
 	"displayName": "AL Object Helper",
 	"description": "VS Code Extension for the AL Language",
 	"publisher": "DSaladin",
-	"version": "1.6.0",
+	"version": "1.6.1",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {
-		"vscode": "^1.40.0"
+		"vscode": "^1.51.0"
 	},
 	"categories": [
 		"Other"
@@ -114,7 +114,7 @@
 	"devDependencies": {
 		"@types/glob": "^7.1.3",
 		"@types/mocha": "^7.0.2",
-		"@types/node": "^13.13.31",
+		"@types/node": "^13.13.32",
 		"@types/vscode": "^1.51.0",
 		"eslint": "^6.8.0",
 		"glob": "^7.1.6",
