@@ -34,7 +34,7 @@ async function readDefinitions(alObjects, index) {
         var isVariableList = false;
         //var variablePattern = /(\S*)\s?\:\s(\S*)\s(.*)\;/gmi;
         //var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z]+)\s?(\'[^\']+\'|\"[^\"]+\"|[^\"\s]+)\;/gi;
-        var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+|)\;/gi;
+        var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+|)( temporary)?\;/gi;
         var procedurePattern = /(local\s)*(procedure)\s(\S*)\(/gi;
         var triggerPattern = /(trigger)\s(\S*)\(/gi;
         var tableFieldPattern = /field\(([0-9]+)\;\s?(\"[^\"]+\"|[a-z0-9\_]+)\;\s?([a-z0-9\[\]]+|Enum (\"[^\"]+\"|[a-z0-9\_]+))\)/gi;
@@ -80,14 +80,16 @@ async function readDefinitions(alObjects, index) {
                             local = true;
                         }
                     }
-                    alObjects[index].functions.push(new ALFunction(name, lineCounter, line, local));
+                    alObjects[index].functions.push(new ALFunction(name, lineCounter, line, local, eventType));
                 }
                 procedurePattern.lastIndex = 0;
+                eventType = "";
             }
             else if (line.includes("trigger")) {
                 isInFunction = true;
                 isInFunctionHeader = true;
                 isVariableList = false;
+                eventType = "";
                 regexMatch = triggerPattern.exec(line);
                 if (regexMatch && regexMatch.length == 3) {
                     var name = regexMatch[2];
@@ -155,10 +157,12 @@ async function readDefinitions(alObjects, index) {
             else if (line.includes("begin") && isInFunctionHeader) {
                 isInFunctionHeader = false;
                 isVariableList = false;
+                eventType = "";
             }
             else if (line.includes("var")) {
                 //if (isInFunctionHeader)
                 isVariableList = true;
+                eventType = "";
             }
             else if (isVariableList) {
                 regexMatch = variablePattern.exec(line);
@@ -168,11 +172,15 @@ async function readDefinitions(alObjects, index) {
                         let name = regexMatch[1];
                         let type = regexMatch[2];
                         let subType = "";
-                        if (regexMatch.length == 4 && regexMatch[3] != "") {
+                        let isTemp = false;
+                        if (regexMatch.length >= 4 && regexMatch[3] != "") {
                             subType = regexMatch[3];
                         }
 
-                        alObjects[index].variables.push(new ALVariable(name, type, lineCounter, isInFunctionHeader, subType));
+                        if (regexMatch[5] != undefined)
+                            isTemp = true;
+
+                        alObjects[index].variables.push(new ALVariable(name, type, lineCounter, isInFunctionHeader, subType, isTemp));
                     }
                 }
                 variablePattern.lastIndex = 0;
@@ -182,9 +190,9 @@ async function readDefinitions(alObjects, index) {
                 if (regexMatch) {
                     if (regexMatch.length == 2) {
                         let tableName = regexMatch[1];
-                        var alTable = workerData.alObjects.find(a => a.type == "table" && a.name == tableName);
-                        if (alTable != undefined)
-                            alObjects[index].pageSourceTable = alTable.name;
+                        if (tableName.startsWith("\""))
+                            tableName = tableName.substring(1, tableName.length - 1);
+                        alObjects[index].pageSourceTable = tableName;
                     }
                 }
             }
@@ -198,9 +206,9 @@ async function readDefinitions(alObjects, index) {
 function addObjectEventPublisher(alObjects, index) {
     const alObject = new ALObject(alObjects[index]);
     var eventType = "Trigger";
-    
+
     //if (!(alObject instanceof ALObject))
-        //return;
+    //return;
 
     if (alObject.type == "table") {
         //**************//

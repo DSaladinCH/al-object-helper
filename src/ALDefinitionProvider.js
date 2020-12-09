@@ -155,7 +155,7 @@ module.exports = class ALDefinitionProvider {
                 let parameter = alFunction.parameters.find(element => element.name == variableName);
                 if (parameter == undefined)
                     return undefined;
-                
+
                 let message = {
                     Type: alObject.type,
                     Name: alObject.name,
@@ -171,11 +171,16 @@ module.exports = class ALDefinitionProvider {
         let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
         let alFunction = alObject.functions.find(element => element.name == variableName);
 
+        if (alFunction == undefined){
+            alObject = this.reader.alObjects.find(element => element.name.toLowerCase() == alObject.pageSourceTable.toLowerCase());
+            alFunction = alObject.functions.find(element => element.name == variableName);
+        }
+
         if (alFunction != undefined) {
             let message = {
                 Type: alObject.type,
                 Name: alObject.name,
-                Path: path,
+                Path: alObject.path,
                 LineNo: alFunction.lineNo
             };
 

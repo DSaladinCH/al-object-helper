@@ -3,6 +3,7 @@ const util = require('util');
 var readLine = require('readline');
 const ALFunction = require('./ALObjects/ALFunction');
 const { MessageChannel } = require('worker_threads');
+const ALVariable = require('./ALObjects/ALVariable');
 
 module.exports = class ALHoverProvider {
     constructor(reader) {
@@ -33,6 +34,7 @@ module.exports = class ALHoverProvider {
                 return hoverContent;
             }
 
+            resolve(undefined);
             return undefined;
         });
     }
@@ -161,13 +163,16 @@ module.exports = class ALHoverProvider {
                 variable = variables.reverse().find(element => element.name == variableName);
             }
             if (variable != undefined) {
-                var displayContent = `${variable.name}: ${variable.type}`;
-                if (variable.subType != "") {
-                    if (variable.subType.startsWith("\""))
-                        displayContent += ` ${variable.subType}`;
-                    else
-                        displayContent += ` "${variable.subType}"`;
-                }
+                // var displayContent = `${variable.name}: ${variable.type}`;
+                // if (variable.subType != "") {
+                //     if (variable.subType.startsWith("\""))
+                //         displayContent += ` ${variable.subType}`;
+                //     else
+                //         displayContent += ` "${variable.subType}"`;
+                // }
+                var displayContent = "";
+                variable = new ALVariable(variable);
+                displayContent = variable.getDisplayText();
 
                 let message = {
                     Type: variable.type,
@@ -186,7 +191,7 @@ module.exports = class ALHoverProvider {
                     }
                     var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == tableName);
                     if (tableAlObject != undefined) {
-                        return this.getObjectDefinition(tableAlObject.path, variable.name, !variable.local);
+                        return this.getObjectDefinition(tableAlObject.path, variable, !variable.local);
                     }
                 }
 
@@ -203,7 +208,7 @@ module.exports = class ALHoverProvider {
                     var displayContent = `var ${parameter.name}: ${parameter.type}`;
                 else
                     var displayContent = `${parameter.name}: ${parameter.type}`;
-                    
+
                 if (parameter.subType != "") {
                     if (parameter.subType.startsWith("\""))
                         displayContent += ` ${parameter.subType}`;
@@ -227,13 +232,16 @@ module.exports = class ALHoverProvider {
             if (variables != undefined) {
                 let variable = variables.reverse().find(element => element.name == variableName);
                 if (variable != undefined) {
-                    var displayContent = `${variable.name}: ${variable.type}`;
-                    if (variable.subType != "") {
-                        if (variable.subType.startsWith("\""))
-                            displayContent += ` ${variable.subType}`;
-                        else
-                            displayContent += ` "${variable.subType}"`;
-                    }
+                    // var displayContent = `${variable.name}: ${variable.type}`;
+                    // if (variable.subType != "") {
+                    //     if (variable.subType.startsWith("\""))
+                    //         displayContent += ` ${variable.subType}`;
+                    //     else
+                    //         displayContent += ` "${variable.subType}"`;
+                    // }
+                    var displayContent = "";
+                    variable = new ALVariable(variable);
+                    displayContent = variable.getDisplayText();
 
                     let message = {
                         Type: variable.type,
@@ -252,7 +260,7 @@ module.exports = class ALHoverProvider {
                         }
                         var tableAlObject = this.reader.alObjects.find(a => a.type == "table" && a.name == tableName);
                         if (tableAlObject != undefined) {
-                            return this.getObjectDefinition(tableAlObject.path, variable.name, !variable.local);
+                            return this.getObjectDefinition(tableAlObject.path, variable, !variable.local);
                         }
                     }
 
@@ -266,31 +274,18 @@ module.exports = class ALHoverProvider {
         let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == path.toLowerCase());
         let alFunction = alObject.functions.find(element => element.name == variableName);
 
-        if (alFunction != undefined) {
-            var parameters = "";
-            if (alFunction.parameters.length != 0) {
-                for (let index = 0; index < alFunction.parameters.length; index++) {
-                    const element = alFunction.parameters[index];
-                    if (element.isVar)
-                        parameters += "var ";
-                    parameters += `${element.name}: ${element.type}`;
-                    if (element.subType != "") {
-                        if (element.subType.startsWith("\""))
-                            parameters += " " + element.subType;
-                        else
-                            parameters += ` "${element.subType}"`;
-                    }
-                    if (index < alFunction.parameters.length - 1)
-                        parameters += "; ";
-                }
-            }
+        if (alFunction == undefined) {
+            alObject = this.reader.alObjects.find(element => element.name.toLowerCase() == alObject.pageSourceTable.toLowerCase());
+            alFunction = alObject.functions.find(element => element.name == variableName);
+        }
 
-            var displayContent = `procedure ${alFunction.name}(${parameters})`;
+        if (alFunction != undefined) {
+            var displayContent = alFunction.getDisplayText(true);
             let message = {
                 Type: "procedure",
                 Type2: "",
                 Name: alFunction.name,
-                Path: path,
+                Path: alObject.path,
                 LineNo: alFunction.lineNo,
                 DisplayContent: displayContent
             };
@@ -338,25 +333,31 @@ module.exports = class ALHoverProvider {
                 LineNo: 0,
                 DisplayContent: `${alObject.type} ${objectName}`
             };
-
-            if (alObject.type == "table") {
-                if (isGlobal)
-                    message.DisplayContent = `(global) ${variableName}: Record ${objectName}`;
-                else
-                    message.DisplayContent = `(local) ${variableName}: Record ${objectName}`;
-
-                for (let index = 0; index < alObject.fields.length; index++) {
-                    const element = alObject.fields[index];
-                    message.DisplayContent += "\n";
-                    message.DisplayContent += element.id;
-                    message.DisplayContent += " - ";
-                    message.DisplayContent += element.name;
-                    for (let index = element.name.length + element.id.length + 3; index < 50; index++) {
-                        message.DisplayContent += " ";
-                    }
-                    message.DisplayContent += element.type;
-                }
+            if (variableName instanceof ALVariable)
+                message.DisplayContent = variableName.getDisplayText(true, alObject);
+            else if (variableName == "Rec" || variableName == "xRec") {
+                let tempVar = new ALVariable(variableName, "Record", 0, false);
+                message.DisplayContent = tempVar.getDisplayText(true, alObject);
             }
+
+            // if (alObject.type == "table") {
+            //     if (isGlobal)
+            //         message.DisplayContent = `(global) ${variableName}: Record ${objectName}`;
+            //     else
+            //         message.DisplayContent = `(local) ${variableName}: Record ${objectName}`;
+
+            //     for (let index = 0; index < alObject.fields.length; index++) {
+            //         const element = alObject.fields[index];
+            //         message.DisplayContent += "\n";
+            //         message.DisplayContent += element.id;
+            //         message.DisplayContent += " - ";
+            //         message.DisplayContent += element.name;
+            //         for (let index = element.name.length + element.id.length + 3; index < 50; index++) {
+            //             message.DisplayContent += " ";
+            //         }
+            //         message.DisplayContent += element.type;
+            //     }
+            // }
 
             return message;
         }
@@ -388,11 +389,13 @@ module.exports = class ALHoverProvider {
         let alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == textDocument.fileName.toLowerCase());
         let variable = alObject.variables.find(element => element.lineNo == message.LineNo);
 
-        var definitionLine = textDocument.lineAt(variable.lineNo).text;
-        var index = definitionLine.indexOf(":");
-        index = this.regexIndexOf(definitionLine, /[a-z]/gi, index) + 1;
+        if (variable != undefined) {
+            var definitionLine = textDocument.lineAt(variable.lineNo).text;
+            var index = definitionLine.indexOf(":");
+            index = this.regexIndexOf(definitionLine, /[a-z]/gi, index) + 1;
 
-        message = this.navigateFromVariable(definitionLine, new vscode.Position(variable.lineNo, index));
+            message = this.navigateFromVariable(definitionLine, new vscode.Position(variable.lineNo, index));
+        }
         // Parent Object
         alObject = this.reader.alObjects.find(element => element.path.toLowerCase() == message.Path.toLowerCase());
 

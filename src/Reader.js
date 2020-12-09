@@ -17,6 +17,7 @@ const ALEventPublisher = require('./ALObjects/ALEventPublisher');
 const ALTableField = require('./ALObjects/ALTableField');
 const ALPageField = require('./ALObjects/ALPageField');
 const ALFunction = require('./ALObjects/ALFunction');
+const ALVariable = require('./ALObjects/ALVariable');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -1073,6 +1074,9 @@ module.exports = class Reader {
                             }
                         for (let index = 0; index < alObject.functions.length; index++) {
                             alObject.functions[index] = new ALFunction(alObject.functions[index]);
+                        }
+                        for (let index = 0; index < alObject.variables.length; index++) {
+                            alObject.variables[index] = new ALVariable(alObject.variables[index]);
                         }
                         this.alObjects[index] = alObject;
                     }
