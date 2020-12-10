@@ -2,6 +2,11 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.6.2] - 10.12.2020
+### Fixed
+- Some Hover bugs
+- Some Definition bugs
+
 ## [1.6.1] - 19.11.2020
 ### Improved
 - Performance on unzipping App Files
@@ -151,6 +156,7 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.6.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.1...v1.5.2

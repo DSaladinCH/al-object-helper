@@ -1,9 +1,9 @@
 {
 	"name": "al-object-helper",
 	"displayName": "AL Object Helper",
-	"description": "VS Code Extension for the AL Language",
+	"description": "Helper Commands for the AL Language. Quick access to Objects in App Packages. Better Event Publisher List.",
 	"publisher": "DSaladin",
-	"version": "1.6.1",
+	"version": "1.6.2",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {
