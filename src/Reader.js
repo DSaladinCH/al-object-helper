@@ -203,7 +203,11 @@ module.exports = class Reader {
                 this.appPackages.push(new AppPackage((splittedName[0] + "_" + splittedName[1]).trim()));
         });
         appFiles = appFiles2;
-
+        if (reader.alRunTimeVersion == "3.0") {
+            const index = appFiles.indexOf(element => element.packageName == "Microsoft_Base Application");
+            if (index != -1)
+                appFiles.splice(index, 1);
+        }
         return new Promise((resolve) => {
             appFiles.forEach(element => {
                 this.readAppFile(element, reader, async function () {
@@ -343,25 +347,46 @@ module.exports = class Reader {
             await reader.createOnNotExist(path.join(baseAppFolderApp, "src"));
             var alreadyCreatedPaths = [];
             alreadyCreatedPaths.push(path.join(baseAppFolderApp, "src"));
+            fileNames.filter(element => element.endsWith("/")).forEach(async function(element) {
+                var dirname = path.join(baseAppFolderApp, element);
+                if (!alreadyCreatedPaths.includes(dirname)) {
+                    alreadyCreatedPaths.push(dirname);
+                    await reader.createOnNotExist(dirname);
+                }
+            });
             fileNames.forEach(function (filename, index) {
-                zip.file(filename).async('nodebuffer').then(async function (content) {
-                    var destPath = path.join(baseAppFolderApp, filename);
-                    var dirname = path.dirname(destPath);
-
-                    if (!alreadyCreatedPaths.includes(dirname)) {
-                        alreadyCreatedPaths.push(dirname);
-                        await reader.createOnNotExist(dirname);
-                    }
-
-                    fs.writeFile(destPath, content, async function (err) {
+                try {
+                    if (filename.endsWith("/")) {
                         files[index] = true;
-                        if (!files.includes(false)) {
-                            if (callback != undefined)
-                                callback();
-                            resolve();
-                        };
-                    });
-                });
+                        // return;
+                    }
+                    else {
+                        zip.file(filename).async('nodebuffer').then(async function (content) {
+                            var destPath = path.join(baseAppFolderApp, filename);
+                            var dirname = path.dirname(destPath);
+
+                            if (!alreadyCreatedPaths.includes(dirname)) {
+                                alreadyCreatedPaths.push(dirname);
+                                await reader.createOnNotExist(dirname);
+                            }
+
+                            fs.writeFile(destPath, content, async function (err) {
+                                if (err){
+                                    console.log("Error (writeFile): " + err.message);
+                                }
+                                files[index] = true;
+                                if (!files.includes(false)) {
+                                    if (callback != undefined)
+                                        callback();
+                                    resolve();
+                                };
+                            });
+                        });
+                    }
+                }
+                catch (error) {
+                    console.log("ERROR: " + error);
+                }
             });
         });
     }
@@ -710,23 +735,33 @@ module.exports = class Reader {
     }
 
     async readDir(startPath, filter, reader) {
-        return new Promise(resolve => {
-            fs.exists(startPath, function (exists) {
-                if (!exists) {
-                    reader.log("No dir " + startPath);
-                    reader.output("No dir " + startPath);
-                    resolve();
-                    return;
+        return new Promise(async resolve => {
+            // try {
+            //     await fs.existsSync(startPath);
+            // }
+            // catch (error) {
+            //     reader.log("No dir " + startPath);
+            //     reader.output("No dir " + startPath);
+            //     resolve();
+            //     return;
+            // }
+            // if (err) {
+            //     reader.log("No dir " + startPath);
+            //     reader.output("No dir " + startPath);
+            //     resolve();
+            //     return;
+            // }
+            // else {
+            var length = 0;
+            var alFiles = [];
+            fs.readdir(startPath, async function (error, files) {
+                if (error) {
+                    reader.output(error.message);
+                    reader.log(error.message);
                 }
-                else {
-                    var length = 0;
-                    var alFiles = [];
-                    fs.readdir(startPath, async function (error, files) {
-                        if (error) {
-                            reader.output(error.message);
-                            reader.log(error.message);
-                        }
-                        for (var i = 0; i < files.length; i++) {
+                if (files !== undefined) {
+                    for (var i = 0; i < files.length; i++) {
+                        try {
                             var filename = path.join(startPath, files[i]);
                             var stat = fs.lstatSync(filename);
                             if (stat.isDirectory()) {
@@ -738,12 +773,16 @@ module.exports = class Reader {
                                 alFiles.push(filename);
                                 length += 1;
                             };
-                        };
-
-                        resolve(alFiles);
-                    });
+                        }
+                        catch (error) { }
+                    };
+                    resolve(alFiles);
+                }
+                else {
+                    resolve(alFiles);
                 }
             });
+            // }
         });
     }
 
