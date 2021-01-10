@@ -18,6 +18,8 @@ const ALTableField = require('./ALObjects/ALTableField');
 const ALPageField = require('./ALObjects/ALPageField');
 const ALFunction = require('./ALObjects/ALFunction');
 const ALVariable = require('./ALObjects/ALVariable');
+const WorkspaceApp = require('./WorkspaceApp');
+const { EMLINK } = require('constants');
 
 module.exports = class Reader {
     constructor(extensionContext) {
@@ -27,17 +29,31 @@ module.exports = class Reader {
 
         this.alObjects = [];
         this.appPackages = [];
-        this.appPackages.push(new AppPackage('Custom'));
+        this.workspaceApps = [];
         this.readLocalFiles = false;
         this.outputChannel = vscode.window.createOutputChannel("ALObjectHelper");
         this.extensionContext = extensionContext;
-        this.rootPath = workspace.rootPath;
-        this.appJsonPath = path.join(this.rootPath, 'app.json');
-        this.alCachePath = this.rootPath.replace(/\\/g, '/') + '/.vscode/.alcache';
-        this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(this.rootPath)).replace(/\\/g, '/');
+
+        this.alCacheRelativePath = '/.vscode/.alcache';
+        this.isWorkspace = false;
+        var reader = this;
+        workspace.workspaceFolders.forEach(function (element) {
+            var appPath = path.join(element.uri.fsPath, 'app.json');
+            if (fs.existsSync(appPath)) {
+                var json = fs.readJSONSync(appPath);
+                reader.workspaceApps.push(new WorkspaceApp(json.name, json.publisher, json.runtime, element.uri.fsPath));
+            }
+        });
+        if (workspace.workspaceFile != undefined) {
+            this.isWorkspace = true;
+        }
+        if (!this.isWorkspace)
+            this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(this.workspaceApps[0].workspacePath)).replace(/\\/g, '/');
+        else
+            this.baseAppFolderPath = path.join(this.settings.get('alObjectHelper.savePath'), 'VSCode', 'ALObjectHelper', path.basename(path.dirname(workspace.workspaceFile.fsPath))).replace(/\\/g, '/');
+
         this.htmlTableBody = "";
         this.objectDesignerPanel = undefined;
-        this.alRunTimeVersion = "";
 
         this.bc14SymbolsZip = this.extensionContext.extensionPath + "\\Symbols\\Microsoft_Base Application_14.0.00000.0.zip";
     }
@@ -46,41 +62,28 @@ module.exports = class Reader {
         const reader = this;
         this.readLocalFiles = false;
         this.alObjects = [];
-        this.appPackages = [];
-        this.appPackages.push(new AppPackage('Custom'));
-
-        //Test
-        // const note7z = require('node-7z');
-        // const zipArchiv = new note7z();
-        // const zipProgress = zipArchiv.extractFull("C:\\temp\\Test\\Microsoft_System.zip", "C:\\temp\\Test\\System", {});
-        // zipProgress.finally(() => {
-        //     console.log("Finisheeeed!");
-        // });
-        // var AdmZip = require('adm-zip');
-        // var admZip2 = new AdmZip("C:\\temp\\Test\\Microsoft_System.zip");
-        // admZip2.extractAllTo("C:\\temp\\Test\\System", true)
-        //console.log(admZip2.getEntries().length + " Entries found");
+        this.workspaceApps.forEach(function (element) {
+            reader.appPackages.push(new AppPackage(element.name, element.publisher, true));
+        });
 
         if (!fs.existsSync(this.baseAppFolderPath))
             fs.mkdirSync(this.baseAppFolderPath, { recursive: true });
-
-        // Check if app.json exists and read it
-        if (!fs.existsSync(this.appJsonPath))
-            return;
-        this.alRunTimeVersion = fs.readJSONSync(this.appJsonPath).runtime;
 
         fs.readdir(this.baseAppFolderPath, async function (error, files) {
             if (error) {
                 reader.output(error.message);
                 reader.log(error.message);
             }
+            files = files.filter(element => !element.endsWith(".zip"));
             var appFiles = await reader.readDir(reader.baseAppFolderPath, '.al', reader);
 
             // Read all existing AL Files
             if (checkExists && files != undefined && appFiles.length > 0) {
                 files.forEach(element => {
-                    const appPackageName = path.basename(element);
-                    reader.appPackages.push(new AppPackage((appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1]).trim()));
+                    const splittedName = path.basename(element).split('_');
+                    const appName = splittedName[1];
+                    const publisher = splittedName[0];
+                    reader.appPackages.push(new AppPackage(appName, publisher));
                 });
 
                 // files.forEach(async element => {
@@ -98,7 +101,10 @@ module.exports = class Reader {
                             progress.report({ message: "Searching App File Objects" });
                             var promises = [];
                             for (let index = 0; index < files.length; index++) {
-                                await reader.detectAllAlFiles(path.basename(files[index]));
+                                var splittedName = path.basename(files[index]).split('_');
+                                var appName = splittedName[1];
+                                var publisher = splittedName[0];
+                                await reader.detectAllAlFiles(appName, publisher);
                                 //promises.push(await reader.detectAllAlFiles(path.basename(files[index])));
                             }
                             //await Promise.all(promises);
@@ -184,33 +190,58 @@ module.exports = class Reader {
     }
 
     async readFiles(progress) {
-        const alPackagesPath = this.rootPath + "\\.alpackages";
+        // const alPackagesPath = this.rootPath + "\\.alpackages";
         const appFilter = '.app';
         const reader = this;
+        var appFiles = [];
 
-        var appFiles = await reader.readDir(alPackagesPath, appFilter, this);
-        var appPackages = [];
+        for (let index = 0; index < this.workspaceApps.length; index++) {
+            const element = this.workspaceApps[index];
+            const newAppFiles = await reader.readDir(element.alPackagesPath, appFilter, reader);
+            newAppFiles.forEach(function (element) {
+                appFiles.push(element);
+            });
+        }
+        // this.workspaceApps.forEach(async function (element) {
+        //     const newAppFiles = await reader.readDir(element.alPackagesPath, appFilter, reader);
+        //     newAppFiles.forEach(function (element) {
+        //         appFiles.push(element);
+        //     });
+        //     // appFiles.apply(newAppFiles);
+        // });
+        // var appFiles = await reader.readDir(alPackagesPath, appFilter, this);
+        var appPackageNames = [];
 
         var appFiles2 = [];
         appFiles.forEach(element => {
             var splittedName = path.basename(element).split('_');
-            if (appPackages.indexOf((splittedName[0] + "_" + splittedName[1]).trim()) == -1) {
-                appPackages.push((splittedName[0] + "_" + splittedName[1]).trim());
+            var appName = splittedName[1];
+            var publisher = splittedName[0];
+            if (appPackageNames.indexOf((publisher + "_" + appName)) == -1) {
+                appPackageNames.push((publisher + "_" + appName).trim());
                 appFiles2.push(element);
             }
 
-            if (this.appPackages.find(element => element.packageName == (splittedName[0] + "_" + splittedName[1]).trim()) == undefined)
-                this.appPackages.push(new AppPackage((splittedName[0] + "_" + splittedName[1]).trim()));
+            if (this.appPackages.find(element => element.name == appName && element.publisher == publisher) == undefined)
+                this.appPackages.push(new AppPackage(appName, publisher));
         });
         appFiles = appFiles2;
-
+        var unzipBC14File = false;
+        if (reader.workspaceApps.filter(element => parseFloat(element.alRunTimeVersion) == 3.0).length > 0) {
+            if (reader.workspaceApps.filter(element => parseFloat(element.alRunTimeVersion) > 3.0).length == 0) {
+                unzipBC14File = true;
+                const index = appFiles.indexOf(element => path.basename(element).split('_')[0] == "Microsoft" && path.basename(element).split('_')[1] == "Base Application");
+                if (index != -1)
+                    appFiles.splice(index, 1);
+            }
+        }
         return new Promise((resolve) => {
             appFiles.forEach(element => {
                 this.readAppFile(element, reader, async function () {
                     if (reader.allPackagesFinished()) {
                         // BC 14
-                        if (reader.alRunTimeVersion == "3.0") {
-                            await reader.readZipFile(reader, ["Microsoft", "Base Application"], reader.bc14SymbolsZip, false);
+                        if (unzipBC14File) {
+                            await reader.readZipFile(reader, "Base Application", "Microsoft", reader.bc14SymbolsZip, false);
                         }
                         reader.log("Finished all!");
                         reader.detectAllExtensions();
@@ -235,12 +266,14 @@ module.exports = class Reader {
 
     async readAppFile(appPath, reader, callback) {
         var splittedName = path.basename(appPath).split('_');
-        const tempAppFileZip = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1] + '.zip');
-        const tempAppFileZip2 = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1] + '2.zip');
-        const baseAppFolderApp = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1]);
+        var appName = splittedName[1];
+        var publisher = splittedName[0];
+        const tempAppFileZip = path.join(reader.baseAppFolderPath, publisher + "_" + appName + '.zip');
+        const tempAppFileZip2 = path.join(reader.baseAppFolderPath, publisher + "_" + appName + '2.zip');
+        const baseAppFolderApp = path.join(reader.baseAppFolderPath, publisher + "_" + appName);
 
-        if (reader.appPackages.find(element => element.packageName == (splittedName[0] + "_" + splittedName[1]).trim()) == undefined) {
-            reader.appPackages.push(new AppPackage((splittedName[0] + "_" + splittedName[1]).trim()));
+        if (reader.appPackages.find(element => element.name == appName && element.publisher == publisher) == undefined) {
+            reader.appPackages.push(new AppPackage(publisher, appName));
         }
 
         fs.copyFile(appPath, tempAppFileZip, async (error) => {
@@ -257,7 +290,7 @@ module.exports = class Reader {
                         reader.output(error.message);
                         reader.log(error.message);
                     }
-                    await reader.readZipFile(reader, splittedName, tempAppFileZip, true, async function () {
+                    await reader.readZipFile(reader, appName, publisher, tempAppFileZip, true, async function () {
                         callback();
                     });
                 });
@@ -268,68 +301,73 @@ module.exports = class Reader {
         });
     }
 
-    async readZipFile(reader, splittedName, zipPath, deleteZip, callback) {
+    async readZipFile(reader, appName, publisher, zipPath, deleteZip, callback) {
         return await new Promise(async (resolve) => {
-            const baseAppFolderApp = path.join(reader.baseAppFolderPath, splittedName[0] + "_" + splittedName[1]);
+            const baseAppFolderApp = path.join(reader.baseAppFolderPath, publisher + "_" + appName);
             reader.log("Unzipping File");
-            reader.output("Unzipping File of " + splittedName[0] + "_" + splittedName[1]);
+            reader.output("Unzipping File of " + appName + " by " + publisher);
             await this.createOnNotExist(baseAppFolderApp);
             await this.createOnNotExist(path.join(baseAppFolderApp, "src"));
 
             var files = [];
             fs.readFile(zipPath, function (err, data) {
-                if (!err) {
-                    var zip = new JSZip();
-                    zip.loadAsync(data).then(async function (contents) {
-                        zip.remove('SymbolReference.json');
-                        zip.remove('[Content_Types].xml');
-                        zip.remove('MediaIdListing.xml');
-                        zip.remove('navigation.xml');
-                        zip.remove('NavxManifest.xml');
-                        zip.remove('Translations');
-                        zip.remove('layout');
-                        zip.remove('ProfileSymbolReferences');
-                        zip.remove('addin');
-                        zip.remove('logo');
+                if (err)
+                    return;
+                    
+                var zip = new JSZip();
+                zip.loadAsync(data).then(async function (contents) {
+                    zip.remove('SymbolReference.json');
+                    zip.remove('[Content_Types].xml');
+                    zip.remove('MediaIdListing.xml');
+                    zip.remove('navigation.xml');
+                    zip.remove('NavxManifest.xml');
+                    zip.remove('Translations');
+                    zip.remove('layout');
+                    zip.remove('ProfileSymbolReferences');
+                    zip.remove('addin');
+                    zip.remove('logo');
 
-                        if (Object.keys(contents.files).length == undefined || Object.keys(contents.files).length == 0) {
-                            if (deleteZip)
-                                fs.unlinkSync(zipPath);
-                            reader.log("Extracted App File");
-                            reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
-
-                            const packageName = splittedName[0] + "_" + splittedName[1];
-                            if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                                reader.appPackages.push(new AppPackage(packageName.trim()));
-                            await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
-                                if (callback != undefined)
-                                    callback();
-                                resolve();
-                            });
-                        }
-
-                        var start = Date.now();
-
-                        Object.keys(contents.files).forEach(function (fileName, index) {
-                            files[index] = false;
-                        });
-
-                        await reader.saveFiles(zip, Object.keys(contents.files), baseAppFolderApp, reader);
+                    if (Object.keys(contents.files).length == undefined || Object.keys(contents.files).length == 0) {
                         if (deleteZip)
                             fs.unlinkSync(zipPath);
-                        reader.log("Extracted App File in " + (Date.now() - start) + "ms");
-                        reader.output("Extracted App File of " + splittedName[0] + "_" + splittedName[1]);
 
-                        const packageName = splittedName[0] + "_" + splittedName[1];
-                        if (reader.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-                            reader.appPackages.push(new AppPackage(packageName.trim()));
-                        await reader.detectAllAlFiles(splittedName[0] + "_" + splittedName[1], function () {
+                        reader.log("Extracted App File");
+                        reader.output("Extracted App File of " + appName + " by " + publisher);
+
+                        if (reader.appPackages.find(element => element.name == appName && element.publisher == publisher) == undefined)
+                            reader.appPackages.push(new AppPackage(appName, publisher));
+                        await reader.detectAllAlFiles(appName, publisher, function () {
                             if (callback != undefined)
                                 callback();
                             resolve();
                         });
+                    }
+
+                    var start = Date.now();
+
+                    Object.keys(contents.files).forEach(function (fileName, index) {
+                        files[index] = false;
                     });
-                }
+
+                    await reader.saveFiles(zip, Object.keys(contents.files), baseAppFolderApp, reader);
+                    if (deleteZip) {
+                        try {
+                            await fs.unlink(zipPath);
+                        }
+                        catch (error) { }
+                    }
+
+                    reader.log("Extracted App File in " + (Date.now() - start) + "ms");
+                    reader.output("Extracted App File of " + appName + " by " + publisher);
+
+                    if (reader.appPackages.find(element => element.name == appName && element.publisher == publisher) == undefined)
+                        reader.appPackages.push(new AppPackage(appName, publisher));
+                    await reader.detectAllAlFiles(appName, publisher, function () {
+                        if (callback != undefined)
+                            callback();
+                        resolve();
+                    });
+                });
             });
         });
     }
@@ -343,8 +381,16 @@ module.exports = class Reader {
             await reader.createOnNotExist(path.join(baseAppFolderApp, "src"));
             var alreadyCreatedPaths = [];
             alreadyCreatedPaths.push(path.join(baseAppFolderApp, "src"));
-            fileNames.forEach(function (filename, index) {
-                zip.file(filename).async('nodebuffer').then(async function (content) {
+
+            for (let index = 0; index < fileNames.length; index++) {
+                const filename = fileNames[index];
+                if (filename.endsWith("/")) {
+                    files[index] = true;
+                    // return;
+                    continue;
+                }
+
+                await zip.file(filename).async('nodebuffer').then(async function (content) {
                     var destPath = path.join(baseAppFolderApp, filename);
                     var dirname = path.dirname(destPath);
 
@@ -354,6 +400,9 @@ module.exports = class Reader {
                     }
 
                     fs.writeFile(destPath, content, async function (err) {
+                        if (err) {
+                            console.log("Error (writeFile): " + err.message);
+                        }
                         files[index] = true;
                         if (!files.includes(false)) {
                             if (callback != undefined)
@@ -362,7 +411,39 @@ module.exports = class Reader {
                         };
                     });
                 });
-            });
+            }
+            if (callback != undefined)
+                callback();
+            resolve();
+            // fileNames.forEach(async function (filename, index) {
+            //     if (filename.endsWith("/")) {
+            //         files[index] = true;
+            //         // return;
+            //     }
+            //     else {
+            //         await zip.file(filename).async('nodebuffer').then(async function (content) {
+            //             var destPath = path.join(baseAppFolderApp, filename);
+            //             var dirname = path.dirname(destPath);
+
+            //             if (!alreadyCreatedPaths.includes(dirname)) {
+            //                 alreadyCreatedPaths.push(dirname);
+            //                 await reader.createOnNotExist(dirname);
+            //             }
+
+            //             fs.writeFile(destPath, content, async function (err) {
+            //                 if (err) {
+            //                     console.log("Error (writeFile): " + err.message);
+            //                 }
+            //                 files[index] = true;
+            //                 if (!files.includes(false)) {
+            //                     if (callback != undefined)
+            //                         callback();
+            //                     resolve();
+            //                 };
+            //             });
+            //         });
+            //     }
+            // });
         });
     }
 
@@ -445,110 +526,111 @@ module.exports = class Reader {
 
     async detectCustomAlFiles(callback = undefined, deleteAll = false, showSuccessfulMessage = true) {
         const alFilter = '.al';
-        const packageName = 'Custom';
+        var reader = this;
 
-        var files = await this.readDir(this.rootPath, alFilter, this);
-        this.log("Found " + files.length + " Custom AL Files");
-        this.output("Found " + files.length + " Custom AL Files");
+        this.workspaceApps.forEach(async function (element) {
+            var files = await reader.readDir(element.workspacePath, alFilter, reader);
+            reader.log("Found " + files.length + " " + element.name + " AL Files");
+            reader.output("Found " + files.length + " " + element.name + " AL Files");
 
-        if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-            this.appPackages.push(new AppPackage(packageName.trim()));
-        else {
-            const index = this.appPackages.findIndex(element => element.packageName == packageName.trim());
-            this.appPackages[index].processed = false;
-        }
+            if (reader.appPackages.find(element2 => element2.name == element.name && element2.publisher == element.publisher) == undefined)
+                reader.appPackages.push(new AppPackage(element.name, element.publisher));
+            else {
+                const index = reader.appPackages.findIndex(element2 => element2.name == element.name && element2.publisher == element.publisher);
+                reader.appPackages[index].processed = false;
+            }
 
-        if (files.length == 0) {
-            var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
-            this.appPackages[foundIndex].processed = true;
-            if (callback != undefined)
-                callback();
-            resolve();
-            return;
-        }
+            if (files.length == 0) {
+                var foundIndex = reader.appPackages.findIndex(a => a.name == element.name && a.publisher == element.publisher);
+                reader.appPackages[foundIndex].processed = true;
+                if (callback != undefined)
+                    callback();
+                resolve();
+                return;
+            }
 
-        if (deleteAll)
-            this.alObjects = this.alObjects.filter(element => element.appPackageName != 'Custom');
+            if (deleteAll)
+                reader.alObjects = reader.alObjects.filter(element => element.name != element.name && element.publisher != element.publisher);
 
-        return new Promise((resolve) => {
-            var arrLen = files.length;
-            var i = 0;
-            files.forEach(async element => {
-                var line = await firstLine(element);
-                var alObject = this.getALObject(line, element);
-                if (alObject == undefined) {
-                    const fileStream = fs.createReadStream(element);
-                    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+            return new Promise((resolve) => {
+                var arrLen = files.length;
+                var i = 0;
+                files.forEach(async element2 => {
+                    var line = await firstLine(element2);
+                    var alObject = reader.getALObject(line, element2);
+                    if (alObject == undefined) {
+                        const fileStream = fs.createReadStream(element2);
+                        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
-                    for await (const line of rl) {
-                        alObject = this.getALObject(line, element);
-                        if (alObject != undefined) {
-                            break;
+                        for await (const line of rl) {
+                            alObject = reader.getALObject(line, element2);
+                            if (alObject != undefined) {
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (alObject != undefined) {
-                    alObject.appPackageName = 'Custom';
-                    this.addAlObject(alObject);
-                    //this.alObjects.push(alObject);
-                }
-
-                i++;
-                if (i >= arrLen) {
-                    this.showInformationMessage("Found " + arrLen + " Custom AL Files");
-
-                    this.detectAllExtensions();
-                    var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
-                    this.appPackages[foundIndex].processed = true;
-                    if (this.allPackagesFinished()) {
-                        if (showSuccessfulMessage)
-                            this.showInformationMessage("All AL files were found successfully!");
-                        this.log("Read all!");
-                        this.output("Read all!");
-                        console.clear();
-
-                        this.alObjects.sort(function (a, b) {
-                            var nameA = a.name.toUpperCase();
-                            var nameB = b.name.toUpperCase();
-                            if (nameA < nameB) {
-                                return -1;
-                            }
-                            if (nameA > nameB) {
-                                return 1;
-                            }
-
-                            return 0;
-                        });
+                    if (alObject != undefined) {
+                        alObject.appPackageName = element.publisher + '_' + element.name;
+                        reader.addAlObject(alObject);
+                        //reader.alObjects.push(alObject);
                     }
 
-                    if (callback != undefined)
-                        callback();
-                    resolve();
-                }
+                    i++;
+                    if (i >= arrLen) {
+                        reader.showInformationMessage("Found " + arrLen + " " + element.name + " AL Files");
+
+                        reader.detectAllExtensions();
+                        var foundIndex = reader.appPackages.findIndex(a => a.name == element.name && a.publisher == element.publisher);
+                        reader.appPackages[foundIndex].processed = true;
+                        if (reader.allPackagesFinished()) {
+                            if (showSuccessfulMessage)
+                                reader.showInformationMessage("All AL files were found successfully!");
+                            reader.log("Read all!");
+                            reader.output("Read all!");
+                            console.clear();
+
+                            reader.alObjects.sort(function (a, b) {
+                                var nameA = a.name.toUpperCase();
+                                var nameB = b.name.toUpperCase();
+                                if (nameA < nameB) {
+                                    return -1;
+                                }
+                                if (nameA > nameB) {
+                                    return 1;
+                                }
+
+                                return 0;
+                            });
+                        }
+
+                        if (callback != undefined)
+                            callback();
+                        resolve();
+                    }
+                });
             });
         });
     }
 
-    async detectAllAlFiles(appPackageName, callback = undefined) {
+    async detectAllAlFiles(appName, publisher, callback = undefined) {
         const alFilter = '.al';
-        const packageName = appPackageName.split('_')[0] + "_" + appPackageName.split('_')[1];
 
-        var files2 = await this.readDir(this.baseAppFolderPath + "/" + appPackageName, alFilter, this);
-        this.log("Found " + files2.length + " AL Files of " + appPackageName.split("_")[1]);
-        this.output("Found " + files2.length + " AL Files of " + appPackageName.split("_")[1]);
+        var files2 = await this.readDir(this.baseAppFolderPath + "/" + publisher + '_' + appName, alFilter, this);
+        this.log("Found " + files2.length + " AL Files of " + appName + " by " + publisher);
+        this.output("Found " + files2.length + " AL Files of " + appName + " by " + publisher);
         var arrLen2 = files2.length;
         var i2 = 0;
 
-        if (this.appPackages.find(element => element.packageName == packageName.trim()) == undefined)
-            this.appPackages.push(new AppPackage(packageName.trim()));
+        if (this.appPackages.find(element => element.name == appName && element.publisher == publisher) == undefined)
+            this.appPackages.push(new AppPackage(appName, publisher));
         else {
-            var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+            var foundIndex = this.appPackages.findIndex(a => a.name == appName && a.publisher == publisher);
             this.appPackages[foundIndex].processed = false;
         }
 
         if (files2.length == 0) {
-            var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+            var foundIndex = this.appPackages.findIndex(a => a.name == appName && a.publisher == publisher);
             this.appPackages[foundIndex].processed = true;
             if (callback != undefined)
                 callback();
@@ -563,11 +645,11 @@ module.exports = class Reader {
         }
         ranges.push({ start: Math.floor(files2.length / numberPerRange) * numberPerRange, end: files2.length, finished: false });
 
-        const tasks = ranges.map((v) => this.detectAlFilesRange(appPackageName, files2, v.start, v.end));
+        const tasks = ranges.map((v) => this.detectAlFilesRange(appName, publisher, files2, v.start, v.end));
         await Promise.all(tasks);
-        var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
+        var foundIndex = this.appPackages.findIndex(a => a.name == appName && a.publisher == publisher);
         this.appPackages[foundIndex].processed = true;
-        this.log("Finished searching AL Files in Package " + packageName + " in " + (Date.now() - start) + "ms");
+        this.log("Finished searching AL Files in Extension " + appName + " in " + (Date.now() - start) + "ms");
         if (this.allPackagesFinished()) {
             this.showInformationMessage("All AL files were found successfully!");
             this.log("Read all!");
@@ -589,61 +671,11 @@ module.exports = class Reader {
 
         if (callback != undefined)
             callback();
-
-        // for (let index = 0; index < files2.length; index++) {
-        //     const element = files2[index];
-        //     var line = await firstLine(element);
-        //     var alObject = this.getALObject(line, element);
-        //     if (alObject == undefined) {
-        //         const fileStream = fs.createReadStream(element);
-        //         const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-
-        //         for await (const line of rl) {
-        //             alObject = this.getALObject(line, element);
-
-        //             if (alObject != undefined) {
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //     if (alObject != undefined) {
-        //         alObject.appPackageName = appPackageName;
-        //         this.addAlObject(alObject);
-        //         //this.alObjects.push(alObject);
-        //     }
-        //     i2++;
-        //     if (i2 >= arrLen2) {
-        //         var foundIndex = this.appPackages.findIndex(a => a.packageName == packageName);
-        //         this.appPackages[foundIndex].processed = true;
-        //         console.log("Finished " + packageName + " in " + (Date.now() - start) + "ms");
-        //         if (this.allPackagesFinished()) {
-        //             this.showInformationMessage("All AL files were found successfully!");
-        //             this.log("Read all!");
-        //             this.output("Read all!");
-
-        //             this.alObjects.sort(function (a, b) {
-        //                 var nameA = a.name.toUpperCase();
-        //                 var nameB = b.name.toUpperCase();
-        //                 if (nameA < nameB) {
-        //                     return -1;
-        //                 }
-        //                 if (nameA > nameB) {
-        //                     return 1;
-        //                 }
-
-        //                 return 0;
-        //             });
-        //         }
-
-        //         if (callback != undefined)
-        //             callback();
-        //     }
-        // };
     }
 
-    async detectAlFilesRange(appPackageName, files, startIndex, endIndex) {
+    async detectAlFilesRange(appName, publisher, files, startIndex, endIndex) {
         return new Promise(async (resolve) => {
-            const worker = new Worker(path.resolve(__dirname, 'ALDetectFilesWorker.js'), { workerData: { files: files, appPackageName: appPackageName, start: startIndex, end: endIndex } });
+            const worker = new Worker(path.resolve(__dirname, 'ALDetectFilesWorker.js'), { workerData: { files: files, appPackageName: publisher + '_' + appName, start: startIndex, end: endIndex } });
             worker.on('message', (value) => {
                 if (typeof value === 'string' || value instanceof String) {
                     console.log(value);
@@ -665,7 +697,7 @@ module.exports = class Reader {
     async detectAllRDLCFiles() {
         const alFilter = '.al';
 
-        var files = await this.readDir(this.rootPath, alFilter, this);
+        var files = await this.readDir(this.workspaceApps[0].workspacePath, alFilter, this);
         this.log("Found " + files.length + " Custom AL Files");
         this.output("Found " + files.length + " Custom AL Files");
 
@@ -710,40 +742,44 @@ module.exports = class Reader {
     }
 
     async readDir(startPath, filter, reader) {
-        return new Promise(resolve => {
-            fs.exists(startPath, function (exists) {
-                if (!exists) {
-                    reader.log("No dir " + startPath);
-                    reader.output("No dir " + startPath);
-                    resolve();
-                    return;
-                }
-                else {
-                    var length = 0;
-                    var alFiles = [];
-                    fs.readdir(startPath, async function (error, files) {
-                        if (error) {
-                            reader.output(error.message);
-                            reader.log(error.message);
-                        }
+        return new Promise(async resolve => {
+            var length = 0;
+            var alFiles = [];
+            try {
+                fs.readdir(startPath, async function (error, files) {
+                    if (error) {
+                        reader.output(error.message);
+                        reader.log(error.message);
+                    }
+                    if (files !== undefined) {
                         for (var i = 0; i < files.length; i++) {
-                            var filename = path.join(startPath, files[i]);
-                            var stat = fs.lstatSync(filename);
-                            if (stat.isDirectory()) {
-                                var newALFiles = await reader.readDir(filename, filter, reader); //recurse
-                                alFiles = alFiles.concat(newALFiles);
+                            try {
+                                var filename = path.join(startPath, files[i]);
+                                var stat = fs.lstatSync(filename);
+                                if (stat.isDirectory()) {
+                                    var newALFiles = await reader.readDir(filename, filter, reader); //recurse
+                                    alFiles = alFiles.concat(newALFiles);
+                                }
+                                else if (filename.endsWith(filter)) {
+                                    //console.log('-- found: ',filename);
+                                    alFiles.push(filename);
+                                    length += 1;
+                                };
                             }
-                            else if (filename.endsWith(filter)) {
-                                //console.log('-- found: ',filename);
-                                alFiles.push(filename);
-                                length += 1;
-                            };
+                            catch (error) {
+                                console.log("Readdir Error: " + error.message);
+                            }
                         };
-
                         resolve(alFiles);
-                    });
-                }
-            });
+                    }
+                    else {
+                        resolve(alFiles);
+                    }
+                });
+            }
+            catch (error) {
+                console.log("Readdir Error: " + error.message);
+            }
         });
     }
 

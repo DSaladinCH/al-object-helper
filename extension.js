@@ -111,7 +111,7 @@ async function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.packageSearch', async function () {
 		var temp = [];
 		reader.appPackages.forEach(element => {
-			temp.push(new AppPackageItem(element.packageName, element.displayPackageName));
+			temp.push(new AppPackageItem(element.name, element.publisher, element.displayPackageName));
 		});
 		const selectedItem = await vscode.window.showQuickPick(temp, { placeHolder: "Select App Package" });
 
@@ -120,7 +120,7 @@ async function activate(context) {
 		const appPackage = AppPackageItem.convertToAppPackageItem(selectedItem);
 
 		var alObjects = [];
-		reader.alObjects.filter(element => element.appPackageName == appPackage.packageName).forEach(element => {
+		reader.alObjects.filter(element => element.appPackageName == appPackage.publisher + '_' + appPackage.appName).forEach(element => {
 			var objectItem = new ALObjectItem(element, false);
 			alObjects.push(objectItem);
 		});

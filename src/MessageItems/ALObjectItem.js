@@ -16,27 +16,29 @@ module.exports = class ALObjectItem {
         this.appPackageName = alObject.appPackageName;
 
         var packageName = "";
-        alObject.appPackageName.split('_').forEach(element => {
-            packageName += element + " ";
-        });
+        var splittedName = alObject.appPackageName.split('_');
+        if (splittedName.length > 1)
+            packageName += splittedName[1] + " by ";
+        if (splittedName.length > 0)
+            packageName += splittedName[0];
+
+        // alObject.appPackageName.split('_').forEach(element => {
+        //     packageName += element + " ";
+        // });
 
         packageName = packageName.trim();
 
-        if (alObject.appPackageName != "Custom" && showPackageName)
+        if (showPackageName)
             this.detail = packageName;
 
         if (alObject.extension) {
             if (alObject.extendsID == -1)
-                this.detail = "Extends " + alObject.extendsName;
+                this.description += " - Extends " + alObject.extendsName;
             else
-                this.detail = "Extends " + alObject.displayExtendsType + " " + alObject.extendsID + " - " + alObject.extendsName;
-            if (showPackageName)
-                this.detail += " (" + packageName + ")"
+                this.description += " - Extends " + alObject.displayExtendsType + " " + alObject.extendsID + " - " + alObject.extendsName;
         }
         if (alObject.shortType == "r" && alObject.secondPath != "") {
-            this.detail = "Includes RDLC Layout";
-            if (showPackageName)
-                this.detail += " (" + packageName + ")"
+            this.detail += "(Includes RDLC Layout)";
         }
     }
 
