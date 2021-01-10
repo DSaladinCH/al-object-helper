@@ -1,7 +1,8 @@
 module.exports = class AppPackageItem {
-    constructor(name, displayName) {
+    constructor(name, publisher, displayName) {
         this.label = displayName;
-        this.packageName = name;
+        this.appName = name;
+        this.publisher = publisher;
     }
 
     static convertToAppPackageItem(obj) {
