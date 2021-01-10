@@ -1,6 +1,6 @@
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 const ALObject = require('./ALObjects/ALObject');
-const fs = require('fs');
+const fs = require('graceful-fs');
 const readline = require('readline');
 const ALEventPublisher = require('./ALObjects/ALEventPublisher');
 const ALFunction = require('./ALObjects/ALFunction');
@@ -199,6 +199,8 @@ async function readDefinitions(alObjects, index) {
             lineCounter += 1;
         }
 
+        rl.close();
+        fileStream.close();
         resolve();
     });
 }

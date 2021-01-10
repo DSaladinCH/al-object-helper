@@ -1,20 +1,9 @@
 module.exports = class AppPackage {
-    constructor(packageName) {
-        if (packageName.toLowerCase() == 'custom') {
-            this.packageName = 'Custom';
-            this.displayPackageName = "Custom";
-            this.processed = false;
-            return;
-        }
-
-        this.packageName = packageName;
-        this.displayPackageName = "";
+    constructor(name, publisher, local = false) {
+        this.name = name;
+        this.publisher = publisher;
+        this.local = local;
         this.processed = false;
-
-        this.packageName.split('_').forEach(element => {
-            this.displayPackageName += element + " ";
-        });
-
-        this.displayPackageName = this.displayPackageName.trim();
+        this.displayPackageName = this.name + " by " + this.publisher;
     }
 }
