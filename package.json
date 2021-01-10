@@ -3,7 +3,7 @@
 	"displayName": "AL Object Helper",
 	"description": "Helper Commands for the AL Language. Quick access to Objects in App Packages. Better Event Publisher List.",
 	"publisher": "DSaladin",
-	"version": "1.6.2",
+	"version": "1.6.3",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"license": "MIT",
 	"engines": {

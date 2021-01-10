@@ -81,6 +81,10 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 1.6.3
+- Added workspace support
+- Fixed some bugs with BC 14
+
 ### 1.6.2
 - Fixed some Hover bugs
 - Fixed some Definition bugs

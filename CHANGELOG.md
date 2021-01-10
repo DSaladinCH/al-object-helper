@@ -2,6 +2,13 @@
 
 All notable changes to the "al-object-helper" extension will be documented in this file.
 
+## [1.6.3] - 10.01.2020
+### Added
+Workspace support
+
+### Fixed
+Bugs with BC 14
+
 ## [1.6.2] - 10.12.2020
 ### Fixed
 - Some Hover bugs
@@ -156,6 +163,7 @@ All notable changes to the "al-object-helper" extension will be documented in th
 ## [1.0.0]
 - Initial release
 
+[1.6.3]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.2...v1.6.0
