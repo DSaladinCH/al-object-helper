@@ -81,6 +81,9 @@ Please report these in the Git Repository.
 
 **Newest Releases**
 
+### 2.0.0
+- Converted to TypeScript
+
 ### 1.6.3
 - Added workspace support
 - Fixed some bugs with BC 14
