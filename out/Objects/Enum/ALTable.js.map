@@ -1,1 +1,0 @@
-{"version":3,"file":"ALTable.js","sourceRoot":"","sources":["../../../src/Objects/Enum/ALTable.ts"],"names":[],"mappings":";;;AACA,6CAAwD;AAIxD,MAAa,OAAQ,SAAQ,mBAAQ;IAGjC,YAAY,UAAkB,EAAE,UAAkB,EAAE,UAAsB,EAAE,QAAgB,EAAE,UAAkB;QAC5G,KAAK,CAAC,UAAU,EAAE,UAAU,EAAE,UAAU,EAAE,QAAQ,EAAE,UAAU,CAAC,CAAC;QAHpE,WAAM,GAAmB,EAAE,CAAC;IAI5B,CAAC;CACJ;AAND,0BAMC"}
