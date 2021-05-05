@@ -1,4 +1,4 @@
-import { ALApp, ALFunction, ALObject, ALPageField, ALTable, ALVariable, FunctionType, ObjectType, Reader } from "../../internal";
+import { ALApp, ALFunction, ALObject, ALPageExtension, ALPageField, ALTable, ALVariable, FunctionType, HelperFunctions, ObjectType, Reader, reader } from "../../internal";
 
 export class ALPage extends ALObject {
     fields: ALPageField[] = [];
@@ -17,6 +17,39 @@ export class ALPage extends ALObject {
             return "";
         }
         return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
+    }
+
+    getAllFields(): ALPageField[] {
+        let alFields: ALPageField[] = [];
+        alFields = alFields.concat(this.fields);
+
+        let extensions = HelperFunctions.getAllExtensions(reader.alApps, this);
+        extensions.forEach(extension => {
+            alFields = alFields.concat((extension as ALPageExtension).fields);
+        });
+
+        return alFields;
+    }
+
+    /**
+     * Search a page field by its name in the page and all page extensions
+     * @param fieldName The field name which should be searched
+     */
+    searchField(fieldName: string): { alObject: ALObject, field: ALPageField } | undefined {
+        let field = this.fields.find(alField => alField.fieldName === fieldName);
+        if (field) {
+            return { alObject: this, field: field };
+        }
+
+        let extensions = HelperFunctions.getAllExtensions(reader.alApps, this);
+        for (let i = 0; i < extensions.length; i++) {
+            field = (extensions[i] as ALPageExtension).fields.find(alField => alField.fieldName === fieldName);
+            if (field) {
+                return { alObject: extensions[i], field: field };
+            }
+        }
+
+        return undefined;
     }
 
     addLocalEvents() {

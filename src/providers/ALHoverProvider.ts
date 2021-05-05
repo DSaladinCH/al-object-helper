@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode";
-import { ALObject, HelperFunctions, Reader } from "../internal";
+import { ALObject, ALVariable, HelperFunctions, Reader } from "../internal";
 
 export class ALHoverProvider implements HoverProvider {
     reader: Reader;
@@ -26,16 +26,21 @@ export class ALHoverProvider implements HoverProvider {
 
             // Get definition name
             const line = document.lineAt(position.line).text;
-            const definitionName = HelperFunctions.detectDefinitionName(line, position.character);
-            vscode.window.showInformationMessage("Definition text: " + definitionName);
+            const definition = HelperFunctions.detectDefinitionName(line, position.character);
+            if (definition.parentName !== "") {
+                vscode.window.showInformationMessage("Definition text: " + definition.parentName + "." + definition.definitionName);
+            }
+            else {
+                vscode.window.showInformationMessage("Definition text: " + definition.definitionName);
+            }
 
-            if (definitionName === "") {
+            if (definition.definitionName === "") {
                 resolve(undefined);
                 return undefined;
             }
 
             // Check for any definition and display it
-            let hover = this.getNavigation(alObject, document, position, definitionName);
+            let hover = await this.getNavigation(alObject, document, position, definition);
             if (hover) {
                 resolve(hover);
                 return hover;
@@ -45,25 +50,59 @@ export class ALHoverProvider implements HoverProvider {
         });
     }
 
-    getNavigation(alObject: ALObject, document: TextDocument, position: Position, definitionName: string): vscode.Hover | undefined {
-        let hover = this.navigateToGlobalVariable(alObject, document, position, definitionName);
-        if (hover) {
-            return hover;
-        }
+    async getNavigation(alObject: ALObject, document: TextDocument, position: Position, definition: { definitionName: string, parentName: string }): Promise<vscode.Hover | undefined> {
+        if (definition.parentName === "") {
+            let hover = this.navigateToGlobalVariable(alObject, document, position, definition.definitionName);
+            if (hover) {
+                return hover;
+            }
 
-        hover = this.navigateToFields(alObject, document, position, definitionName);
-        if (hover) {
-            return hover;
-        }
+            hover = this.navigateToFields(alObject, document, position, definition.definitionName);
+            if (hover) {
+                return hover;
+            }
 
-        hover = this.navigateToNextFunction(alObject, document, position, definitionName);
-        if (hover) {
-            return hover;
-        }
+            hover = this.navigateToNextFunction(alObject, document, position, definition.definitionName);
+            if (hover) {
+                return hover;
+            }
 
-        hover = this.navigateToLocalFunction(alObject, document, position, definitionName);
-        if (hover) {
-            return hover;
+            hover = this.navigateToLocalFunction(alObject, document, position, definition.definitionName);
+            if (hover) {
+                return hover;
+            }
+        }
+        // search in parent object
+        else {
+            // search parent variable
+            let parentALObject: ALObject | undefined;
+            if (definition.parentName.toLowerCase() === "rec" || definition.parentName.toLowerCase() === "xrec") {
+                parentALObject = HelperFunctions.getRecOfALObject(alObject);
+            }
+            else {
+                let alVariable = HelperFunctions.navigateToGlobalVariable(alObject, document, position, definition.parentName);
+
+                if (!alVariable) {
+                    let next = HelperFunctions.navigateToNextLocalFunction(alObject, document, position, definition.parentName);
+                    if (next instanceof ALVariable) {
+                        alVariable = next as ALVariable;
+                    }
+                }
+
+                if (!alVariable) {
+                    return undefined;
+                }
+
+                parentALObject = HelperFunctions.getALObjectOfALVariable(alVariable);
+            }
+
+            if (!parentALObject) {
+                return undefined;
+            }
+
+            const parentDocument = await HelperFunctions.getTextDocument(parentALObject);
+            let result = await this.getNavigation(parentALObject, parentDocument, new Position(0, 0), { definitionName: definition.definitionName, parentName: "" });
+            return result;
         }
 
         return undefined;
@@ -84,7 +123,7 @@ export class ALHoverProvider implements HoverProvider {
             return undefined;
         }
 
-        return new vscode.Hover({ language: 'al', value: field.getDisplayText() });
+        return new vscode.Hover({ language: 'al', value: field.field.getDisplayText() });
     }
 
     navigateToNextFunction(alObject: ALObject, document: TextDocument, position: Position, definitionName: string): vscode.Hover | undefined {

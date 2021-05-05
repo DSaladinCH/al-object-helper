@@ -1,6 +1,4 @@
-import lineReader = require("line-reader");
-import { extensionPrefix } from "../../extension";
-import { ALApp, ALFunction, ALObject, ALTableField, ALVariable, FunctionType, ObjectType, Reader } from "../../internal";
+import { ALApp, ALFunction, ALObject, ALTableExtension, ALTableField, ALVariable, FunctionType, HelperFunctions, ObjectType, Reader, reader } from "../../internal";
 
 export class ALTable extends ALObject {
     fields: ALTableField[] = [];
@@ -18,6 +16,43 @@ export class ALTable extends ALObject {
             return "";
         }
         return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
+    }
+
+    /**
+     * Get all table field including table extension fields
+     * @returns All table field in this table and all table extensions
+     */
+    getAllFields(): ALTableField[] {
+        let alFields: ALTableField[] = [];
+        alFields = alFields.concat(this.fields);
+
+        let extensions = HelperFunctions.getAllExtensions(reader.alApps, this);
+        extensions.forEach(extension => {
+            alFields = alFields.concat((extension as ALTableExtension).fields);
+        });
+
+        return alFields;
+    }
+
+    /**
+     * Search a table field by its name in the table and all table extensions
+     * @param fieldName The field name which should be searched
+     */
+    searchField(fieldName: string): { alObject: ALObject, field: ALTableField } | undefined {
+        let field = this.fields.find(alField => alField.fieldName === fieldName);
+        if (field) {
+            return { alObject: this, field: field };
+        }
+
+        let extensions = HelperFunctions.getAllExtensions(reader.alApps, this);
+        for (let i = 0; i < extensions.length; i++) {
+            field = (extensions[i] as ALTableExtension).fields.find(alField => alField.fieldName === fieldName);
+            if (field) {
+                return { alObject: extensions[i], field: field };
+            }
+        }
+
+        return undefined;
     }
 
     addLocalEvents() {

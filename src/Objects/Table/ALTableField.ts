@@ -19,8 +19,29 @@ export class ALTableField {
         this.lineNo = lineNo;
     }
 
-    getDisplayText(): string {
-        return `(field) ${this.fieldID} - "${this.fieldName}": ${this.dataType}`;
+    getDisplayText(format?: boolean): string {
+        const idMaxLength = 10;
+        const spaceAfterID = 0;
+        const nameMaxLength = 30;
+        const spaceAfterName = 0;
+
+        if (!format) {
+            return `(field) ${this.fieldID} - "${this.fieldName}": ${this.dataType}`;
+        }
+
+        let fieldText = "";
+        fieldText += this.fieldID;
+        for (let i = 0; i < idMaxLength - this.fieldID.length + spaceAfterID; i++) {
+            fieldText += " ";
+        }
+
+        fieldText += ` - "${this.fieldName}"`;
+        for (let i = 0; i < nameMaxLength - this.fieldName.length + spaceAfterName; i++) {
+            fieldText += " ";
+        }
+
+        fieldText += `: ${this.dataType}`;
+        return fieldText;
     }
 
     static addToObject(alObject: ALObject, tableField: ALTableField) {

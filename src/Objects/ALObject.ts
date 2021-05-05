@@ -14,7 +14,7 @@ export abstract class ALObject {
         this.objectType = objectType;
         this.objectID = objectID;
         this.objectName = objectName;
-        if (this.objectName.startsWith("\"")){
+        if (this.objectName.startsWith("\"")) {
             this.objectName = this.objectName.substring(1);
             this.objectName = this.objectName.substring(0, this.objectName.length - 1);
         }
@@ -63,5 +63,31 @@ export abstract class ALObject {
             default:
                 return false;
         }
+    }
+
+    isEqual(alObject: ALObject): Boolean {
+        if (this.alApp.appPublisher !== alObject.alApp.appPublisher) {
+            return false;
+        }
+
+        if (this.alApp.appName !== alObject.alApp.appName) {
+            return false;
+        }
+
+        if (this.objectType !== alObject.objectType) {
+            return false;
+        }
+
+        if (this.objectName !== alObject.objectName) {
+            return false;
+        }
+
+        if (this.objectID !== "" && alObject.objectID !== "") {
+            if (this.objectID !== alObject.objectID) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

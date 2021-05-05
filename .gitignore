@@ -12,6 +12,7 @@
 ### TypeScript ###
 node_modules/
 .node_modules/
+out/*
 built/*
 tests/cases/rwc/*
 tests/cases/test262/*

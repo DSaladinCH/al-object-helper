@@ -1,4 +1,4 @@
-import { ALApp, ALExtension, ALTable, ALTableField, ObjectType, Reader } from "../../internal";
+import { ALApp, ALExtension, ALObject, ALTable, ALTableField, ObjectType, Reader } from "../../internal";
 
 export class ALTableExtension extends ALExtension {
     fields: ALTableField[] = [];
@@ -13,7 +13,7 @@ export class ALTableExtension extends ALExtension {
 
     getUIDescription(): string {
         let description = `${ObjectType[this.objectType]} ${this.objectID}`;
-        if (this.parent === undefined){
+        if (this.parent === undefined) {
             return " - Extends unknown";
         }
 
@@ -23,18 +23,35 @@ export class ALTableExtension extends ALExtension {
         else {
             description += ` - Extends ${this.parent.objectType} ${this.parent.objectID} - ${this.parent.objectName}`;
         }
-        
+
         return description;
     }
 
     getUIDetail(): string {
-        if (!this.alApp){
+        if (!this.alApp) {
             return "";
         }
         return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
     }
 
-    addLocalEvents(){
-        
+    /**
+     * Search a table field by its name in the table and all table extensions
+     * @param fieldName The field name which should be searched
+     */
+    searchField(fieldName: string): { alObject: ALObject, field: ALTableField } | undefined {
+        let field = this.fields.find(alField => alField.fieldName === fieldName);
+        if (field) {
+            return { alObject: this, field: field };
+        }
+
+        if (!this.parent) {
+            return undefined;
+        }
+
+        return (this.parent as ALTable).searchField(fieldName);
+    }
+
+    addLocalEvents() {
+
     }
 }

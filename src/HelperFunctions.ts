@@ -9,6 +9,7 @@ export class HelperFunctions {
     static getObjectTypeFromString(type: string): ObjectType {
         switch (type.toLowerCase()) {
             case "table":
+            case "record":
                 return ObjectType.Table;
             case "tableextension":
                 return ObjectType.TableExtension;
@@ -242,24 +243,27 @@ export class HelperFunctions {
     }
 
     static async openFile(alObject: ALObject): Promise<Boolean> {
-        let document: vscode.TextDocument;
+        let document = await this.getTextDocument(alObject);
+        await vscode.window.showTextDocument(document, vscode.ViewColumn.Active);
+
+        return true;
+    }
+
+    static async getTextDocument(alObject: ALObject): Promise<vscode.TextDocument> {
         if (this.isLocalObject(alObject)) {
-            document = await vscode.workspace.openTextDocument(alObject.objectPath);
+            return await vscode.workspace.openTextDocument(alObject.objectPath);
         }
         else {
             const objectName = alObject.objectName.replace(/\W/g, "");
-            const uri = vscode.Uri.parse(`alObjectHelper:\\\\AOH\\${alObject.alApp.appName}\\${objectName}.${ObjectType[alObject.objectType]}.dal#${JSON.stringify(
+            const uri = vscode.Uri.parse(`alObjectHelper:\\\\${alObject.alApp.appName}\\${objectName}.${ObjectType[alObject.objectType]}.al#${JSON.stringify(
                 {
                     AppName: alObject.alApp.appName,
                     Type: alObject.objectType,
                     ID: alObject.objectID,
                     Name: alObject.objectName
                 })}`);
-            document = await vscode.workspace.openTextDocument(uri);
+            return await vscode.workspace.openTextDocument(uri);
         }
-
-        await vscode.window.showTextDocument(document, vscode.ViewColumn.Active);
-        return true;
     }
 
     static async openUriFile(uri: vscode.Uri, lineNo?: number) {
@@ -345,24 +349,102 @@ export class HelperFunctions {
     }
 
     static searchALObjectByID(alApps: ALApp[], objectType: ObjectType, objectID: string): ALObject | undefined {
+        let alObject: ALObject | undefined;
         alApps.forEach(alApp => {
-            const alObject = alApp.alObjects.find(alObject => alObject.objectType === objectType && alObject.objectID === objectID);
+            alObject = alApp.alObjects.find(alObject => alObject.objectType === objectType && alObject.objectID === objectID);
             if (alObject) {
                 return alObject;
             }
         });
 
-        return undefined;
+        return alObject;
     }
 
     static searchALObjectByName(alApps: ALApp[], objectType: ObjectType, objectName: string): ALObject | undefined {
-        alApps.forEach(alApp => {
-            const alObject = alApp.alObjects.find(alObject => alObject.objectType === objectType && alObject.objectName === objectName);
+        let alObject: ALObject | undefined;
+        for (let i = 0; i < alApps.length; i++) {
+            const alApp = alApps[i];
+            alObject = alApp.alObjects.find(alObject => alObject.objectType === objectType && alObject.objectName === objectName);
             if (alObject) {
-                return alObject;
+                break;
             }
-        });
+        }
 
+        return alObject;
+    }
+
+    static getAllExtensions(alApps: ALApp[], parentALObject: ALObject): ALExtension[] {
+        let alExtensions: ALExtension[] = [];
+        for (let i = 0; i < alApps.length; i++) {
+            const alApp = alApps[i];
+            let alObjects = alApp.alObjects.filter(alObject => {
+                // if object is an extension
+                if (alObject.isExtension()) {
+                    if ((alObject as ALExtension).parent) {
+                        return (alObject as ALExtension).parent?.objectType === parentALObject.objectType &&
+                            (alObject as ALExtension).parent?.objectName === parentALObject.objectName;
+                    }
+                }
+
+                return false;
+            });
+
+            if (alObjects && alObjects.length > 0) {
+                alExtensions = alExtensions.concat((alObjects as ALExtension[]));
+            }
+        }
+
+        return alExtensions;
+    }
+
+    static getALObjectOfALVariable(alVariable: ALVariable): ALObject | undefined {
+        if (alVariable.dataType === "" || alVariable.subType === "") {
+            return undefined;
+        }
+
+        const objectType = HelperFunctions.getObjectTypeFromString(alVariable.dataType);
+        if (objectType === ObjectType.NotAvailable) {
+            return undefined;
+        }
+
+        let subType = alVariable.subType;
+        if (subType.startsWith("\"")) {
+            subType = subType.substring(1);
+            subType = subType.substring(0, subType.length - 1);
+        }
+
+        // if subtype is a ID
+        if (/^[0-9]+$/.test(subType)) {
+            return HelperFunctions.searchALObjectByID(reader.alApps, objectType, subType);
+        }
+
+        return HelperFunctions.searchALObjectByName(reader.alApps, objectType, subType);
+    }
+
+    static getRecOfALObject(alObject: ALObject): ALObject | undefined {
+        let tempAlObject: ALObject | undefined;
+        switch (alObject.objectType) {
+            case ObjectType.Table:
+                // if in table, just return table
+                tempAlObject = alObject;
+            case ObjectType.Page:
+                // if in page, return sourcetable
+                tempAlObject = (alObject as ALPage).sourceTable;
+            case ObjectType.TableExtension:
+                // if in tableextension, return parent table
+                var parent = (alObject as ALTableExtension).parent;
+                if (!parent) { return undefined; }
+                tempAlObject = this.getRecOfALObject(parent);
+            case ObjectType.PageExtension:
+                // if in tableextension, return parent sourcetable
+                var parent = (alObject as ALTableExtension).parent;
+                if (!parent) { return undefined; }
+                tempAlObject = (parent as ALPage).sourceTable;
+        }
+
+        if (tempAlObject) {
+            return HelperFunctions.searchALObjectByName(reader.alApps, tempAlObject.objectType, alObject.objectName);
+        }
         return undefined;
     }
 
@@ -378,11 +460,14 @@ export class HelperFunctions {
         return alApp.alObjects.find(alObject => alObject.objectType === message.Type && alObject.objectID === message.ID);
     }
 
-    static detectDefinitionName(line: string, characterPos: number): string {
+    static detectDefinitionName(line: string, characterPos: number): { definitionName: string, parentName: string } {
         let startPos = 0;
+        let parentStartPos = 0;
         let endPos = 0;
+        let parentEndPos = 0;
         let opened = false;
         let inPos = false;
+        let hasParent = false;
 
         for (let i = 0; i < line.length; i++) {
             // if variable got opened by " and the character position is inside the ", then the variable got multiple words
@@ -401,12 +486,22 @@ export class HelperFunctions {
 
             if (opened && i === characterPos - 1) {
                 inPos = true;
+                if (line[startPos - 2] === ".") {
+                    if (line[startPos - 3] !== ")") {
+                        hasParent = true;
+                    }
+                }
             }
         }
 
         if (!inPos) {
             for (let i = characterPos - 1; i >= 0; i--) {
                 if ([" ", ",", ".", "("].indexOf(line[i]) !== -1) {
+                    if (line[i] === ".") {
+                        if (line[i - 1] !== ")") {
+                            hasParent = true;
+                        }
+                    }
                     startPos = i + 1;
                     break;
                 }
@@ -420,7 +515,38 @@ export class HelperFunctions {
             }
         }
 
+        if (hasParent) {
+            let diff = 2;
+            if (inPos) {
+                diff = 3;
+            }
+
+            if (line[startPos - diff] === "\"") {
+                parentEndPos = startPos - diff;
+                for (let i = startPos - diff - 1; i >= 0; i--) {
+                    if (line[i] === "\"") {
+                        parentStartPos = i + 1;
+                        break;
+                    }
+                }
+            }
+            else {
+                parentEndPos = startPos - diff + 1;
+                for (let i = startPos - diff; i >= 0; i--) {
+                    if ([" ", ",", ".", "("].indexOf(line[i]) !== -1) {
+                        parentStartPos = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
+
         let definitionName = line.substring(startPos, endPos);
+        let parentName = "";
+        if (parentStartPos !== 0) {
+            parentName = line.substring(parentStartPos, parentEndPos);
+        }
+
         if (definitionName.startsWith("\'") || definitionName.endsWith("\'")) {
             definitionName = "";
         }
@@ -428,7 +554,21 @@ export class HelperFunctions {
             definitionName = "";
         }
 
-        return definitionName;
+        definitionName = HelperFunctions.removeQuotes(definitionName);
+        parentName = HelperFunctions.removeQuotes(parentName);
+
+        return { definitionName: definitionName, parentName: parentName };
+    }
+
+    static removeQuotes(input: string): string {
+        if (input.startsWith("\"")) {
+            input = input.substring(1);
+        }
+        if (input.endsWith("\"")) {
+            input = input.substring(0, input.length - 1);
+        }
+
+        return input;
     }
 
     /**
@@ -452,7 +592,7 @@ export class HelperFunctions {
      * @param definitionName The definition name to search for
      * @returns The found al table field, al page field or undefined (not found)
      */
-    static navigateToFields(alObject: ALObject, document: TextDocument, position: Position, definitionName: string): ALTableField | ALPageField | undefined {
+    static navigateToFields(alObject: ALObject, document: TextDocument, position: Position, definitionName: string): { alObject: ALObject, field: ALTableField | ALPageField } | undefined {
         // Only tables and pages got fields at the moment
         if ([ObjectType.Table, ObjectType.TableExtension, ObjectType.Page, ObjectType.PageExtension].indexOf(alObject.objectType) === -1) {
             return undefined;
@@ -460,13 +600,13 @@ export class HelperFunctions {
 
         switch (alObject.objectType) {
             case ObjectType.Table:
-                return (alObject as ALTable).fields.find(alField => alField.fieldName === definitionName);
+                return (alObject as ALTable).searchField(definitionName);
             case ObjectType.TableExtension:
-                return (alObject as ALTableExtension).fields.find(alField => alField.fieldName === definitionName);
+                return (alObject as ALTableExtension).searchField(definitionName);
             case ObjectType.Page:
-                return (alObject as ALPage).fields.find(alField => alField.fieldName === definitionName);
+                return (alObject as ALPage).searchField(definitionName);
             case ObjectType.PageExtension:
-                return (alObject as ALPageExtension).fields.find(alField => alField.fieldName === definitionName);
+                return (alObject as ALPageExtension).searchField(definitionName);
         }
 
         return undefined;

@@ -1,4 +1,4 @@
-import { ALApp, ALExtension, ALPage, ALPageField, ObjectType, Reader } from "../../internal";
+import { ALApp, ALExtension, ALObject, ALPage, ALPageField, ObjectType, Reader } from "../../internal";
 
 export class ALPageExtension extends ALExtension {
     fields: ALPageField[] = [];
@@ -13,7 +13,7 @@ export class ALPageExtension extends ALExtension {
 
     getUIDescription(): string {
         let description = `${ObjectType[this.objectType]} ${this.objectID}`;
-        if (this.parent === undefined){
+        if (this.parent === undefined) {
             return " - Extends unknown";
         }
 
@@ -23,18 +23,35 @@ export class ALPageExtension extends ALExtension {
         else {
             description += ` - Extends ${this.parent.objectType} ${this.parent.objectID} - ${this.parent.objectName}`;
         }
-        
+
         return description;
     }
 
     getUIDetail(): string {
-        if (!this.alApp){
+        if (!this.alApp) {
             return "";
         }
         return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
     }
 
-    addLocalEvents(){
-        
+    /**
+     * Search a page field by its name in the page and all page extensions
+     * @param fieldName The field name which should be searched
+     */
+    searchField(fieldName: string): { alObject: ALObject, field: ALPageField } | undefined {
+        let field = this.fields.find(alField => alField.fieldName === fieldName);
+        if (field) {
+            return { alObject: this, field: field };
+        }
+
+        if (!this.parent) {
+            return undefined;
+        }
+
+        return (this.parent as ALPage).searchField(fieldName);
+    }
+
+    addLocalEvents() {
+
     }
 }

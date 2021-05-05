@@ -1,3 +1,6 @@
+import { HelperFunctions } from "./HelperFunctions";
+import { ALTable } from "./internal";
+
 export class ALVariable {
     variableName: string;
     dataType: string;
@@ -17,7 +20,7 @@ export class ALVariable {
 
     recreateOriginalCodeText(): string {
         let variableText = "";
-        if (this.isVar){
+        if (this.isVar) {
             variableText += "var ";
         }
 
@@ -31,8 +34,20 @@ export class ALVariable {
             }
         }
 
-        if (this.isTemporary){
+        if (this.isTemporary) {
             variableText += " temporary";
+        }
+
+        if (this.dataType.toLowerCase() === "record") {
+            // include all fields of the table
+            const alObject = HelperFunctions.getALObjectOfALVariable(this);
+            if (alObject) {
+                let alFields = (alObject as ALTable).getAllFields();
+                alFields.forEach(alField => {
+                    variableText += "\r\n";
+                    variableText += alField.getDisplayText(true);
+                });
+            }
         }
 
         return variableText;

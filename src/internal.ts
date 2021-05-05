@@ -1,4 +1,3 @@
-export * from "./ALProject";
 export * from "./ALApp";
 export * from "./AppType";
 export * from "./HelperFunctions";
