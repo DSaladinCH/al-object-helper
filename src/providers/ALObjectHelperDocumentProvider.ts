@@ -1,5 +1,4 @@
-import { CancellationToken, Event, ProviderResult, TextDocumentContentProvider, Uri } from "vscode";
-import fs = require("fs-extra");
+import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
 import { HelperFunctions, reader } from "../internal";
 

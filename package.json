@@ -26,31 +26,36 @@
 	],
 	"activationEvents": [
 		"workspaceContains:.alpackages",
-		"workspaceContains:**/*.app",
-		"workspaceContains:**/app.json",
-		"onLanguage:al",
-		"onCommand:al-object-helper.startExtension"
+		"onLanguage:al"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "al-object-helper.startExtension",
-				"title": "AL Helper: Start Extension"
+				"command": "al-object-helper.openALObject",
+				"title": "AL Helper: Open AL Object"
 			},
 			{
-				"command": "al-object-helper.openALFile",
-				"title": "AL Helper: Open AL File"
+				"command": "al-object-helper.openALObjectOfApp",
+				"title": "AL Helper: Open AL Object of App"
 			},
 			{
 				"command": "al-object-helper.copyEvent",
 				"title": "AL Helper: Copy Event"
+			},
+			{
+				"command": "al-object-helper.jumpToEventSubscriber",
+				"title": "AL Helper: Jump to local Event Subscriber"
 			}
 		],
 		"keybindings": [
 			{
-				"command": "al-object-helper.openALFile",
+				"command": "al-object-helper.openALObject",
 				"key": "Ctrl+Alt+O"
+			},
+			{
+				"command": "al-object-helper.copyEvent",
+				"key": "Shift+Alt+E"
 			}
 		],
 		"configuration": {

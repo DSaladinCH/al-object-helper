@@ -1,4 +1,4 @@
-import { ALApp, ALCodeunit, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALPage, ALPageExtension, ALQuery, ALReport, ALReportExtension, ALTable, ALTableExtension, ALVariable, ALXmlport, ObjectType, Reader } from "../internal";
+import { ALApp, ALCodeunit, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALPage, ALPageExtension, ALQuery, ALReport, ALReportExtension, ALTable, ALTableExtension, ALVariable, ALXmlport, ObjectType, reader, shortcutRegex } from "../internal";
 
 export abstract class ALObject {
     objectType: ObjectType;
@@ -19,35 +19,6 @@ export abstract class ALObject {
             this.objectName = this.objectName.substring(0, this.objectName.length - 1);
         }
         this.alApp = alApp;
-    }
-
-    static getObjectFromType(objectType: ObjectType, objectPath: string, objectID: string, objectName: string, alApp: ALApp): ALObject | ALExtension | undefined {
-        switch (objectType) {
-            case ObjectType.Table:
-                return new ALTable(objectPath, objectID, objectName, alApp);
-            case ObjectType.TableExtension:
-                return new ALTableExtension(objectPath, objectID, objectName, alApp);
-            case ObjectType.Page:
-                return new ALPage(objectPath, objectID, objectName, alApp);
-            case ObjectType.PageExtension:
-                return new ALPageExtension(objectPath, objectID, objectName, alApp);
-            case ObjectType.Codeunit:
-                return new ALCodeunit(objectPath, objectID, objectName, alApp);
-            case ObjectType.Xmlport:
-                return new ALXmlport(objectPath, objectID, objectName, alApp);
-            case ObjectType.Report:
-                return new ALReport(objectPath, objectID, objectName, alApp);
-            case ObjectType.ReportExtension:
-                return new ALReportExtension(objectPath, objectID, objectName, alApp);
-            case ObjectType.Query:
-                return new ALQuery(objectPath, objectID, objectName, alApp);
-            case ObjectType.Enum:
-                return new ALEnum(objectPath, objectID, objectName, alApp);
-            case ObjectType.EnumExtension:
-                return new ALEnumExtension(objectPath, objectID, objectName, alApp);
-            default:
-                return undefined;
-        }
     }
 
     abstract getUIDescription(): string;
@@ -89,5 +60,98 @@ export abstract class ALObject {
         }
 
         return true;
+    }
+
+    static createByObjectType(objectType: ObjectType, objectPath: string, objectID: string, objectName: string, alApp: ALApp): ALObject | ALExtension | undefined {
+        switch (objectType) {
+            case ObjectType.Table:
+                return new ALTable(objectPath, objectID, objectName, alApp);
+            case ObjectType.TableExtension:
+                return new ALTableExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.Page:
+                return new ALPage(objectPath, objectID, objectName, alApp);
+            case ObjectType.PageExtension:
+                return new ALPageExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.Codeunit:
+                return new ALCodeunit(objectPath, objectID, objectName, alApp);
+            case ObjectType.Xmlport:
+                return new ALXmlport(objectPath, objectID, objectName, alApp);
+            case ObjectType.Report:
+                return new ALReport(objectPath, objectID, objectName, alApp);
+            case ObjectType.ReportExtension:
+                return new ALReportExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.Query:
+                return new ALQuery(objectPath, objectID, objectName, alApp);
+            case ObjectType.Enum:
+                return new ALEnum(objectPath, objectID, objectName, alApp);
+            case ObjectType.EnumExtension:
+                return new ALEnumExtension(objectPath, objectID, objectName, alApp);
+            default:
+                return undefined;
+        }
+    }
+
+    static getByShortcut(shortcutText: string): ALObject[] | undefined {
+        let matches: RegExpMatchArray | null = shortcutText.toLowerCase().match(shortcutRegex.source);
+        if (!matches || matches.length < 3) {
+            return undefined;
+        }
+        let objectType: ObjectType | undefined = ALObject.getObjectTypeByShortcut(matches[1]);
+        let searchExtension: boolean = (matches[1].length === 2 && matches[1].toLowerCase().endsWith("e"));
+        let objectID: string = matches[2];
+        if (objectType === undefined) {
+            return undefined;
+        }
+        let alObjects: ALObject[] = [];
+        if (!searchExtension) {
+            reader.alApps.forEach(alApp => {
+                alObjects = alObjects.concat(alApp.alObjects.filter(a => a.objectType === objectType && a.objectID === objectID));
+            });
+        }
+        else {
+            reader.alApps.forEach(alApp => {
+                alObjects = alObjects.concat(alApp.alObjects.filter(a => a.objectType === objectType));
+            });
+            alObjects = (alObjects as ALExtension[]).filter(a => a.parent?.objectID === objectID);
+        }
+
+        if (!alObjects || alObjects.length === 0) {
+            return undefined;
+        }
+
+        return alObjects;
+    }
+
+    static getObjectTypeByShortcut(shortcut: string): ObjectType | undefined {
+        switch (shortcut.toLowerCase()) {
+            case 't':
+                return ObjectType.Table;
+            case 'te':
+            case 'ted':
+                return ObjectType.TableExtension;
+            case 'p':
+                return ObjectType.Page;
+            case 'pe':
+            case 'ped':
+                return ObjectType.PageExtension;
+            case 'e':
+                return ObjectType.Enum;
+            case 'ee':
+            case 'eed':
+                return ObjectType.EnumExtension;
+            case 'r':
+                return ObjectType.Report;
+            case 're':
+            case 'red':
+                return ObjectType.ReportExtension;
+            case 'c':
+                return ObjectType.Codeunit;
+            case 'x':
+                return ObjectType.Xmlport;
+            case 'q':
+                return ObjectType.Query;
+            default:
+                return undefined;
+        }
     }
 }

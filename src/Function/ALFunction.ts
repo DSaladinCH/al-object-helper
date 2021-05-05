@@ -1,25 +1,38 @@
-import { ALExtension, ALObject, ALPageExtension, ALReportExtension, ALTableExtension, ALVariable, FunctionType, ObjectType } from "../internal";
+import { ALExtension, ALFunctionArgument, ALObject, ALVariable, FunctionType, ObjectType } from "../internal";
 
+/**
+ * A al function with parameters and variables
+ */
 export class ALFunction {
+    /** The typ of a function */
     functionType: FunctionType;
+    /** Defines if a function is local */
     isLocal: boolean;
+    /** The name of a function */
     functionName: string;
+    /** The line no of a function inside of an al object */
     lineNo: number;
+    /** Parameters of a function */
     parameters: ALVariable[] = [];
+    /** Variables of a function */
     variables: ALVariable[] = [];
+    /** The return value of a function */
     returnValue: ALVariable | undefined = undefined;
-    elementName: string = "";
+    functionArgument: ALFunctionArgument | undefined;
 
-    constructor(functionType: FunctionType, name: string, settings: { lineNo: number, parameters?: ALVariable[] | undefined, returnValue: ALVariable | undefined, isLocal: boolean, elementName?: string }) {
+    constructor(functionType: FunctionType, name: string, settings: { lineNo: number, parameters?: ALVariable[] | undefined, returnValue: ALVariable | undefined, isLocal: boolean }) {
         this.functionType = functionType;
         this.isLocal = settings.isLocal;
         this.functionName = name;
         this.lineNo = settings.lineNo;
         if (settings.parameters) { this.parameters = settings.parameters; }
-        if (settings.elementName) { this.elementName = settings.elementName; }
         this.returnValue = settings.returnValue;
     }
 
+    /**
+     * Get the original function text from the al code
+     * @returns Original function text
+     */
     recreateOriginalCodeText(): string {
         let functionText = "";
         if (this.isLocal) {
@@ -71,12 +84,17 @@ export class ALFunction {
         return functionText;
     }
 
+    /**
+     * Get the event subscriber function text for a event publisher
+     * @param alObject The al object correspondig to this event
+     * @returns The event subscriber text
+     */
     getEventSubscriberText(alObject: ALObject): string {
-        // if (this.functionType === FunctionType.InternalEvent ||
-        //     this.functionType === FunctionType.BusinessEvent ||
-        //     this.functionType === FunctionType.IntegrationEvent) {
-        //     return "";
-        // }
+        if (this.functionType === FunctionType.Standard ||
+            this.functionType === FunctionType.Trigger ||
+            this.functionType === FunctionType.EventSubscriber) {
+            return "";
+        }
 
         //#region Event subscriber header
         let objectName = alObject.objectName;
@@ -99,7 +117,7 @@ export class ALFunction {
             objectTypeStr = "Database";
         }
 
-        let functionHeader = `[EventSubscriber(ObjectType::${ObjectType[objectType]}, ${objectTypeStr}::"${objectName}", '${this.functionName}', '${this.elementName}', false, false)]`;
+        let functionHeader = `[EventSubscriber(ObjectType::${ObjectType[objectType]}, ${objectTypeStr}::"${objectName}", '${this.functionName}', '${this.functionArgument?.eventElementName}', false, false)]`;
         //#endregion
 
         //#region Function declaration
@@ -129,15 +147,15 @@ export class ALFunction {
                     parameters += " temporary";
                 }
 
-                parameters += ";";
+                parameters += "; ";
             });
 
             // remove last ;
-            parameters = parameters.substring(0, parameters.length - 1);
+            parameters = parameters.substring(0, parameters.length - 2);
         }
 
         functionText += `procedure ${objectName.replace(/\W/g, "")}_${this.functionName}`;
-        if (this.elementName !== "") { functionText += `_${this.elementName.replace(/\W/g, "")}`; }
+        if (this.functionArgument?.eventElementName !== "") { functionText += `_${this.functionArgument?.eventElementName.replace(/\W/g, "")}`; }
         functionText += `(${parameters})`;
 
         if (this.returnValue) {
@@ -154,6 +172,12 @@ export class ALFunction {
         return eventText;
     }
 
+    /**
+     * Get all parameters as al variables from a string of parameters
+     * @param parametersText Parameter text from the al code
+     * @param lineNo The line no of the parameters
+     * @returns All al variables found in the parameter text
+     */
     static convertParametersText(parametersText: string, lineNo: number): ALVariable[] {
         let variables: ALVariable[] = [];
         const parameterPattern = /(var )?(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+|)( temporary)?(?:\;|\)|$)/gi;
@@ -172,5 +196,27 @@ export class ALFunction {
         } while (match);
 
         return variables;
+    }
+
+    /**
+     * Get the function type from a string
+     * @param functionType The function type as string
+     * @returns The function type
+     */
+    static getFunctionTypeByString(functionType: string): FunctionType | undefined {
+        switch (functionType.toLowerCase()) {
+            case "procedure":
+                return FunctionType.Standard;
+            case "trigger":
+                return FunctionType.Trigger;
+            case "businessevent":
+                return FunctionType.BusinessEvent;
+            case "integrationevent":
+                return FunctionType.IntegrationEvent;
+            case "eventsubscriber":
+                return FunctionType.EventSubscriber;
+            default:
+                return undefined;
+        }
     }
 }

@@ -1,4 +1,4 @@
-import { ALApp, ALExtension, ALReport, ObjectType, Reader } from "../../internal";
+import { ALApp, ALExtension, ALReport, ObjectType } from "../../internal";
 
 export class ALReportExtension extends ALExtension {
     constructor(objectPath: string, objectID: string, objectName: string, alApp: ALApp) {

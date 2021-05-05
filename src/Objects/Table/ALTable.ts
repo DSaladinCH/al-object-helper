@@ -1,4 +1,4 @@
-import { ALApp, ALFunction, ALObject, ALTableExtension, ALTableField, ALVariable, FunctionType, HelperFunctions, ObjectType, Reader, reader } from "../../internal";
+import { ALApp, ALFunction, ALObject, ALTableExtension, ALTableField, ALVariable, FunctionType, HelperFunctions, ObjectType, reader } from "../../internal";
 
 export class ALTable extends ALObject {
     fields: ALTableField[] = [];

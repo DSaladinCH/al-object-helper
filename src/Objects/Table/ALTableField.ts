@@ -1,4 +1,4 @@
-import { ALFunction, ALObject, ALTable, ALTableExtension, ALVariable, FunctionType, ObjectType } from "../../internal";
+import { ALFunction, ALFunctionArgument, ALObject, ALTable, ALTableExtension, ALVariable, FunctionType, ObjectType } from "../../internal";
 
 export class ALTableField {
     fieldID: string;
@@ -58,6 +58,7 @@ export class ALTableField {
     static addValidateEvent(alObject: ALObject, tableField: ALTableField) {
         // https://docs.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/devenv-event-types
 
+        var alFunction: ALFunction;
         var alVariables: ALVariable[] = [];
         var returnValue: ALVariable | undefined;
         let tableObjectName = alObject.objectName;
@@ -73,7 +74,9 @@ export class ALTableField {
         alVariables = [];
         alVariables.push(new ALVariable("Rec", "Record", tableObjectName, 0, { isTemporary: false, isVar: true }));
         alVariables.push(new ALVariable("xRec", "Record", tableObjectName, 0, { isTemporary: false, isVar: true }));
-        alObject.functions.push(new ALFunction(FunctionType.InternalEvent, "OnBeforeValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false, elementName: tableField.fieldName }));
+        alFunction = new ALFunction(FunctionType.InternalEvent, "OnBeforeValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false });
+        alFunction.functionArgument = ALFunctionArgument.createEventPublisher(tableField.fieldName);
+        alObject.functions.push(alFunction);
 
         //***********************//
         //*** OnAfterValidate ***//
@@ -81,6 +84,8 @@ export class ALTableField {
         alVariables = [];
         alVariables.push(new ALVariable("Rec", "Record", tableObjectName, 0, { isTemporary: false, isVar: true }));
         alVariables.push(new ALVariable("xRec", "Record", tableObjectName, 0, { isTemporary: false, isVar: true }));
-        alObject.functions.push(new ALFunction(FunctionType.InternalEvent, "OnAfterValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false, elementName: tableField.fieldName }));
+        alFunction = new ALFunction(FunctionType.InternalEvent, "OnAfterValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false });
+        alFunction.functionArgument = ALFunctionArgument.createEventPublisher(tableField.fieldName);
+        alObject.functions.push(alFunction);
     }
 }

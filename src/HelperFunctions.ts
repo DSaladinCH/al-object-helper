@@ -156,95 +156,17 @@ export class HelperFunctions {
         });
     }
 
-    static getTypeByShortcut(shortcut: string): ObjectType | undefined {
-        switch (shortcut.toLowerCase()) {
-            case 't':
-                return ObjectType.Table;
-            case 'te':
-            case 'ted':
-                return ObjectType.TableExtension;
-            case 'p':
-                return ObjectType.Page;
-            case 'pe':
-            case 'ped':
-                return ObjectType.PageExtension;
-            case 'e':
-                return ObjectType.Enum;
-            case 'ee':
-            case 'eed':
-                return ObjectType.EnumExtension;
-            case 'r':
-                return ObjectType.Report;
-            case 're':
-            case 'red':
-                return ObjectType.ReportExtension;
-            case 'c':
-                return ObjectType.Codeunit;
-            case 'x':
-                return ObjectType.Xmlport;
-            case 'q':
-                return ObjectType.Query;
-            default:
-                return undefined;
-        }
-    }
-
-    static getFunctionTypeByString(functionType: string): FunctionType | undefined {
-        switch (functionType.toLowerCase()) {
-            case "procedure":
-                return FunctionType.Standard;
-            case "trigger":
-                return FunctionType.Trigger;
-            case "businessevent":
-                return FunctionType.BusinessEvent;
-            case "integrationevent":
-                return FunctionType.IntegrationEvent;
-            default:
-                return undefined;
-        }
-    }
-
-    static async openFileWithShortcut(shortcutText: string): Promise<Boolean> {
-        let matches: RegExpMatchArray | null = shortcutText.toLowerCase().match(shortcutRegex.source);
-        if (!matches || matches.length < 3) {
-            return false;
-        }
-        let objectType: ObjectType | undefined = HelperFunctions.getTypeByShortcut(matches[1]);
-        let searchExtension: boolean = (matches[1].length === 2 && matches[1].toLowerCase().endsWith("e"));
-        let objectID: string = matches[2];
-        if (objectType === undefined) {
-            return false;
-        }
-        let alObjects: ALObject[] = [];
-        if (!searchExtension) {
-            reader.alApps.forEach(alApp => {
-                alObjects = alObjects.concat(alApp.alObjects.filter(a => a.objectType === objectType && a.objectID === objectID));
-            });
-            //alObjects = reader.alObjects.filter(a => a.objectType === objectType && a.objectID === objectID);
-        }
-        else {
-            reader.alApps.forEach(alApp => {
-                alObjects = alObjects.concat(alApp.alObjects.filter(a => a.objectType === objectType));
-            });
-            //alObjects = reader.alObjects.filter(a => a.objectType === objectType);
-            alObjects = (alObjects as ALExtension[]).filter(a => a.parent?.objectID === objectID);
-        }
-
-        if (!alObjects || alObjects.length === 0) {
-            return false;
-        }
-
-        if (alObjects.length === 1) {
-            return await this.openFile(alObjects[0]);
-        }
-
-        // TODO: show dialog to select an object
-        return true;
-    }
-
-    static async openFile(alObject: ALObject): Promise<Boolean> {
+    static async openFile(alObject: ALObject, lineNo?: number): Promise<Boolean> {
         let document = await this.getTextDocument(alObject);
-        await vscode.window.showTextDocument(document, vscode.ViewColumn.Active);
+        let editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.Active);
+
+        if (!lineNo) {
+            return true;
+        }
+
+        let pos = new vscode.Position(lineNo, document.lineAt(lineNo).text.length);
+        editor.selection = new vscode.Selection(pos, pos);
+        editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.Default);
 
         return true;
     }
@@ -331,20 +253,16 @@ export class HelperFunctions {
                     continue;
                 }
 
-                const parent = HelperFunctions.searchALObjectByName(alApps, alObject.parent.objectType, alObject.parent.objectName);
+                var parent = HelperFunctions.searchALObjectByName(alApps, alObject.parent.objectType, alObject.parent.objectName);
                 if (!parent) {
                     continue;
                 }
 
                 alObject.parent.objectName = parent.objectName;
                 alObject.parent.objectPath = parent.objectPath;
+                alObject.parent.objectID = parent.objectID;
+                alObject.parent.alApp = parent.alApp;
             }
-            // (alApp.alObjects.filter(alObject => alObject.isExtension()) as ALExtension[]).forEach(alObject => {
-            //     if (!alObject.parent){
-            //         continue;
-            //     }
-            //     const parent = HelperFunctions.searchALObjectByName(alApps, alObject.parent.objectType, alObject.parent.objectName);
-            // });
         });
     }
 

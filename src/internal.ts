@@ -1,7 +1,7 @@
 export * from "./ALApp";
 export * from "./AppType";
-export * from "./HelperFunctions";
 export * from "./extension";
+export * from "./HelperFunctions";
 export * from "./Reader";
 
 /***************/
@@ -11,11 +11,12 @@ export * from "./Reader";
 /* General */
 export * from "./Objects/ALObject";
 export * from "./Objects/ALExtension";
-export * from "./ObjectType";
-export * from "./ALVariable";
+export * from "./Objects/ObjectType";
 
 /* Function */
 export * from "./Function/ALFunction";
+export * from "./Function/ALFunctionArgument";
+export * from "./Function/ALVariable";
 export * from "./Function/FunctionType";
 
 /* Table */
@@ -49,8 +50,10 @@ export * from "./Objects/Enum/ALEnumField";
 /**********/
 /*** UI ***/
 /**********/
+export * from "./ui/ALAppItem";
 export * from "./ui/ALObjectItem";
-export * from "./ui/ALEventPublisherItem";
+export * from "./ui/ALFunctionItem";
+export * from "./ui/UIManagement";
 
 /*****************/
 /*** Providers ***/

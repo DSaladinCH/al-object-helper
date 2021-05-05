@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
-import { CancellationToken, Definition, DefinitionProvider, Location, LocationLink, Position, ProviderResult, TextDocument } from "vscode";
-import { ALObject, ALTable, ALVariable, HelperFunctions, Reader, variablePattern } from "../internal";
-import { ObjectType } from "../ObjectType";
+import { CancellationToken, Definition, DefinitionProvider, LocationLink, Position, TextDocument } from "vscode";
+import { ALObject, ALVariable, HelperFunctions, Reader } from "../internal";
 
 export class ALDefinitionProvider implements DefinitionProvider {
     reader: Reader;

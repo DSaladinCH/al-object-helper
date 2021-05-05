@@ -1,4 +1,4 @@
-import { ALObject, ALEnumField, ObjectType, ALEnum, ALExtension, ALApp, Reader } from "../../internal";
+import { ALEnumField, ObjectType, ALEnum, ALExtension, ALApp } from "../../internal";
 
 export class ALEnumExtension extends ALExtension {
     fields: ALEnumField[] = [];

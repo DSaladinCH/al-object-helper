@@ -1,5 +1,4 @@
-import { HelperFunctions } from "./HelperFunctions";
-import { ALTable } from "./internal";
+import { ALTable, HelperFunctions } from "../internal";
 
 export class ALVariable {
     variableName: string;

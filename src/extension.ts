@@ -1,11 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import { read } from 'fs-extra';
 import * as vscode from 'vscode';
-import { FunctionType } from './Function/FunctionType';
-import { ALDefinitionProvider, ALEventPublisherItem, ALHoverProvider, ALObjectHelperDocumentProvider, ALObjectItem, HelperFunctions, ObjectType } from './internal';
-import { Reader } from "./Reader";
-const clipboard = require('clipboardy');
+import clipboard = require('clipboardy');
+import { ALDefinitionProvider, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, AppType, FunctionType, HelperFunctions, ObjectType, Reader, UIManagement } from './internal';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -28,62 +25,41 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.languages.registerDefinitionProvider('al', new ALDefinitionProvider(reader));
 	vscode.languages.registerHoverProvider('al', new ALHoverProvider(reader));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openALFile', async function () {
-		var alObjects: ALObjectItem[] = [];
-		reader.alApps.forEach(alApp => {
-			alApp.alObjects.forEach(alObject => {
-				alObjects.push(new ALObjectItem(alObject));
-			});
-		});
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openALObject', async function () {
+		const alObject = await UIManagement.selectALObjectInApps(reader.alApps);
+		if (!alObject) {
+			return;
+		}
 
-		const quickPick: vscode.QuickPick<vscode.QuickPickItem> = vscode.window.createQuickPick();
-		quickPick.items = alObjects;
-		quickPick.placeholder = "Search for a Object or use shortcut";
-		quickPick.matchOnDescription = true;
-		quickPick.matchOnDetail = true;
-		quickPick.onDidChangeValue(function (e) {
-			// check if input (e) is a object type shortcut
-			// if yes insert it a quickitem
-			// else remove the quickitem
-			if (shortcutRegex.test(e)) {
-				if (alObjects.length > 0 && alObjects[0].isTemporary) {
-					// Modify first item
-					alObjects[0].label = e.toLowerCase();
-				}
-				else {
-					// Add first item
-					alObjects = [ALObjectItem.createShortcutItem(e)].concat(alObjects);
-				}
-			}
-			else {
-				if (alObjects[0].isTemporary) {
-					// Remove item
-					alObjects.shift();
-				}
-			}
-			quickPick.items = alObjects;
-		});
-		quickPick.onDidAccept(async function (event) {
-			const alObjectItem = quickPick.selectedItems[0] as ALObjectItem;
-			if (alObjectItem.isTemporary) {
-				// open file with shortcut
-				if (!await HelperFunctions.openFileWithShortcut(alObjectItem.label)) {
-					vscode.window.showWarningMessage(extensionPrefix + `Could not open the shortcut ${alObjectItem.label}`);
-				}
-			}
-			else {
-				// open file from path
-				if (!await HelperFunctions.openFile(alObjectItem.alObject)) {
-					vscode.window.showWarningMessage(extensionPrefix + `Could not open the object with id ${alObjectItem.alObject.objectID}`);
-				}
-			}
-		});
+		if (await HelperFunctions.openFile(alObject)) {
+			vscode.window.showInformationMessage(`Opened ${ObjectType[alObject.objectType]} ${alObject.objectName}`);
+		}
+		else {
+			vscode.window.showWarningMessage("Could not find or open this object");
+		}
+	}));
 
-		quickPick.show();
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openALObjectOfApp', async function () {
+		const alApp = await UIManagement.selectALApp(reader.alApps);
+		if (!alApp) {
+			return;
+		}
+
+		const alObject = await UIManagement.selectALObjectInApp(alApp);
+		if (!alObject) {
+			return;
+		}
+
+		if (await HelperFunctions.openFile(alObject)) {
+			vscode.window.showInformationMessage(`Opened ${ObjectType[alObject.objectType]} ${alObject.objectName}`);
+		}
+		else {
+			vscode.window.showWarningMessage("Could not find or open this object");
+		}
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.copyEvent', async function () {
-		var alObjects: ALObjectItem[] = [];
+		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
 			alApp.alObjects.forEach(alObject => {
 				if (alObject.functions.find(alFunction =>
@@ -91,39 +67,32 @@ export async function activate(context: vscode.ExtensionContext) {
 					alFunction.functionType === FunctionType.BusinessEvent ||
 					alFunction.functionType === FunctionType.IntegrationEvent
 				)) {
-					alObjects.push(new ALObjectItem(alObject));
+					alObjects.push(alObject);
 				}
 			});
 		});
 
-		const quickPick: vscode.QuickPick<vscode.QuickPickItem> = vscode.window.createQuickPick();
-		quickPick.items = alObjects;
-		quickPick.placeholder = "Search for a Object or use shortcut";
-		quickPick.matchOnDescription = true;
-		quickPick.matchOnDetail = true;
+		const alObject = await UIManagement.selectALObject(alObjects);
+		if (!alObject) {
+			return;
+		}
 
-		quickPick.onDidAccept(async function (event) {
-			const alObjectItem = quickPick.selectedItems[0] as ALObjectItem;
-			const events: ALEventPublisherItem[] = [];
+		const alFunction = await UIManagement.selectEventPublisher(alObject);
+		if (!alFunction) {
+			return;
+		}
 
-			const functions = alObjectItem.alObject.functions.filter(alFunction =>
-				alFunction.functionType === FunctionType.InternalEvent ||
-				alFunction.functionType === FunctionType.BusinessEvent ||
-				alFunction.functionType === FunctionType.IntegrationEvent
-			);
-			
-			functions.forEach(alFunction => events.push(new ALEventPublisherItem(alFunction)));
+		clipboard.writeSync(alFunction.getEventSubscriberText(alObject));
+		vscode.window.showInformationMessage("Copied to Clipboard!");
+	}));
 
-			vscode.window.showQuickPick(events, { placeHolder: `Select event from ${ObjectType[alObjectItem.alObject.objectType]} "${alObjectItem.alObject.objectName}" to copy` }).then((value) => {
-				if (value === undefined){
-					return;
-				}
-				clipboard.writeSync(value.alFunction.getEventSubscriberText(alObjectItem.alObject));
-				vscode.window.showInformationMessage("Copied to Clipboard!");
-			});
-		});
+	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.jumpToEventSubscriber', async function () {
+		const alFunction = await UIManagement.selectEventSubscriber(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+		if (!alFunction) {
+			return;
+		}
 
-		quickPick.show();
+		HelperFunctions.openFile(alFunction.alObject, alFunction.alFunction.lineNo);
 	}));
 }
 

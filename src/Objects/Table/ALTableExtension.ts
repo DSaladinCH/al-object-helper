@@ -1,4 +1,4 @@
-import { ALApp, ALExtension, ALObject, ALTable, ALTableField, ObjectType, Reader } from "../../internal";
+import { ALApp, ALExtension, ALObject, ALTable, ALTableField, ObjectType } from "../../internal";
 
 export class ALTableExtension extends ALExtension {
     fields: ALTableField[] = [];

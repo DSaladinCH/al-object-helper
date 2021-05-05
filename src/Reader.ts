@@ -1,17 +1,15 @@
 import * as vscode from "vscode";
-import * as os from "os";
 import path = require("path");
 import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern } from "./internal";
 import JSZip = require("jszip");
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
     outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ALObjectHelper");
     workspaceConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration();
-    //alObjects: ALObject[] = [];
     alApps: ALApp[] = [];
     printDebug: boolean = false;
 
@@ -24,7 +22,7 @@ export class Reader {
                 var appPath = path.join(element.uri.fsPath, "app.json");
                 if (fs.existsSync(appPath)) {
                     var json = fs.readJSONSync(appPath);
-                    this.alApps.push(new ALApp(AppType.local, json.name, json.publisher, json.runtime, element.uri.fsPath));
+                    this.alApps.push(new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, element.uri.fsPath));
                 }
             });
         }
@@ -91,17 +89,17 @@ export class Reader {
                 }
             }
 
-            var file = fs.createWriteStream('C:\\temp\\alFiles.txt');
-            file.on('error', function (err) { /* error handling */ });
-            alFiles.forEach(function (v) { file.write(v + '\n'); });
-            file.end();
+            // var file = fs.createWriteStream('C:\\temp\\alFiles.txt');
+            // file.on('error', function (err) { /* error handling */ });
+            // alFiles.forEach(function (v) { file.write(v + '\n'); });
+            // file.end();
 
-            var file2 = fs.createWriteStream('C:\\temp\\alObjects.txt');
-            file2.on('error', function (err) { /* error handling */ });
-            this.alApps.filter(app => app.appType === AppType.local).forEach(alApp => {
-                alApp.alObjects.forEach(function (v) { file2.write(v.objectPath + '\n'); });
-            });
-            file2.end();
+            // var file2 = fs.createWriteStream('C:\\temp\\alObjects.txt');
+            // file2.on('error', function (err) { /* error handling */ });
+            // this.alApps.filter(app => app.appType === AppType.local).forEach(alApp => {
+            //     alApp.alObjects.forEach(function (v) { file2.write(v.objectPath + '\n'); });
+            // });
+            // file2.end();
 
             return true;
         });
@@ -130,6 +128,7 @@ export class Reader {
                     }
 
                     console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
+                    HelperFunctions.fillParentObjects(reader.alApps);
                     resolve('');
                 };
                 start();
@@ -289,6 +288,7 @@ export class Reader {
                 let firstLine = true;
                 let currentFunction: ALFunction | undefined;
                 let nextFunctionType: FunctionType | undefined;
+                let nextFunctionArgument: ALFunctionArgument | undefined;
                 let collectionVariables: boolean = false;
 
                 lineReader.eachLine(file, async function (line, isLast, cb = async () => {
@@ -415,11 +415,17 @@ export class Reader {
                             return true;
                         }
 
-                        currentFunction = reader.getProcedure(line, lineNo, alObject, nextFunctionType);
+                        currentFunction = reader.getProcedure(line, lineNo, alObject, nextFunctionType, nextFunctionArgument);
                         if (currentFunction){
                             collectionVariables = false;
                         }
+                        nextFunctionArgument = undefined;
                         nextFunctionType = reader.checkEventPublisher(line);
+
+                        // if event subscriber, get informations of the subscriber
+                        if (nextFunctionType === FunctionType.EventSubscriber){
+                            nextFunctionArgument = reader.getEventSubscriber(line);
+                        }
 
                         // check for a global variable after checking for a new function
                         if (collectionVariables) {
@@ -468,7 +474,7 @@ export class Reader {
         const id = matches[2].trim();
         const name = HelperFunctions.removeNameSurrounding(matches[3].trim());
 
-        alObject = ALObject.getObjectFromType(type, filePath, id, name, alApp);
+        alObject = ALObject.createByObjectType(type, filePath, id, name, alApp);
         if (!alObject) {
             return undefined;
         }
@@ -494,10 +500,21 @@ export class Reader {
             return (undefined);
         }
 
-        return HelperFunctions.getFunctionTypeByString(match[1]);
+        return ALFunction.getFunctionTypeByString(match[1]);
     }
 
-    getProcedure(lineText: string, lineNo: number, alObject: ALObject, customFunctionType?: FunctionType | undefined): ALFunction | undefined {
+    getEventSubscriber(lineText: string): ALFunctionArgument | undefined{
+        const eventSubscriberPattern = /\[EventSubscriber\(ObjectType::([^,]+),\s?[^:]+::("[^"]+"|[^,]+),\s?'([^']*)',\s?'([^']*)'/i;
+        let match = eventSubscriberPattern.exec(lineText);
+
+        if (!match) {
+            return (undefined);
+        }
+
+        return ALFunctionArgument.createEventSubscriber(match[1], match[2], match[3], match[4]);
+    }
+
+    getProcedure(lineText: string, lineNo: number, alObject: ALObject, customFunctionType?: FunctionType, functionArgument?: ALFunctionArgument): ALFunction | undefined {
         try {
             const procedurePattern = /(local)?\s?(procedure|trigger) ([^(]*)\(([^)]*)?\)(?::\s?([^\s]+))?/i;
             let match = procedurePattern.exec(lineText);
@@ -505,7 +522,7 @@ export class Reader {
                 return undefined;
             }
 
-            let functionType = HelperFunctions.getFunctionTypeByString(match[2]);
+            let functionType = ALFunction.getFunctionTypeByString(match[2]);
             if (functionType === undefined) {
                 return undefined;
             }
@@ -528,6 +545,7 @@ export class Reader {
                 functionType = customFunctionType;
             }
             const alFunction = new ALFunction(functionType, name, { lineNo: lineNo, parameters: parameters, returnValue: returnValue, isLocal: isLocal });
+            alFunction.functionArgument = functionArgument;
             alObject.functions.push(alFunction);
             return alFunction;
         }
@@ -568,7 +586,7 @@ export class Reader {
                     continue;
                 }
                 const content = contentBuffer.toString();
-                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Runtime="([^"]+)"/i;
+                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)"/i;
                 if (this.printDebug) { this.outputChannel.appendLine(`Extracting data of NavxManifest.xml from app file ${appPath}`); }
                 const matches = manifestAppPattern.exec(content);
                 if (!matches) {
@@ -577,7 +595,7 @@ export class Reader {
 
                 if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
                 if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
-                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], appPath));
+                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath));
                 }
             }
 

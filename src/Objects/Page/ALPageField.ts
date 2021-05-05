@@ -1,4 +1,4 @@
-import { ALFunction, ALObject, ALPage, ALPageExtension, ALVariable, FunctionType, ObjectType } from "../../internal";
+import { ALFunction, ALFunctionArgument, ALObject, ALPage, ALPageExtension, ALVariable, FunctionType, ObjectType } from "../../internal";
 
 export class ALPageField {
     fieldName: string;
@@ -7,7 +7,7 @@ export class ALPageField {
 
     constructor(fieldName: string, sourceValue: string, lineNo: number) {
         this.fieldName = fieldName;
-        if (this.fieldName.startsWith("\"") && this.fieldName.endsWith("\"")){
+        if (this.fieldName.startsWith("\"") && this.fieldName.endsWith("\"")) {
             this.fieldName = this.fieldName.substring(1);
             this.fieldName = this.fieldName.substring(0, this.fieldName.length - 1);
         }
@@ -30,16 +30,24 @@ export class ALPageField {
         }
     }
 
-    static addValidateEvent(alObject: ALObject, pageField: ALPageField){
+    static addValidateEvent(alObject: ALObject, pageField: ALPageField) {
         // https://docs.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/devenv-event-types
 
+        var alFunction: ALFunction;
         var alVariables: ALVariable[] = [];
         var returnValue: ALVariable | undefined;
         let pageObjectName = alObject.objectName;
-        if (alObject.objectType === ObjectType.PageExtension) {
+        if (alObject.objectType === ObjectType.Page) {
+            const sourceTable = (alObject as ALPage).sourceTable;
+            if (!sourceTable) { return; }
+            pageObjectName = sourceTable.objectName;
+        }
+        else if (alObject.objectType === ObjectType.PageExtension) {
             const parent = (alObject as ALPageExtension).parent;
             if (!parent) { return; }
-            pageObjectName = parent.objectName;
+            const sourceTable = (parent as ALPage).sourceTable;
+            if (!sourceTable) { return; }
+            pageObjectName = sourceTable.objectName;
         }
 
         //************************//
@@ -48,7 +56,9 @@ export class ALPageField {
         alVariables = [];
         alVariables.push(new ALVariable("Rec", "Record", pageObjectName, 0, { isTemporary: false, isVar: true }));
         alVariables.push(new ALVariable("xRec", "Record", pageObjectName, 0, { isTemporary: false, isVar: true }));
-        alObject.functions.push(new ALFunction(FunctionType.InternalEvent, "OnBeforeValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false, elementName: pageField.fieldName }));
+        alFunction = new ALFunction(FunctionType.InternalEvent, "OnBeforeValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false });
+        alFunction.functionArgument = ALFunctionArgument.createEventPublisher(pageField.fieldName);
+        alObject.functions.push(alFunction);
 
         //***********************//
         //*** OnAfterValidate ***//
@@ -56,6 +66,8 @@ export class ALPageField {
         alVariables = [];
         alVariables.push(new ALVariable("Rec", "Record", pageObjectName, 0, { isTemporary: false, isVar: true }));
         alVariables.push(new ALVariable("xRec", "Record", pageObjectName, 0, { isTemporary: false, isVar: true }));
-        alObject.functions.push(new ALFunction(FunctionType.InternalEvent, "OnAfterValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false, elementName: pageField.fieldName }));
+        alFunction = new ALFunction(FunctionType.InternalEvent, "OnAfterValidateEvent", { lineNo: 0, parameters: alVariables, returnValue: returnValue, isLocal: false });
+        alFunction.functionArgument = ALFunctionArgument.createEventPublisher(pageField.fieldName);
+        alObject.functions.push(alFunction);
     }
 }
