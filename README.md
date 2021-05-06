@@ -26,7 +26,7 @@ Please report these in the Git Repository.
 * Automatically research when changing branch
 * Automatically research when downloading symbols
 
-### Shortcuts
+## Shortcuts
 To quickly open any object you can use a object shortcut. \
 Just run the command **Open AL Object** and type the type shortcut and the object id.
 * T = Open a Table
@@ -48,7 +48,6 @@ Just run the command **Open AL Object** and type the type shortcut and the objec
 **Ex. P21 for Customer Page** \
 ![Ex. P21 for Customer Page](Images/vid02.gif)
 
-
 ## Important Infos
 If you use the latest version of the AL Language Extension by Microsoft, you have to remove the "AL: Find Event" keybinding to use the integrated search.
 ![Remove the "AL: Find Event" keybinding](Images/vid03.gif)
@@ -57,10 +56,8 @@ With the latest version it is possible to jump to definition within an AL file.
 This is a new feature and may still contain errors. Possibly there are also definitions which have not yet been implemented.
 Please report these in the Git Repository.
 
-
 ## Requirements
 * [AL Language](https://marketplace.visualstudio.com/items?itemName=ms-dynamics-smb.al)
-
 
 ## Commands
 * **Open AL Object**: Search for any object (Shortcut: Ctrl + Alt + O)
