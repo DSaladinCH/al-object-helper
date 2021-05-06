@@ -46,6 +46,14 @@
 			{
 				"command": "al-object-helper.jumpToEventSubscriber",
 				"title": "AL Helper: Jump to local Event Subscriber"
+			},
+			{
+				"command": "al-object-helper.openExtendedObject",
+				"title": "AL Helper: Open extended Object"
+			},
+			{
+				"command": "al-object-helper.showObjectExtension",
+				"title": "AL Helper: Show Extensions"
 			}
 		],
 		"keybindings": [
@@ -58,6 +66,18 @@
 				"key": "Shift+Alt+E"
 			}
 		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "al-object-helper.openExtendedObject",
+					"when": "al-object-helper.isALExtension"
+				},
+				{
+					"command": "al-object-helper.showObjectExtension",
+					"when": "al-object-helper.hasALExtensions"
+				}
+			]
+		},
 		"configuration": {
 			"type": "object",
 			"title": "AL Object Helper Configuration",

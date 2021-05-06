@@ -5,19 +5,24 @@ import { HelperFunctions, reader } from "../internal";
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
 
-    async provideTextDocumentContent(uri: Uri, token: CancellationToken): Promise<string> {
+    async provideTextDocumentContent(uri: Uri, token: CancellationToken): Promise<string | undefined> {
         let message = JSON.parse(uri.fragment);
         let result: string = uri.fsPath;
 
-        const alApp = reader.alApps.find(alApp => alApp.appName === message.AppName);
-        if (!alApp){
-            return result;
-        }
+        // const alApp = reader.alApps.find(alApp => alApp.appName === message.AppName);
+        // if (!alApp){
+        //     return result;
+        // }
 
-        let alObject = alApp.alObjects.find(f => f.objectType === message.Type && f.objectID === message.ID);
+        // let alObject = alApp.alObjects.find(f => f.objectType === message.Type && f.objectID === message.ID);
         
+        // if (!alObject) {
+        //     return result;
+        // }
+
+        let alObject = HelperFunctions.getALObjectByUriFragment(uri.fragment);
         if (!alObject) {
-            return result;
+            return undefined;
         }
 
         if (HelperFunctions.isLocalObject(alObject)) {
@@ -26,16 +31,16 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
 
         let zipPath: string | undefined = HelperFunctions.getZipPath(alObject);
         if (!zipPath){
-            return result;
+            return undefined;
         }
         let jsZip = await HelperFunctions.readZip(zipPath);
         if (!jsZip){
-            return result;
+            return undefined;
         }
         
         let zipObject: JSZip.JSZipObject | null = jsZip.file(alObject.objectPath);
         if (zipObject === null){
-            return result;
+            return undefined;
         }
         return await zipObject.async('string');
     }

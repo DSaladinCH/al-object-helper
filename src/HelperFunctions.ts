@@ -82,27 +82,6 @@ export class HelperFunctions {
                         return alFiles;
                     }
 
-                    // for await (let fileName of files){
-                    //     // const fileName = files[i];
-                    //     try {
-                    //         const filePath = path.join(dirPath, fileName);
-                    //         const stats = await HelperFunctions.getLstat(filePath);
-                    //         if (stats === undefined) {
-                    //             continue;
-                    //         }
-
-                    //         if (stats.isDirectory()) {
-                    //             alFiles = alFiles.concat(await HelperFunctions.searchFiles(filePath, extension));
-                    //         }
-                    //         else if (fileName.endsWith(extension)) {
-                    //             console.log(`Found file "${fileName}"`);
-                    //             alFiles.push(filePath);
-                    //         }
-                    //     }
-                    //     catch (error) {
-                    //         console.log(extensionPrefix + error.message);
-                    //     }
-                    // }
                     for (let i = 0; i < files.length; i++) {
                         const fileName = files[i];
                         try {
@@ -201,6 +180,16 @@ export class HelperFunctions {
         editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.Default);
     }
 
+    static getALObjectByUriFragment(fragment: any): ALObject | undefined {
+        let message = JSON.parse(fragment);
+        const alApp = reader.alApps.find(alApp => alApp.appName === message.AppName);
+        if (!alApp) {
+            return undefined;
+        }
+
+        return alApp.alObjects.find(f => f.objectType === message.Type && f.objectID === message.ID);
+    }
+
     static isLocalObject(alObject: ALObject): boolean {
         const alApp = reader.alApps.find(a => a.appName === alObject.alApp.appName);
         if (!alApp) {
@@ -289,30 +278,6 @@ export class HelperFunctions {
         }
 
         return alObject;
-    }
-
-    static getAllExtensions(alApps: ALApp[], parentALObject: ALObject): ALExtension[] {
-        let alExtensions: ALExtension[] = [];
-        for (let i = 0; i < alApps.length; i++) {
-            const alApp = alApps[i];
-            let alObjects = alApp.alObjects.filter(alObject => {
-                // if object is an extension
-                if (alObject.isExtension()) {
-                    if ((alObject as ALExtension).parent) {
-                        return (alObject as ALExtension).parent?.objectType === parentALObject.objectType &&
-                            (alObject as ALExtension).parent?.objectName === parentALObject.objectName;
-                    }
-                }
-
-                return false;
-            });
-
-            if (alObjects && alObjects.length > 0) {
-                alExtensions = alExtensions.concat((alObjects as ALExtension[]));
-            }
-        }
-
-        return alExtensions;
     }
 
     static getALObjectOfALVariable(alVariable: ALVariable): ALObject | undefined {

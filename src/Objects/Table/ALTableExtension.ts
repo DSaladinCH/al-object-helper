@@ -21,7 +21,7 @@ export class ALTableExtension extends ALExtension {
             description += ` - Extends "${this.parent.objectName}"`;
         }
         else {
-            description += ` - Extends ${this.parent.objectType} ${this.parent.objectID} - ${this.parent.objectName}`;
+            description += ` - Extends ${ObjectType[this.parent.objectType]} ${this.parent.objectID} - ${this.parent.objectName}`;
         }
 
         return description;

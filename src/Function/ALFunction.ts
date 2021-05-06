@@ -117,7 +117,11 @@ export class ALFunction {
             objectTypeStr = "Database";
         }
 
-        let functionHeader = `[EventSubscriber(ObjectType::${ObjectType[objectType]}, ${objectTypeStr}::"${objectName}", '${this.functionName}', '${this.functionArgument?.eventElementName}', false, false)]`;
+        let elementName = "";
+        if (this.functionArgument) {
+            elementName = this.functionArgument.eventElementName;
+        }
+        let functionHeader = `[EventSubscriber(ObjectType::${ObjectType[objectType]}, ${objectTypeStr}::"${objectName}", '${this.functionName}', '${elementName}', false, false)]`;
         //#endregion
 
         //#region Function declaration
@@ -155,7 +159,9 @@ export class ALFunction {
         }
 
         functionText += `procedure ${objectName.replace(/\W/g, "")}_${this.functionName}`;
-        if (this.functionArgument?.eventElementName !== "") { functionText += `_${this.functionArgument?.eventElementName.replace(/\W/g, "")}`; }
+        if (elementName !== "") {
+            functionText += `_${elementName.replace(/\W/g, "")}`;
+        }
         functionText += `(${parameters})`;
 
         if (this.returnValue) {

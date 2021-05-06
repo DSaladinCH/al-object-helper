@@ -9,43 +9,43 @@ export * from "./Reader";
 /***************/
 
 /* General */
-export * from "./Objects/ALObject";
-export * from "./Objects/ALExtension";
-export * from "./Objects/ObjectType";
+export * from "./objects/ALObject";
+export * from "./objects/ALExtension";
+export * from "./objects/ObjectType";
 
 /* Function */
-export * from "./Function/ALFunction";
-export * from "./Function/ALFunctionArgument";
-export * from "./Function/ALVariable";
-export * from "./Function/FunctionType";
+export * from "./function/ALFunction";
+export * from "./function/ALFunctionArgument";
+export * from "./function/ALVariable";
+export * from "./function/FunctionType";
 
 /* Table */
-export * from "./Objects/Table/ALTable";
-export * from "./Objects/Table/ALTableExtension";
-export * from "./Objects/Table/ALTableField";
+export * from "./objects/Table/ALTable";
+export * from "./objects/Table/ALTableExtension";
+export * from "./objects/Table/ALTableField";
 
 /* Page */
-export * from "./Objects/Page/ALPage";
-export * from "./Objects/Page/ALPageExtension";
-export * from "./Objects/Page/ALPageField";
+export * from "./objects/Page/ALPage";
+export * from "./objects/Page/ALPageExtension";
+export * from "./objects/Page/ALPageField";
 
 /* Codeunit */
-export * from "./Objects/Codeunit/ALCodeunit";
+export * from "./objects/Codeunit/ALCodeunit";
 
 /* Xmlport */
-export * from "./Objects/Xmlport/ALXmlport";
+export * from "./objects/Xmlport/ALXmlport";
 
 /* Report */
-export * from "./Objects/Report/ALReport";
-export * from "./Objects/Report/ALReportExtension";
+export * from "./objects/Report/ALReport";
+export * from "./objects/Report/ALReportExtension";
 
 /* Query */
-export * from "./Objects/Query/ALQuery";
+export * from "./objects/Query/ALQuery";
 
 /* Enum */
-export * from "./Objects/Enum/ALEnum";
-export * from "./Objects/Enum/ALEnumExtension";
-export * from "./Objects/Enum/ALEnumField";
+export * from "./objects/Enum/ALEnum";
+export * from "./objects/Enum/ALEnumExtension";
+export * from "./objects/Enum/ALEnumField";
 
 /**********/
 /*** UI ***/

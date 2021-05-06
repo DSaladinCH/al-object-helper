@@ -26,7 +26,7 @@ export class ALTable extends ALObject {
         let alFields: ALTableField[] = [];
         alFields = alFields.concat(this.fields);
 
-        let extensions = HelperFunctions.getAllExtensions(reader.alApps, this);
+        let extensions = this.getAllExtensions(reader.alApps);
         extensions.forEach(extension => {
             alFields = alFields.concat((extension as ALTableExtension).fields);
         });
@@ -44,7 +44,7 @@ export class ALTable extends ALObject {
             return { alObject: this, field: field };
         }
 
-        let extensions = HelperFunctions.getAllExtensions(reader.alApps, this);
+        let extensions = this.getAllExtensions(reader.alApps);
         for (let i = 0; i < extensions.length; i++) {
             field = (extensions[i] as ALTableExtension).fields.find(alField => alField.fieldName === fieldName);
             if (field) {

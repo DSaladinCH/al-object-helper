@@ -29,11 +29,36 @@ export abstract class ALObject {
         switch (this.objectType) {
             case ObjectType.TableExtension:
             case ObjectType.PageExtension:
+            case ObjectType.ReportExtension:
             case ObjectType.EnumExtension:
                 return true;
             default:
                 return false;
         }
+    }
+
+    getAllExtensions(alApps: ALApp[]): ALExtension[] {
+        let alExtensions: ALExtension[] = [];
+        for (let i = 0; i < alApps.length; i++) {
+            const alApp = alApps[i];
+            let alObjects = alApp.alObjects.filter(alObject => {
+                // if object is an extension
+                if (alObject.isExtension()) {
+                    if ((alObject as ALExtension).parent) {
+                        return (alObject as ALExtension).parent?.objectType === this.objectType &&
+                            (alObject as ALExtension).parent?.objectName === this.objectName;
+                    }
+                }
+
+                return false;
+            });
+
+            if (alObjects && alObjects.length > 0) {
+                alExtensions = alExtensions.concat((alObjects as ALExtension[]));
+            }
+        }
+
+        return alExtensions;
     }
 
     isEqual(alObject: ALObject): Boolean {

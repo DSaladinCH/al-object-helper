@@ -75,6 +75,8 @@ export class Reader {
                 };
                 start();
             });
+            HelperFunctions.fillParentObjects(this.alApps);
+
             console.log(extensionPrefix + `Found ${alFiles.length} AL Files`);
             if (this.printDebug) { this.outputChannel.appendLine(`Found ${alFiles.length} al files in all local projects`); }
             let objectCount = 0;
