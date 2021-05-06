@@ -169,20 +169,20 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
-[2.0.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.3...v2.0.0
-[1.6.3]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.2...v1.6.3
-[1.6.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.1...v1.6.2
-[1.6.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.6.0...v1.6.1
-[1.6.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.2...v1.6.0
-[1.5.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.1...v1.5.2
-[1.5.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.5.0...v1.5.1
-[1.5.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.5...v1.4.0
-[1.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.4...v1.3.5
-[1.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.2...v1.3.3
-[1.3.2]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.1...v1.3.2
-[1.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/v1.3.0...v1.3.1
-[1.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.5...v1.2.0
-[1.1.5]: https://github.com/DSaladinCH/al-object-helper/compare/v1.1.3...v1.1.5
+[2.0.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.3...2.0.0
+[1.6.3]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.2...1.6.3
+[1.6.2]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.1...1.6.2
+[1.6.1]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.0...1.6.1
+[1.6.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.5.2...1.6.0
+[1.5.2]: https://github.com/DSaladinCH/al-object-helper/compare/1.5.1...1.5.2
+[1.5.1]: https://github.com/DSaladinCH/al-object-helper/compare/1.5.0...1.5.1
+[1.5.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.4.0...1.5.0
+[1.4.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.3.5...1.4.0
+[1.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/1.3.4...1.3.5
+[1.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/1.3.2...1.3.3
+[1.3.2]: https://github.com/DSaladinCH/al-object-helper/compare/1.3.1...1.3.2
+[1.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/1.3.0...1.3.1
+[1.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.2.0...1.3.0
+[1.2.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.1.5...1.2.0
+[1.1.5]: https://github.com/DSaladinCH/al-object-helper/compare/1.1.3...1.1.5
 [1.1.3]: https://github.com/DSaladinCH/al-object-helper/releases/tag/1.1.3
