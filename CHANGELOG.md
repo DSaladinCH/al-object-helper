@@ -1,5 +1,4 @@
 # Change Log
-
 All versions of AL Object Helper will be documented in this file.
 
 ## [2.0.0] - 2021-05-06
