@@ -29,7 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(textDocumentScheme, new ALObjectHelperDocumentProvider()));
 	context.subscriptions.push(vscode.languages.registerDefinitionProvider("al", new ALDefinitionProvider(reader)));
 	context.subscriptions.push(vscode.languages.registerHoverProvider("al", new ALHoverProvider(reader)));
-	context.subscriptions.push(vscode.window.registerTreeDataProvider("alObjectHelperObjectList", new ALObjectHelperTreeDataProvider()));
+	// context.subscriptions.push(vscode.window.registerTreeDataProvider("alObjectHelperObjectList", new ALObjectHelperTreeDataProvider()));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
 		await reader.startReading();
