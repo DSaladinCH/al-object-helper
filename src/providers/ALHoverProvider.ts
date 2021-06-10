@@ -27,12 +27,6 @@ export class ALHoverProvider implements HoverProvider {
             // Get definition name
             const line = document.lineAt(position.line).text;
             const definition = HelperFunctions.detectDefinitionName(line, position.character);
-            if (definition.parentName !== "") {
-                vscode.window.showInformationMessage("Definition text: " + definition.parentName + "." + definition.definitionName);
-            }
-            else {
-                vscode.window.showInformationMessage("Definition text: " + definition.definitionName);
-            }
 
             if (definition.definitionName === "") {
                 resolve(undefined);

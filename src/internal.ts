@@ -58,6 +58,7 @@ export * from "./ui/UIManagement";
 /*****************/
 /*** Providers ***/
 /*****************/
-export * from './providers/ALDefinitionProvider';
-export * from './providers/ALHoverProvider';
+export * from "./providers/ALDefinitionProvider";
+export * from "./providers/ALHoverProvider";
 export * from "./providers/ALObjectHelperDocumentProvider";
+export * from "./providers/ALObjectHelperTreeDataProvider";

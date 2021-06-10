@@ -7,6 +7,8 @@ export class ALApp {
     appVersion: string;
     appRunTimeVersion: string;
     appPath: string;
+    appDate: Date;
+    appChanged: boolean = true;
     private _alObjects: ALObject[] = [];
 
     get alObjects() {
@@ -21,7 +23,7 @@ export class ALApp {
      * @param alRunTimeVersion The runtime version of this app
      * @param appPath The path to this app (project path or app path)
      */
-    constructor(appType: AppType, name: string, publisher: string, version: string, alRunTimeVersion: string, appPath: string) {
+    constructor(appType: AppType, name: string, publisher: string, version: string, alRunTimeVersion: string, appPath: string, appDate: Date) {
         this.appType = appType;
         this.appName = name.trim();
         this.appPublisher = publisher.trim();
@@ -33,10 +35,11 @@ export class ALApp {
                 this.appPath += "\\";
             }
         }
+        this.appDate = appDate;
     }
 
     static Empty(): ALApp {
-        return new ALApp(AppType.appPackage, '', '', '', '', '');
+        return new ALApp(AppType.appPackage, '', '', '', '', '', new Date());
     }
 
     /**
@@ -44,6 +47,15 @@ export class ALApp {
      * @param newAlObject The al object which should be added
      */
     addObject(newAlObject: ALObject) {
+        var existingALObject = this.alObjects.find(alObject => alObject.objectType === newAlObject.objectType && alObject.objectID === newAlObject.objectID &&
+            alObject.alApp.appName === newAlObject.alApp.appName);
+
+        // if the object already exists, update it
+        if (existingALObject) {
+            existingALObject = newAlObject;
+            return;
+        }
+
         this.alObjects.push(newAlObject);
     }
 
@@ -52,6 +64,9 @@ export class ALApp {
      * @param newAlObjects The al objects which should be added
      */
     addObjects(newAlObjects: ALObject[]) {
-        this._alObjects = this.alObjects.concat(newAlObjects);
+        for (let i = 0; i < newAlObjects.length; i++) {
+            this.addObject(newAlObjects[i]);
+        }
+        // this._alObjects = this.alObjects.concat(newAlObjects);
     }
 }

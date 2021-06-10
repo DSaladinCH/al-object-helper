@@ -1,5 +1,8 @@
-import * as vscode from 'vscode';
-import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, ObjectType, shortcutRegex } from "../internal";
+import * as vscode from "vscode";
+import * as fs from "fs";
+import path = require("path");
+import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, ObjectType, reader, shortcutRegex } from "../internal";
+import { resolve } from "path";
 
 export class UIManagement {
     static async selectALApp(alApps: ALApp[]): Promise<ALApp | undefined> {
@@ -177,6 +180,43 @@ export class UIManagement {
             });
 
             quickPick.show();
+        });
+    }
+
+    static async showObjectListPanel(alApps: ALApp[]) {
+        // Create and show panel
+        const panel = vscode.window.createWebviewPanel(
+            'alObjectList',
+            'AL Object List',
+            vscode.ViewColumn.One,
+            {}
+        );
+
+        // And set its HTML content
+        panel.webview.html = await this.getWebviewContent();
+    }
+
+    private static async getWebviewContent(): Promise<string> {
+        return new Promise<string>((resolve) => {
+            // Get path to resource on disk
+            // And get the special URI to use with the webview
+            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'objectlist', 'index.html'));
+            //const appOnDiskPath = vscode.Uri.file(path.join(this._extensionPath, 'designer', 'scripts', 'vendor-bundle.js'));
+            //const appJsSrc: any = this._panel.webview.asWebviewUri(appOnDiskPath);
+
+            fs.readFile(htmlOnDiskPath.fsPath, (error, data) => {
+                if (error) {
+                    resolve("");
+                    return "";
+                }
+
+                let content = data.toString();
+                // content = content.replace('scripts/vendor-bundle.js', appJsSrc);
+                // content = content.replace('${panelMode}', this.panelMode);
+                // content = content.replace('${objectInfo}', JSON.stringify(this.objectInfo));
+                resolve(content);
+                return content;
+            });
         });
     }
 }

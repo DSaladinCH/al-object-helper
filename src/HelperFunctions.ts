@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
-import { Position, TextDocument } from 'vscode';
+import * as vscode from "vscode";
+import { Position, TextDocument } from "vscode";
 import path = require("path");
 import fs = require("fs-extra");
 import JSZip = require("jszip");
@@ -117,8 +117,32 @@ export class HelperFunctions {
 
     static getLstat(filePath: string): Promise<fs.Stats> {
         return new Promise<fs.Stats>(async (resolve) => {
-            await fs.lstat(filePath, function (error, stats) {
+            fs.lstat(filePath, function (error, stats) {
                 resolve(stats);
+            });
+        });
+    }
+
+    static getFileModifyDate(filePath: string): Promise<Date> {
+        return new Promise<Date>(async (resolve) => {
+            fs.lstat(filePath, (err, stats) => {
+                if (err) {
+                    resolve(new Date());
+                    return;
+                }
+                resolve(stats.mtime);
+            });
+        });
+    }
+
+    static pathExists(filePath: string): Promise<boolean> {
+        return new Promise<boolean>(async (resolve) => {
+            fs.access(filePath, fs.constants.F_OK, (err) => {
+                if (err) {
+                    resolve(false);
+                    return;
+                }
+                resolve(true);
             });
         });
     }
@@ -136,10 +160,18 @@ export class HelperFunctions {
     }
 
     static async openFile(alObject: ALObject, lineNo?: number): Promise<Boolean> {
-        let document = await this.getTextDocument(alObject);
-        let editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.Active);
+        let document: vscode.TextDocument | undefined;
+        let editor: vscode.TextEditor | undefined;
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Loading file for object ${alObject.objectName}`
+        }, async () => {
+            document = await this.getTextDocument(alObject);
+            editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.Active);
+            return true;
+        });
 
-        if (!lineNo) {
+        if (!lineNo || !document || !editor) {
             return true;
         }
 

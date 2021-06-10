@@ -1,8 +1,8 @@
-// The module 'vscode' contains the VS Code extensibility API
+// The module "vscode" contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
-import clipboard = require('clipboardy');
-import { ALDefinitionProvider, ALExtension, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, AppType, FunctionType, HelperFunctions, ObjectType, Reader, UIManagement } from './internal';
+import * as vscode from "vscode";
+import clipboard = require("clipboardy");
+import { ALApp, ALDefinitionProvider, ALExtension, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, ALObjectHelperTreeDataProvider, AppType, FunctionType, HelperFunctions, ObjectType, Reader, UIManagement } from './internal';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -18,7 +18,7 @@ var hasALExtensions: boolean;
 var currentExtensions: ALExtension[];
 
 export async function activate(context: vscode.ExtensionContext) {
-	console.log('Congratulations, your extension "al-object-helper" is now active!');
+	// console.log("Congratulations, your extension \"al-object-helper\" is now active!");
 	//vscode.window.showInformationMessage("Congratulations, your extension \"al-object-helper\" is now active!");
 
 	setIsALExtension(false);
@@ -27,10 +27,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	await reader.startReading();
 
 	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(textDocumentScheme, new ALObjectHelperDocumentProvider()));
-	vscode.languages.registerDefinitionProvider('al', new ALDefinitionProvider(reader));
-	vscode.languages.registerHoverProvider('al', new ALHoverProvider(reader));
+	context.subscriptions.push(vscode.languages.registerDefinitionProvider("al", new ALDefinitionProvider(reader)));
+	context.subscriptions.push(vscode.languages.registerHoverProvider("al", new ALHoverProvider(reader)));
+	context.subscriptions.push(vscode.window.registerTreeDataProvider("alObjectHelperObjectList", new ALObjectHelperTreeDataProvider()));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openALObject', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
+		await reader.startReading();
 		const alObject = await UIManagement.selectALObjectInApps(reader.alApps);
 		if (!alObject) {
 			return;
@@ -44,7 +46,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openALObjectOfApp', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectOfApp", async function () {
+		await reader.startReading();
 		const alApp = await UIManagement.selectALApp(reader.alApps);
 		if (!alApp) {
 			return;
@@ -63,7 +66,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.copyEvent', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.copyEvent", async function () {
 		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
 			alApp.alObjects.forEach(alObject => {
@@ -91,7 +94,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage("Copied to Clipboard!");
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.jumpToEventSubscriber', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.jumpToEventSubscriber", async function () {
 		const alFunction = await UIManagement.selectEventSubscriber(reader.alApps.filter(alApp => alApp.appType === AppType.local));
 		if (!alFunction) {
 			return;
@@ -100,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		HelperFunctions.openFile(alFunction.alObject, alFunction.alFunction.lineNo);
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.openExtendedObject', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openExtendedObject", async function () {
 		if (!currentExtendedObject) {
 			return;
 		}
@@ -108,7 +111,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		await HelperFunctions.openFile(currentExtendedObject);
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('al-object-helper.showObjectExtension', async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.showObjectExtension", async function () {
 		if (currentExtensions.length === 0) {
 			return;
 		}
@@ -121,7 +124,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		await HelperFunctions.openFile(alObject);
 	}));
 
-	vscode.window.onDidChangeActiveTextEditor((textEditor) => {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectList", async function () {
+		UIManagement.showObjectListPanel(reader.alApps);
+	}));
+
+	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((textEditor) => {
 		setIsALExtension(false);
 		sethasALExtension(false);
 
@@ -156,7 +163,36 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		checkIsALExtension(alObject);
 		checkHasALExtensions(alObject);
-	});
+	}));
+
+	context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(async (workspaceFoldersChange) => {
+		for (let i = 0; i < workspaceFoldersChange.removed.length; i++) {
+			let appPath = workspaceFoldersChange.removed[i].uri.fsPath;
+			if (!appPath.endsWith("\\")) {
+				appPath += "\\";
+			}
+			const index = reader.alApps.findIndex(alApp => alApp.appPath === appPath);
+			if (index === -1) {
+				continue;
+			}
+
+			reader.alApps.splice(index, 1);
+		}
+
+		const newApps: ALApp[] = [];
+		for (let i = 0; i < workspaceFoldersChange.added.length; i++) {
+			const element = workspaceFoldersChange.added[i];
+			const alApp = reader.addLocalFolderAsApp(element.uri.fsPath);
+			if (!alApp) {
+				continue;
+			}
+			newApps.push(alApp);
+		}
+
+		if (newApps.length > 0) {
+			await reader.startReadingLocalApps(newApps);
+		}
+	}));
 }
 
 // this method is called when your extension is deactivated

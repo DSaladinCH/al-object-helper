@@ -8,7 +8,7 @@ export class ALDefinitionProvider implements DefinitionProvider {
     constructor(reader: Reader) {
         this.reader = reader;
     }
-
+    
     provideDefinition(document: TextDocument, position: Position, token: CancellationToken): Promise<Definition | LocationLink[] | undefined> {
         return new Promise<Definition | LocationLink[] | undefined>(async (resolve) => {
             // Only temporary app package al files
@@ -27,12 +27,12 @@ export class ALDefinitionProvider implements DefinitionProvider {
             // Get definition name
             const line = document.lineAt(position.line).text;
             const definition = HelperFunctions.detectDefinitionName(line, position.character);
-            if (definition.parentName !== "") {
-                vscode.window.showInformationMessage("Definition text: " + definition.parentName + "." + definition.definitionName);
-            }
-            else {
-                vscode.window.showInformationMessage("Definition text: " + definition.definitionName);
-            }
+            // if (definition.parentName !== "") {
+            //     vscode.window.showInformationMessage("Definition text: " + definition.parentName + "." + definition.definitionName);
+            // }
+            // else {
+            //     vscode.window.showInformationMessage("Definition text: " + definition.definitionName);
+            // }
 
             if (definition.definitionName === "") {
                 resolve(undefined);
