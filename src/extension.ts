@@ -33,6 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
 		await reader.startReading();
+		
 		const alObject = await UIManagement.selectALObjectInApps(reader.alApps);
 		if (!alObject) {
 			return;
@@ -48,6 +49,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectOfApp", async function () {
 		await reader.startReading();
+
 		const alApp = await UIManagement.selectALApp(reader.alApps);
 		if (!alApp) {
 			return;
@@ -67,6 +69,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.copyEvent", async function () {
+		await reader.startReading();
+		
 		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
 			alApp.alObjects.forEach(alObject => {
@@ -95,6 +99,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.jumpToEventSubscriber", async function () {
+		await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+		
 		const alFunction = await UIManagement.selectEventSubscriber(reader.alApps.filter(alApp => alApp.appType === AppType.local));
 		if (!alFunction) {
 			return;
