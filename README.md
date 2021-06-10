@@ -75,6 +75,10 @@ Please report these in the Git Repository.
 -
 
 ## Release Notes
+### 2.1.0
+- Fixed a event subscriber bug with array parameters
+- Added a reload when opening the al object helper searchbar
+
 ### 2.0.0
 - Completely reworked extension and converted it to TypeScript
 - Faster reading
