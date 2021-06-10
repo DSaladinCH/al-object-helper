@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <link href="css/styles.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="css/fontawesome.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="menu">
+        <div>
+            <div style="margin: 0; height: 4em; align-items: center; display: flex;">
+                    <h2 style="margin: 0; margin-top: 0.5em">Types</h2>
+            </div>
+            <div style="overflow: scroll; flex: 1;">
+                <table id="typeTable" class="objectDesignerTable">
+                    <tr>
+                        <td>All</td>
+                    </tr>
+                    <tr>
+                        <td>Table</td>
+                    </tr>
+                    <tr>
+                        <td>TableExtension</td>
+                    </tr>
+                    <tr>
+                        <td>Page</td>
+                    </tr>
+                    <tr>
+                        <td>PageExtension</td>
+                    </tr>
+                    <tr>
+                        <td>Codeunit</td>
+                    </tr>
+                    <tr>
+                        <td>Report</td>
+                    </tr>
+                    <tr>
+                        <td>XmlPort</td>
+                    </tr>
+                    <tr>
+                        <td>Enum</td>
+                    </tr>
+                    <tr>
+                        <td>EnumExtension</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div style="width: 80%;">
+        <div id="header">
+            <div>
+                <input class="searchBar" type="text" />
+                <button class="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div id="main">
+            <div>
+                <h2 style="margin-top: 0;">AL Objects</h2>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="grid-container">
+        <div class="headerItem">
+            <div>
+                <div class="verticalCenter">
+                    <div class="verticalCenter2">
+                        <input class="searchBar" type="text" />
+                        <button class="searchButton">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="menuItem">
+            <h1>Types</h1>
+            <table id="typeTable" class="objectDesignerTable">
+                <tr>
+                    <td>All</td>
+                </tr>
+                <tr>
+                    <td>Table</td>
+                </tr>
+                <tr>
+                    <td>TableExtension</td>
+                </tr>
+                <tr>
+                    <td>Page</td>
+                </tr>
+                <tr>
+                    <td>PageExtension</td>
+                </tr>
+                <tr>
+                    <td>Codeunit</td>
+                </tr>
+                <tr>
+                    <td>Report</td>
+                </tr>
+                <tr>
+                    <td>XmlPort</td>
+                </tr>
+                <tr>
+                    <td>Enum</td>
+                </tr>
+                <tr>
+                    <td>EnumExtension</td>
+                </tr>
+            </table>
+        </div>
+        <div class="mainItem">
+            <div>Main</div>
+        </div>
+    </div> -->
+    <script>
+        //vscode = acquireVsCodeApi();
+        var typeTable = document.getElementById("typeTable");
+        var elements = typeTable.getElementsByTagName("td");
+        for (var i = 0; i < elements.length; i++) {
+            (elements)[i].addEventListener("click", function () {
+                if (this.parentElement.classList.contains("active")) {
+                    this.parentElement.classList.remove("active");
+                    filterType = "";
+                }
+                else {
+                    console.log(this.innerHTML);
+                    this.parentElement.classList.add("active");
+                    filterType = this.innerHTML;
+                    if (filterType == "All")
+                        filterType = "";
+                }
+                //filterList();
+            });
+        }
+    </script>
+</body>
+
+</html>

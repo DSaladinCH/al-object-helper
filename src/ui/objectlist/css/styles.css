@@ -1,0 +1,196 @@
+:root {
+    --mainbackgroundColor: #1a1d1e;
+    --menuBackgroundColor: #292929;
+    --headerBackgroundColor: #000000;
+    --backgroundLight: #282b2c;
+    --backgroundNormal: #1a1d1e;
+    --backgroundDark: #121414;
+    --backgroundBlack: #000000;
+    --borderColorDark: #3b4042;
+    --textColor: #ffffff;
+    --accentColorLight: #00d7ff;
+    --accentColor: #0533ff;
+    --accentColorDark: #0300a1;
+}
+
+html {
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    background-color: var(--mainbackgroundColor);
+    color: var(--textColor);
+    margin: 0px;
+    height: 100%;
+    display: flex;
+}
+
+i {
+    color: var(--textColor);
+}
+
+.verticalCenter {
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.verticalCenter2 {
+    display: flex;
+}
+
+.headerItem {
+    grid-area: header;
+    background-color: var(--headerBackgroundColor);
+    height: 20vh;
+}
+
+.menuItem {
+    grid-area: menu;
+    background-color: var(--menuBackgroundColor);
+    height: 100vh;
+    padding: 1em;
+}
+
+.mainItem {
+    grid-area: main;
+    background-color: var(--mainbackgroundColor);
+    height: 80vh;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-areas: 'menu header header header header header' 'menu main main main main main';
+    grid-template-columns: 30% auto;
+}
+
+#menu {
+    background-color: var(--menuBackgroundColor);
+    height: 100vh;
+    display: block;
+    width: 20%;
+}
+
+#menu div {
+    height: 100%;
+    margin: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+#header {
+    background-color: var(--headerBackgroundColor);
+    min-height: 7em;
+    height: 15%;
+    display: block;
+    width: 100%;
+    flex: 1;
+    align-items: center;
+    justify-content: left;
+    display: flex;
+}
+
+#header div {
+    padding: 1em 3em;
+}
+
+#main {
+    background-color: var(--mainbackgroundColor);
+    height: 85%;
+    display: block;
+    width: 100%;
+    flex: 1;
+}
+
+#main div {
+    padding: 1em;
+}
+
+.searchBar {
+    width: 350px;
+    height: 50px;
+    background-color: red;
+}
+
+.searchButton {
+    width: 50px;
+    height: 50px;
+    margin-left: 20px;
+    padding: 0;
+}
+
+.objectDesignerTable {
+    width: 100%;
+}
+
+th {
+    text-align: left;
+}
+
+td {
+    padding: 5px 10px;
+    user-select: none;
+}
+
+tr {
+    height: 25px;
+}
+
+tr:hover {
+    background-color: black;
+    color: white;
+    /* background-color: var(--vscode-list-hoverBackground); */
+    /* color: var(--vscode-list-hoverForeground); */
+}
+
+tr.active {
+    /* background-color: var(--vscode-list-focusBackground); */
+    background-color: var(--accentColorDark);
+}
+
+input {
+    /* display: block; */
+    width: 100%;
+    max-width: 100%;
+    border-width: 1px;
+    border-radius: 5px;
+    border-style: solid;
+    min-height: 30px;
+    max-height: 50px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+    outline: 0;
+    background-color: var(--backgroundNormal) !important;
+    border-color: var(--borderColorDark) !important;
+    color: var(--textColor) !important;
+}
+
+input:hover {
+    border-color: var(--accentColorLight) !important;
+}
+
+input:focus {
+    border-color: var(--accentColor) !important;
+}
+
+button {
+    border-width: 1px;
+    border-radius: 5px;
+    border-style: solid;
+    background-color: var(--backgroundNormal) !important;
+    border-color: var(--borderColorDark) !important;
+    color: var(--textColor) !important;
+}
+
+button:hover {
+    border-color: var(--accentColorLight) !important;
+}
+
+button:focus {
+    border-color: var(--accentColorDark) !important;
+}

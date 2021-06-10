@@ -65,6 +65,10 @@
 			{
 				"command": "al-object-helper.showObjectExtension",
 				"title": "AL Helper: Show Extensions"
+			},
+			{
+				"command": "al-object-helper.openALObjectList",
+				"title": "AL Helper: Open AL Object List"
 			}
 		],
 		"keybindings": [
@@ -77,6 +81,24 @@
 				"key": "Shift+Alt+E"
 			}
 		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "al-object-helper-objectList",
+					"title": "AL Object List",
+					"icon": "Images/icons/list-solid.svg"
+				}
+			]
+		},
+		"views": {
+			"al-object-helper-objectList": [
+				{
+					"id": "alObjectHelperObjectList",
+					"name": "AL Object List",
+					"type": "tree"
+				}
+			]
+		},
 		"menus": {
 			"commandPalette": [
 				{
