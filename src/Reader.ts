@@ -19,11 +19,12 @@ export class Reader {
 
         if (vscode.workspace.workspaceFolders) {
             vscode.workspace.workspaceFolders.forEach((element) => {
-                var appPath = path.join(element.uri.fsPath, "app.json");
-                if (fs.existsSync(appPath)) {
-                    var json = fs.readJSONSync(appPath);
-                    this.alApps.push(new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, element.uri.fsPath));
-                }
+                this.addLocalFolderAsApp(element.uri.fsPath);
+                // var appPath = path.join(element.uri.fsPath, "app.json");
+                // if (fs.existsSync(appPath)) {
+                //     var json = fs.readJSONSync(appPath);
+                //     this.alApps.push(new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, element.uri.fsPath));
+                // }
             });
         }
 
@@ -34,16 +35,35 @@ export class Reader {
     }
 
     async startReading() {
-        if (this.printDebug) { this.outputChannel.appendLine("Start reading!"); }
-        let alFiles: string[] = [];
-
         for (let index = 0; index < this.alApps.length; index++) {
             const alApp = this.alApps[index];
-            await this.discoverAppPackages(alApp);
+            await this.discoverAppPackagesOfLocalApp(alApp);
         }
         if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
 
-        vscode.window.withProgress({
+        await Promise.all([
+            this.startReadingLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
+            this.startReadingAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
+        ]);
+    }
+
+    addLocalFolderAsApp(folderPath: string): ALApp | null {
+        var appPath = path.join(folderPath, "app.json");
+        if (fs.existsSync(appPath)) {
+            var json = fs.readJSONSync(appPath);
+            const alApp = new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, folderPath, new Date());
+            this.alApps.push(alApp);
+            return alApp;
+        }
+
+        return null;
+    }
+
+    async startReadingLocalApps(alApps: ALApp[]) {
+        if (this.printDebug) { this.outputChannel.appendLine("Start reading local apps!"); }
+        let alFiles: string[] = [];
+
+        await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: "Reading local objects - Current"
         }, async (progress, token) => {
@@ -52,11 +72,12 @@ export class Reader {
                 const start = async function () {
                     var start = Date.now();
 
-                    var alApps = reader.alApps.filter(app => app.appType === AppType.local);
-                    var quotient = Math.floor(100 / alApps.length);
-                    console.log(extensionPrefix + `Found ${alApps.length} workspace folders`);
-                    for (let i = 0; i < alApps.length; i++) {
-                        const alApp = alApps[i];
+                    var filteredALApps = alApps.filter(app => app.appType === AppType.local);
+                    var quotient = Math.floor(100 / filteredALApps.length);
+                    console.log(extensionPrefix + `Found ${filteredALApps.length} workspace folders`);
+                    for (let i = 0; i < filteredALApps.length; i++) {
+                        const alApp = filteredALApps[i];
+                        await reader.discoverAppPackagesOfLocalApp(alApp);
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
                         console.log(extensionPrefix + `Found project "${alApp.appName}" with path "${alApp.appPath}"`);
@@ -70,18 +91,18 @@ export class Reader {
                         });
                     }
 
-                    console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
+                    // console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
                     resolve('');
                 };
                 start();
             });
             HelperFunctions.fillParentObjects(this.alApps);
 
-            console.log(extensionPrefix + `Found ${alFiles.length} AL Files`);
+            console.log(extensionPrefix + `Found ${alFiles.length} AL Files in all local projects`);
             if (this.printDebug) { this.outputChannel.appendLine(`Found ${alFiles.length} al files in all local projects`); }
             let objectCount = 0;
             this.alApps.filter(app => app.appType === AppType.local).forEach(app => objectCount += app.alObjects.length);
-            console.log(extensionPrefix + `Found ${objectCount} AL Objects`);
+            console.log(extensionPrefix + `Found ${objectCount} AL Objects in all local projects`);
             if (this.printDebug) {
                 if (alFiles.length - objectCount > 0) {
                     this.outputChannel.appendLine(`Found ${objectCount} al objects, so ${alFiles.length - objectCount} objects could not be read or are not supported yet`);
@@ -105,8 +126,15 @@ export class Reader {
 
             return true;
         });
+    }
 
-        vscode.window.withProgress({
+    async startReadingAppPackages(alApps: ALApp[]) {
+        if (this.printDebug) { this.outputChannel.appendLine("Start reading app packages!"); }
+        if (alApps.length === 0){
+            return;
+        }
+
+        await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: "Reading app packages - Current"
         }, async (progress, token) => {
@@ -115,21 +143,23 @@ export class Reader {
                 const start = async function () {
                     var start = Date.now();
 
-                    var alApps = reader.alApps.filter(app => app.appType === AppType.appPackage);
-                    var quotient = Math.floor(100 / alApps.length);
-                    for (let i = 0; i < alApps.length; i++) {
-                        const alApp = alApps[i];
+                    var filteredALApps = alApps.filter(app => app.appType === AppType.appPackage);
+                    var quotient = Math.floor(100 / filteredALApps.length);
+                    for (let i = 0; i < filteredALApps.length; i++) {
+                        var alApp = filteredALApps[i];
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
-                        console.log(extensionPrefix + `Found app package "${alApp.appName}" with path "${alApp.appPath}"`);
+                        // console.log(extensionPrefix + `Found app package "${alApp.appName}" with path "${alApp.appPath}"`);
+                        console.log(extensionPrefix + `Found app package "${alApp.appName}"`);
                         if (reader.printDebug) { reader.outputChannel.appendLine(`Search al files in app package "${alApp.appName}"`); }
 
                         await reader.getAppALSymbols(alApp, (a, m) => {
                             progress.report({ message: `${alApp.appName} (${a} of ${m})` });
                         });
+                        alApp.appChanged = false;
                     }
 
-                    console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
+                    // console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
                     HelperFunctions.fillParentObjects(reader.alApps);
                     resolve('');
                 };
@@ -242,7 +272,7 @@ export class Reader {
                 });
             });
 
-            console.log(extensionPrefix + "Time: " + (Date.now() - startDate));
+            // console.log(extensionPrefix + "Time: " + (Date.now() - startDate));
             alApp.addObjects(alObjects);
             resolve();
         });
@@ -252,11 +282,9 @@ export class Reader {
         return new Promise<ALObject[]>(async (resolve) => {
             let reader = this;
             let alObjects: ALObject[] = [];
-            let i = 0;
             for await (const alFile of alFiles) {
                 if (updateCallback) { updateCallback(); }
 
-                i++;
                 const contentBuffer: Buffer | undefined = await jsZip.file(alFile)?.async("nodebuffer");
                 if (!contentBuffer) {
                     continue;
@@ -265,10 +293,6 @@ export class Reader {
                 const readable = Readable.from(contentBuffer);
                 let alObject = await reader.searchObjectInContent(alFile, alApp, readable);
                 if (alObject) {
-                    if (i >= 50) {
-                        i = 0;
-                        console.log(extensionPrefix + "Found one, yeah -> " + alObject.objectName);
-                    }
                     alObjects.push(alObject);
                 }
             }
@@ -418,14 +442,14 @@ export class Reader {
                         }
 
                         currentFunction = reader.getProcedure(line, lineNo, alObject, nextFunctionType, nextFunctionArgument);
-                        if (currentFunction){
+                        if (currentFunction) {
                             collectionVariables = false;
                         }
                         nextFunctionArgument = undefined;
                         nextFunctionType = reader.checkEventPublisher(line);
 
                         // if event subscriber, get informations of the subscriber
-                        if (nextFunctionType === FunctionType.EventSubscriber){
+                        if (nextFunctionType === FunctionType.EventSubscriber) {
                             nextFunctionArgument = reader.getEventSubscriber(line);
                         }
 
@@ -505,7 +529,7 @@ export class Reader {
         return ALFunction.getFunctionTypeByString(match[1]);
     }
 
-    getEventSubscriber(lineText: string): ALFunctionArgument | undefined{
+    getEventSubscriber(lineText: string): ALFunctionArgument | undefined {
         const eventSubscriberPattern = /\[EventSubscriber\(ObjectType::([^,]+),\s?[^:]+::("[^"]+"|[^,]+),\s?'([^']*)',\s?'([^']*)'/i;
         let match = eventSubscriberPattern.exec(lineText);
 
@@ -556,7 +580,7 @@ export class Reader {
         }
     }
 
-    discoverAppPackages(alApp: ALApp): Promise<void> {
+    discoverAppPackagesOfLocalApp(alApp: ALApp): Promise<void> {
         return new Promise<void>(async (resolve) => {
             if (alApp.appType !== AppType.local) {
                 resolve();
@@ -595,9 +619,30 @@ export class Reader {
                     continue;
                 }
 
+                const appDate = await HelperFunctions.getFileModifyDate(appPath);
                 if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
                 if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
-                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath));
+                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate));
+                }
+                else {
+                    var existingALApp = this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2]);
+                    if (existingALApp && existingALApp.appType === AppType.appPackage) {
+                        // app did not change by default
+                        existingALApp.appChanged = false;
+                        // if the date is not the same as the saved date, then the app changed
+                        if (existingALApp.appDate.getTime() !== appDate.getTime()) {
+                            existingALApp.appDate = appDate;
+                            existingALApp.appChanged = true;
+                        }
+                    }
+                }
+            }
+
+            const appPackages = this.alApps.filter(alApp => alApp.appType === AppType.appPackage);
+            for (let i = 0; i < appPackages.length; i++) {
+                if (!await HelperFunctions.pathExists(appPackages[i].appPath)) {
+                    console.log(extensionPrefix + `Did not find apppackage ${appPackages[i].appName}, so it gets deleted`);
+                    this.alApps.splice(this.alApps.findIndex(alApp => alApp.appPath === appPackages[i].appPath));
                 }
             }
 

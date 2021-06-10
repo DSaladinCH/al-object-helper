@@ -139,7 +139,7 @@ export class ALFunction {
 
                 parameters += `${alVariable.variableName}: ${alVariable.dataType}`;
                 if (alVariable.subType && alVariable.subType !== "") {
-                    if (/\W/.test(alVariable.subType) && !alVariable.subType.startsWith("\"")) {
+                    if (/\W/.test(alVariable.subType) && !alVariable.subType.startsWith("\"") && !alVariable.subType.startsWith("of")) {
                         parameters += ` "${alVariable.subType}"`;
                     }
                     else {

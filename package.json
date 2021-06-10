@@ -24,6 +24,17 @@
 	"categories": [
 		"Other"
 	],
+	"keywords": [
+		"AL",
+		"AL Extension",
+		"Microsoft Business Central",
+		"Quick Access",
+		"Event Publishers",
+		"Event Subscribers",
+		"Events",
+		"Definitions",
+		"Hover"
+	],
 	"activationEvents": [
 		"workspaceContains:.alpackages",
 		"onLanguage:al"
@@ -122,6 +133,7 @@
 		"fs-extra": "^9.1.0",
 		"jszip": "^3.6.0",
 		"line-reader": "^0.4.0",
-		"os": "^0.1.1"
+		"os": "^0.1.1",
+		"underscore": "^1.13.1"
 	}
 }
