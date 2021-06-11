@@ -72,9 +72,12 @@ Please report these in the Git Repository.
 * Copy Event (`Shift+Alt+E` on Windows)
 
 ## Known Issues
--
+- Reloading of objects causes perfomance issues
 
 ## Release Notes
+### 2.1.1
+- Reverted reloading of objects because of performance issues
+
 ### 2.1.0
 - Fixed a event subscriber bug with array parameters
 - Added a reload when opening the al object helper searchbar
