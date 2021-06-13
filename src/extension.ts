@@ -32,7 +32,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	// context.subscriptions.push(vscode.window.registerTreeDataProvider("alObjectHelperObjectList", new ALObjectHelperTreeDataProvider()));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
-		//await reader.startReading();
+		if (reader.autoReloadObjects){
+			await reader.startReading();
+		}
 		
 		const alObject = await UIManagement.selectALObjectInApps(reader.alApps);
 		if (!alObject) {
@@ -48,7 +50,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectOfApp", async function () {
-		//await reader.startReading();
+		if (reader.autoReloadObjects){
+			await reader.startReading();
+		}
 
 		const alApp = await UIManagement.selectALApp(reader.alApps);
 		if (!alApp) {
@@ -69,7 +73,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.copyEvent", async function () {
-		//await reader.startReading();
+		if (reader.autoReloadObjects){
+			await reader.startReading();
+		}
 		
 		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
@@ -99,7 +105,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.jumpToEventSubscriber", async function () {
-		//await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+		if (reader.autoReloadObjects){
+			await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+		}
 		
 		const alFunction = await UIManagement.selectEventSubscriber(reader.alApps.filter(alApp => alApp.appType === AppType.local));
 		if (!alFunction) {
@@ -132,6 +140,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectList", async function () {
 		UIManagement.showObjectListPanel(reader.alApps);
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reloadObjects", async function () {
+		await reader.startReading();
 	}));
 
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((textEditor) => {

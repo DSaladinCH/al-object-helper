@@ -8,7 +8,7 @@
 	},
 	"license": "MIT",
 	"description": "",
-	"version": "2.1.1",
+	"version": "2.1.2",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"engines": {
 		"vscode": "^1.53.0"
@@ -65,6 +65,10 @@
 			{
 				"command": "al-object-helper.showObjectExtension",
 				"title": "AL Helper: Show Extensions"
+			},
+			{
+				"command": "al-object-helper.reloadObjects",
+				"title": "AL Helper: Reload Objects"
 			}
 		],
 		"keybindings": [
@@ -91,12 +95,21 @@
 		},
 		"configuration": {
 			"type": "object",
-			"title": "AL Object Helper Configuration",
+			"title": "AL Object Helper",
 			"properties": {
 				"alObjectHelper.printDebug": {
 					"type": "boolean",
 					"default": "false",
-					"description": "Print debug messages in output channel"
+					"title": "Print Debug Messages",
+					"description": "Print debug messages in output channel",
+					"scope": "machine-overridable"
+				},
+				"alObjectHelper.suppressAutoReloadObjects": {
+					"type": "boolean",
+					"default": "true",
+					"title": "Suppress auto reload Objects",
+					"description": "Suppress the auto reload of objects when using a al object helper search command (Requires a fast CPU if set to false)",
+					"scope": "machine-overridable"
 				}
 			}
 		}
