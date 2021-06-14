@@ -118,12 +118,11 @@
 		"rootDir"
 	],
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"lint": "eslint src --ext ts",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"test": "node ./out/test/runTest.js"
+		"vscode:prepublish": "npm run -S esbuild-base",
+		"esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+		"esbuild": "npm run -S esbuild-base",
+		"esbuild-watch": "npm run -S esbuild-base --watch",
+		"test-compile": "tsc -p ./"
 	},
 	"devDependencies": {
 		"@types/fs-extra": "^9.0.7",
@@ -135,6 +134,7 @@
 		"@types/vscode": "^1.53.0",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
 		"@typescript-eslint/parser": "^2.30.0",
+		"esbuild": "^0.12.8",
 		"eslint": "^6.8.0",
 		"glob": "^7.1.6",
 		"mocha": "^7.1.2",
