@@ -118,18 +118,18 @@
 		"rootDir"
 	],
 	"scripts": {
-		"vscode:prepublish": "npm run -S esbuild-base",
-		"esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
-		"esbuild": "npm run -S esbuild-base",
-		"esbuild-watch": "npm run -S esbuild-base --watch",
-		"test-compile": "tsc -p ./"
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint src --ext ts",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
 		"@types/fs-extra": "^9.0.7",
 		"@types/glob": "^7.1.1",
 		"@types/line-reader": "0.0.33",
 		"@types/mocha": "^7.0.2",
-		"@types/n-readlines": "^1.0.1",
 		"@types/node": "^13.11.0",
 		"@types/vscode": "^1.53.0",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
@@ -144,11 +144,8 @@
 	"dependencies": {
 		"clipboardy": "^2.3.0",
 		"fs-extra": "^9.1.0",
-		"glob-parent": "^6.0.0",
 		"jszip": "^3.6.0",
 		"line-reader": "^0.4.0",
-		"lodash": "^4.17.21",
-		"os": "^0.1.1",
-		"underscore": "^1.13.1"
+		"lodash": "^4.17.21"
 	}
 }
