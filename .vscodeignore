@@ -1,7 +1,7 @@
 .vscode/**
 .vscode-test/**
 out/test/**
-out/ui/**
+out/ui/objectlist/**
 src/**
 Images/**
 !Images/ALObjectHelper_Small.png

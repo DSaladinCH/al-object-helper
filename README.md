@@ -8,7 +8,9 @@ Searching for a event? Just use the integrated event search and copy the functio
 
 In a app package object, it is possible to view definitions and hover over them. \
 This functionality may still contain errors. Possibly there are also definitions which have not yet been implemented. \
-Please report these in the Git Repository.
+Please report these in the git Repository.
+
+Also, please report any bug in the git repository.
 
 ## Features
 * **Open objects** with a easy shortcut
