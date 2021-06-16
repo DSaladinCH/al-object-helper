@@ -1,6 +1,14 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.1.2] - 2021-06-15
+### Added
+- Option to suppress the auto reload
+- Reload command
+
+### Improved
+- Shortened the vsix file
+
 ## [2.1.1] - 2021-06-11
 ### Fixed
 - Reverted reloading of objects because of performance issues

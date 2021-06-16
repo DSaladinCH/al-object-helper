@@ -77,6 +77,11 @@ Please report these in the Git Repository.
 - Reloading of objects causes perfomance issues
 
 ## Release Notes
+### 2.1.2
+- Added option to suppress the auto reload
+- Added reload command
+- Shortened the vsix file
+
 ### 2.1.1
 - Reverted reloading of objects because of performance issues
 
