@@ -47,16 +47,16 @@ export class ALApp {
      * @param newAlObject The al object which should be added
      */
     addObject(newAlObject: ALObject) {
-        var existingALObject = this.alObjects.find(alObject => alObject.objectType === newAlObject.objectType && alObject.objectID === newAlObject.objectID &&
+        var index = this._alObjects.findIndex(alObject => alObject.objectType === newAlObject.objectType && alObject.objectID === newAlObject.objectID &&
             alObject.alApp.appName === newAlObject.alApp.appName);
 
         // if the object already exists, update it
-        if (existingALObject) {
-            existingALObject = newAlObject;
+        if (index !== -1) {
+            this._alObjects[index] = newAlObject;
             return;
         }
 
-        this.alObjects.push(newAlObject);
+        this._alObjects.push(newAlObject);
     }
 
     /**

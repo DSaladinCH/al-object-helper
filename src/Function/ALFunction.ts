@@ -27,6 +27,11 @@ export class ALFunction {
         this.lineNo = settings.lineNo;
         if (settings.parameters) { this.parameters = settings.parameters; }
         this.returnValue = settings.returnValue;
+
+        if (functionType === FunctionType.EventSubscriber){
+            // event subscribers are allways local
+            this.isLocal = true;
+        }
     }
 
     /**
@@ -48,7 +53,7 @@ export class ALFunction {
 
                 parameters += `${alVariable.variableName}: ${alVariable.dataType}`;
                 if (alVariable.subType && alVariable.subType !== "") {
-                    if (/\W/.test(alVariable.subType) && !alVariable.subType.startsWith("\"")) {
+                    if (/\W/.test(alVariable.subType) && !alVariable.subType.startsWith("\"") && !alVariable.subType.startsWith("of")) {
                         parameters += ` "${alVariable.subType}"`;
                     }
                     else {
@@ -60,19 +65,19 @@ export class ALFunction {
                     parameters += " temporary";
                 }
 
-                parameters += ";";
+                parameters += "; ";
             });
 
             // remove last ;
-            parameters = parameters.substring(0, parameters.length - 1);
+            parameters = parameters.substring(0, parameters.length - 2);
         }
 
         functionText += `procedure ${this.functionName}(${parameters})`;
 
         if (this.returnValue) {
             functionText += `: ${this.returnValue.dataType}`;
-            if (this.returnValue.subType) {
-                if (/\W/.test(this.returnValue.subType) && !this.returnValue.subType.startsWith("\"")) {
+            if (this.returnValue.subType && this.returnValue.subType !== "") {
+                if (/\W/.test(this.returnValue.subType) && !this.returnValue.subType.startsWith("\"") && !this.returnValue.subType.startsWith("of")) {
                     functionText += ` "${this.returnValue.subType}"`;
                 }
                 else {
@@ -139,7 +144,7 @@ export class ALFunction {
 
                 parameters += `${alVariable.variableName}: ${alVariable.dataType}`;
                 if (alVariable.subType && alVariable.subType !== "") {
-                    if (/\W/.test(alVariable.subType) && !alVariable.subType.startsWith("\"")) {
+                    if (/\W/.test(alVariable.subType) && !alVariable.subType.startsWith("\"") && !alVariable.subType.startsWith("of")) {
                         parameters += ` "${alVariable.subType}"`;
                     }
                     else {

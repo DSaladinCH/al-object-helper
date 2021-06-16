@@ -8,7 +8,9 @@ Searching for a event? Just use the integrated event search and copy the functio
 
 In a app package object, it is possible to view definitions and hover over them. \
 This functionality may still contain errors. Possibly there are also definitions which have not yet been implemented. \
-Please report these in the Git Repository.
+Please report these in the git Repository.
+
+Also, please report any bug in the git repository.
 
 ## Features
 * **Open objects** with a easy shortcut
@@ -72,9 +74,21 @@ Please report these in the Git Repository.
 * Copy Event (`Shift+Alt+E` on Windows)
 
 ## Known Issues
--
+- Reloading of objects causes perfomance issues
 
 ## Release Notes
+### 2.1.2
+- Added option to suppress the auto reload
+- Added reload command
+- Shortened the vsix file
+
+### 2.1.1
+- Reverted reloading of objects because of performance issues
+
+### 2.1.0
+- Fixed a event subscriber bug with array parameters
+- Added a reload when opening the al object helper searchbar
+
 ### 2.0.0
 - Completely reworked extension and converted it to TypeScript
 - Faster reading

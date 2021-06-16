@@ -15,13 +15,16 @@ export class ALFunctionItem {
      */
     constructor(alObject: ALObject, alFunction: ALFunction, includeElementName?: boolean) {
         this.label = alFunction.functionName;
-        if (includeElementName) {
-            this.label += alFunction.functionArgument?.eventElementName.replace(/\W/g, "");
+        if (includeElementName && alFunction.functionArgument) {
+            this.label += alFunction.functionArgument.eventElementName.replace(/\W/g, "");
         }
 
         if (alFunction.functionType === FunctionType.EventSubscriber) {
             if (alFunction.functionArgument) {
-                this.label = alFunction.functionArgument.subscriberEventName + alFunction.functionArgument.eventElementName.replace(/\W/g, "");
+                this.label = alFunction.functionArgument.subscriberEventName;
+                if (alFunction.functionArgument.eventElementName) {
+                    this.label += alFunction.functionArgument.eventElementName.replace(/\W/g, "");
+                }
                 this.description = `${alFunction.functionArgument.subscriberObjectType} ${alFunction.functionArgument.subscriberObjectName}`;
             }
         }

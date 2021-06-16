@@ -31,11 +31,13 @@ export class UIManagement {
     static async selectALObjectInApps(alApps: ALApp[]): Promise<ALObject | undefined> {
         var alObjectItems: ALObjectItem[] = [];
         alApps.forEach(alApp => {
-            alApp.alObjects.forEach(alObject => {
-                alObjectItems.push(new ALObjectItem(alObject));
-            });
+            const realALApp = reader.alApps.find(a => a.appName === alApp.appName);
+            if (realALApp){
+                realALApp.alObjects.forEach(alObject => {
+                    alObjectItems.push(new ALObjectItem(alObject));
+                });
+            }
         });
-
 
         return await this.showALObjectDialog(alObjectItems);
     }
@@ -50,7 +52,7 @@ export class UIManagement {
     }
 
     private static async showALObjectDialog(alObjectItems: ALObjectItem[]): Promise<ALObject | undefined> {
-        return new Promise<ALObject | undefined>((resolve) => {
+        return new Promise<ALObject | undefined>(async (resolve) => {
             const quickPick: vscode.QuickPick<vscode.QuickPickItem> = vscode.window.createQuickPick();
             quickPick.items = alObjectItems;
             quickPick.placeholder = "Search for a Object or use shortcut";

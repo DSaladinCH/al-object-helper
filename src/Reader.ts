@@ -8,14 +8,16 @@ import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunct
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
-    outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ALObjectHelper");
+    outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("AL Object Helper");
     workspaceConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration();
     alApps: ALApp[] = [];
     printDebug: boolean = false;
+    autoReloadObjects: boolean = false;
 
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context;
         this.printDebug = this.workspaceConfig.get("alObjectHelper.printDebug") as boolean;
+        this.autoReloadObjects = !this.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
 
         if (vscode.workspace.workspaceFolders) {
             vscode.workspace.workspaceFolders.forEach((element) => {
@@ -30,7 +32,9 @@ export class Reader {
 
         vscode.workspace.onDidChangeConfiguration((e) => {
             // update configurations
+            this.workspaceConfig = vscode.workspace.getConfiguration();
             this.printDebug = this.workspaceConfig.get("alObjectHelper.printDebug") as boolean;
+            this.autoReloadObjects = !this.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
         });
     }
 

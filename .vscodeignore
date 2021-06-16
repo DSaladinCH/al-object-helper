@@ -1,7 +1,10 @@
 .vscode/**
 .vscode-test/**
 out/test/**
+out/ui/objectlist/**
 src/**
+Images/**
+!Images/ALObjectHelper_Small.png
 .gitignore
 vsc-extension-quickstart.md
 **/tsconfig.json

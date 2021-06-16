@@ -8,7 +8,7 @@
 	},
 	"license": "MIT",
 	"description": "",
-	"version": "2.0.0",
+	"version": "2.1.2",
 	"icon": "Images/ALObjectHelper_Small.png",
 	"engines": {
 		"vscode": "^1.53.0"
@@ -67,6 +67,10 @@
 				"title": "AL Helper: Show Extensions"
 			},
 			{
+				"command": "al-object-helper.reloadObjects",
+				"title": "AL Helper: Reload Objects"
+			},
+			{
 				"command": "al-object-helper.openALObjectList",
 				"title": "AL Helper: Open AL Object List"
 			}
@@ -113,12 +117,21 @@
 		},
 		"configuration": {
 			"type": "object",
-			"title": "AL Object Helper Configuration",
+			"title": "AL Object Helper",
 			"properties": {
 				"alObjectHelper.printDebug": {
 					"type": "boolean",
 					"default": "false",
-					"description": "Print debug messages in output channel"
+					"title": "Print Debug Messages",
+					"description": "Print debug messages in output channel",
+					"scope": "machine-overridable"
+				},
+				"alObjectHelper.suppressAutoReloadObjects": {
+					"type": "boolean",
+					"default": "true",
+					"title": "Suppress auto reload Objects",
+					"description": "Suppress the auto reload of objects when using a al object helper search command (Requires a fast CPU if set to false)",
+					"scope": "machine-overridable"
 				}
 			}
 		}
@@ -139,11 +152,11 @@
 		"@types/glob": "^7.1.1",
 		"@types/line-reader": "0.0.33",
 		"@types/mocha": "^7.0.2",
-		"@types/n-readlines": "^1.0.1",
 		"@types/node": "^13.11.0",
 		"@types/vscode": "^1.53.0",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
 		"@typescript-eslint/parser": "^2.30.0",
+		"esbuild": "^0.12.8",
 		"eslint": "^6.8.0",
 		"glob": "^7.1.6",
 		"mocha": "^7.1.2",
@@ -154,8 +167,6 @@
 		"clipboardy": "^2.3.0",
 		"fs-extra": "^9.1.0",
 		"jszip": "^3.6.0",
-		"line-reader": "^0.4.0",
-		"os": "^0.1.1",
-		"underscore": "^1.13.1"
+		"line-reader": "^0.4.0"
 	}
 }

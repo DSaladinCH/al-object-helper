@@ -1,6 +1,25 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.1.2] - 2021-06-15
+### Added
+- Option to suppress the auto reload
+- Reload command
+
+### Improved
+- Shortened the vsix file
+
+## [2.1.1] - 2021-06-11
+### Fixed
+- Reverted reloading of objects because of performance issues
+
+## [2.1.0] - 2021-06-10
+### Added
+- Reload when opening the al object helper searchbar
+  
+### Fixed
+- Fixed a event subscriber bug with array parameters
+
 ## [2.0.0] - 2021-05-06
 ### Improved
 - Completely reworked extension and converted it to TypeScript
@@ -168,6 +187,8 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.1.1]: https://github.com/DSaladinCH/al-object-helper/compare/2.1.0...2.1.1
+[2.1.0]: https://github.com/DSaladinCH/al-object-helper/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.3...2.0.0
 [1.6.3]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.2...1.6.3
 [1.6.2]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.1...1.6.2
