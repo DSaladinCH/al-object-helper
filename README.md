@@ -8,7 +8,9 @@ Searching for a event? Just use the integrated event search and copy the functio
 
 In a app package object, it is possible to view definitions and hover over them. \
 This functionality may still contain errors. Possibly there are also definitions which have not yet been implemented. \
-Please report these in the Git Repository.
+Please report these in the git Repository.
+
+Also, please report any bug in the git repository.
 
 ## Features
 * **Open objects** with a easy shortcut
@@ -75,6 +77,16 @@ Please report these in the Git Repository.
 - Reloading of objects causes perfomance issues
 
 ## Release Notes
+### 2.1.3
+- Added option to only load symbol files
+- Added option to only show local files when running the command "Open AL Object"
+- Fixed reload command to recreate the reader class
+
+### 2.1.2
+- Added option to suppress the auto reload
+- Added reload command
+- Shortened the vsix file
+
 ### 2.1.1
 - Reverted reloading of objects because of performance issues
 
