@@ -1,10 +1,15 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
-## [2.1.2] - 2021-06-15
+## [2.1.3] - 2022-01-06
 ### Added
 - Option to suppress the auto reload
 - Reload command
+- Option to only load symbol files
+- Option to only show local files when running the command "Open AL Object"
+
+### Fixed
+- Fixed reload command to recreate the reader class
 
 ### Improved
 - Shortened the vsix file
@@ -187,6 +192,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.1.3]: https://github.com/DSaladinCH/al-object-helper/compare/2.1.1...2.1.3
 [2.1.1]: https://github.com/DSaladinCH/al-object-helper/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/DSaladinCH/al-object-helper/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/DSaladinCH/al-object-helper/compare/1.6.3...2.0.0

@@ -77,6 +77,11 @@ Please report these in the Git Repository.
 - Reloading of objects causes perfomance issues
 
 ## Release Notes
+### 2.1.3
+- Added option to only load symbol files
+- Added option to only show local files when running the command "Open AL Object"
+- Fixed reload command to recreate the reader class
+
 ### 2.1.2
 - Added option to suppress the auto reload
 - Added reload command
