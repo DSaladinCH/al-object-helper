@@ -13,11 +13,12 @@ export class Reader {
     alApps: ALApp[] = [];
     printDebug: boolean = false;
     autoReloadObjects: boolean = false;
+    onlyLoadSymbolFiles: boolean = false;
+    onlyShowLocalFiles: boolean = false;
 
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context;
-        this.printDebug = this.workspaceConfig.get("alObjectHelper.printDebug") as boolean;
-        this.autoReloadObjects = !this.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
+        this.loadConfiguration(this);
 
         if (vscode.workspace.workspaceFolders) {
             vscode.workspace.workspaceFolders.forEach((element) => {
@@ -32,10 +33,16 @@ export class Reader {
 
         vscode.workspace.onDidChangeConfiguration((e) => {
             // update configurations
-            this.workspaceConfig = vscode.workspace.getConfiguration();
-            this.printDebug = this.workspaceConfig.get("alObjectHelper.printDebug") as boolean;
-            this.autoReloadObjects = !this.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
+            this.loadConfiguration(this);
         });
+    }
+
+    loadConfiguration(reader: Reader) {
+        reader.workspaceConfig = vscode.workspace.getConfiguration();
+        reader.printDebug = reader.workspaceConfig.get("alObjectHelper.printDebug") as boolean;
+        reader.autoReloadObjects = !reader.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
+        reader.onlyLoadSymbolFiles = reader.workspaceConfig.get("alObjectHelper.onlyLoadSymbolFiles") as boolean;
+        reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
     }
 
     async startReading() {
@@ -134,7 +141,7 @@ export class Reader {
 
     async startReadingAppPackages(alApps: ALApp[]) {
         if (this.printDebug) { this.outputChannel.appendLine("Start reading app packages!"); }
-        if (alApps.length === 0){
+        if (alApps.length === 0) {
             return;
         }
 
@@ -321,13 +328,14 @@ export class Reader {
                 let nextFunctionArgument: ALFunctionArgument | undefined;
                 let collectionVariables: boolean = false;
 
-                lineReader.eachLine(file, async function (line, isLast, cb = async () => {
+                lineReader.eachLine(file, function (line, isLast, cb = async () => {
                     // Callback
                     if (firstLine) {
                         resolve(undefined);
                         return;
                     }
                     resolve(alObject);
+                    return;
                 }) {
                     if (isLast) {
                         cb(false);
@@ -349,6 +357,11 @@ export class Reader {
                         alObject = tempALObject;
                         firstLine = false;
                         alObject.addLocalEvents();
+                        // Finish searching because of user preferences
+                        if (reader.onlyLoadSymbolFiles) {
+                            cb(false);
+                            return false;
+                        }
                         return true;
                     }
 
@@ -479,7 +492,9 @@ export class Reader {
                 });
             }
             catch (error) {
-                console.log(extensionPrefix + error.message);
+                if (error instanceof Error) {
+                    console.log(extensionPrefix + error.message);
+                }
                 resolve(undefined);
             }
         });
