@@ -68,6 +68,10 @@
             {
                 "command": "al-object-helper.reloadObjects",
                 "title": "AL Helper: Reload Objects"
+            },
+            {
+                "command": "al-object-helper.checkLicense",
+                "title": "AL Helper: Check license"
             }
         ],
         "keybindings": [{
