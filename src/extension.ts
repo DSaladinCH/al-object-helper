@@ -170,12 +170,19 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage(`Loaded ${reader.licenseInformation?.licenseObjects.length} license objects for ${reader.licenseInformation?.customerName}`);
 		}
 
-		var alobjectsOutOfRange = await reader.checkLicense();
-		alobjectsOutOfRange = alobjectsOutOfRange.sort((a, b) => a.objectID.localeCompare(b.objectID));
-		alobjectsOutOfRange.forEach(alObject => {
-			console.log(alObject.objectType + ";" + alObject.objectID);
+		var alObjectsOutOfRange = await reader.checkLicense();
+		alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectID.localeCompare(b.objectID));
+		if (alObjectsOutOfRange.length === 0) {
+			reader.outputChannel.appendLine("All objects are in range of the license file");
+			return;
+		}
+
+		reader.outputChannel.show(true);
+		reader.outputChannel.appendLine("Not all objects are in range. Objects out of range:");
+		alObjectsOutOfRange.forEach(alObject => {
+			reader.outputChannel.appendLine(`${ObjectType[alObject.objectType]} ${alObject.objectID} - ${alObject.objectName}`);
 		});
-		// Show objects
+		reader.outputChannel.appendLine(`Total: ${alObjectsOutOfRange.length} objects`);
 	}));
 
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((textEditor) => {
