@@ -4,13 +4,15 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation } from "./internal";
+import { isModuleNamespaceObject } from "util/types";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
     outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("AL Object Helper");
     workspaceConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration();
     alApps: ALApp[] = [];
+    licenseInformation: LicenseInformation | undefined;
     printDebug: boolean = false;
     autoReloadObjects: boolean = false;
     onlyLoadSymbolFiles: boolean = false;
@@ -670,6 +672,139 @@ export class Reader {
                 this.outputChannel.appendLine(`Found all app files in ${alApp.appPath}`);
             }
             resolve();
+        });
+    }
+
+    loadLicense(licenseFilePath: vscode.Uri): Promise<void> {
+        return new Promise<void>((resolve) => {
+            var customerName: string, productVersion: string, expiryDate: string;
+            var licenseObjects: LicenseObject[] = [];
+            const licenseInformationPattern: RegExp = /^([^:]+):([^\r\n]+)$/i;
+            const objectAssignmentPattern: RegExp = /^(.{30,60})(.{15})(.{15})(.{15,20})([RIMDX-]{5})/i;
+            const unsupportedCharacterPattern: RegExp = /\uFFFD/g;
+            var licenseInformation: Boolean;
+            var objectAssignment: Boolean;
+            var moduleObjects: Boolean;
+            var reader = this;
+
+            lineReader.eachLine(licenseFilePath.fsPath, function (line, isLast, cb = async () => {
+                // Callback
+                reader.licenseInformation = new LicenseInformation(customerName, productVersion, expiryDate);
+                reader.licenseInformation.licenseObjects = licenseObjects;
+                resolve();
+                return;
+            }) {
+                if (isLast) {
+                    cb(false);
+                    return false;
+                }
+
+                switch (line) {
+                    case "License and Address Information":
+                        licenseInformation = true;
+                        objectAssignment = false;
+                        moduleObjects = false;
+                        break;
+                    case "Object Assignment":
+                        licenseInformation = false;
+                        objectAssignment = true;
+                        moduleObjects = false;
+                        break;
+                    case "Module Objects and Permissions":
+                        licenseInformation = false;
+                        objectAssignment = false;
+                        moduleObjects = true;
+                        break;
+                    case "Limited Usage Ranges":
+                        licenseInformation = false;
+                        objectAssignment = false;
+                        moduleObjects = false;
+
+                        cb(false);
+                        return false;
+                }
+
+                var objectTypeStr: string, rangeFrom: string, rangeTo: string, rimdx: string, moduleName: string;
+                var objectType: ObjectType | undefined;
+
+                if (licenseInformation) {
+                    const match = licenseInformationPattern.exec(line);
+                    if (!match) { return true; }
+
+                    switch (match[1].replace(unsupportedCharacterPattern, '').trim()) {
+                        case "Name": {
+                            customerName = match[2].replace(unsupportedCharacterPattern, '').trim();
+                        }
+                        case "Product Version": {
+                            productVersion = match[2].replace(unsupportedCharacterPattern, '').trim();
+                        }
+                        case "Enhancement Expiry Date": {
+                            expiryDate = match[2].replace(unsupportedCharacterPattern, '').trim();
+                        }
+                    }
+                }
+                else if (objectAssignment && line.length === 80) {
+                    const match = objectAssignmentPattern.exec(line);
+                    if (!match) { return true; }
+
+                    objectTypeStr = match[1].replace(unsupportedCharacterPattern, '').trim();
+                    rangeFrom = match[3].replace(unsupportedCharacterPattern, '').trim();
+                    rangeTo = match[4].replace(unsupportedCharacterPattern, '').trim();
+                    rimdx = match[5].replace(unsupportedCharacterPattern, '').trim();
+                    objectType = LicenseObject.getObjectType(objectTypeStr);
+                    if (objectType === undefined) { return true; }
+
+                    licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx));
+                }
+                else if (moduleObjects && line.length === 115) {
+                    const match = objectAssignmentPattern.exec(line);
+                    if (!match) { return true; }
+
+                    objectTypeStr = match[4].replace(unsupportedCharacterPattern, '').trim();
+                    moduleName = match[1].replace(unsupportedCharacterPattern, '').trim();
+                    rangeFrom = match[2].replace(unsupportedCharacterPattern, '').trim();
+                    rangeTo = match[3].replace(unsupportedCharacterPattern, '').trim();
+                    rimdx = match[5].replace(unsupportedCharacterPattern, '').trim();
+                    objectType = LicenseObject.getObjectType(objectTypeStr);
+                    if (objectType === undefined) { return true; }
+
+                    if (moduleName === "Essentials Objects (hidden)") { return true; }
+                    licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx, moduleName));
+                }
+
+                return true;
+            });
+        });
+    }
+
+    checkLicense(): Promise<ALObject[]> {
+        return new Promise<ALObject[]>((resolve) => {
+            var reader = this;
+            var alObjectsOutOfRange: ALObject[] = [];
+
+            if (!reader.licenseInformation) {
+                resolve(alObjectsOutOfRange);
+                return alObjectsOutOfRange;
+            }
+
+            this.alApps.filter(a => a.appType === AppType.local).forEach((app) => {
+                app.alObjects.forEach((alObject) => {
+                    if (!LicenseObject.isLicenseImportant(alObject.objectType)) { return; }
+
+                    var outOfRange = true;
+                    reader.licenseInformation?.licenseObjects.filter(l => l.objectType === alObject.objectType).forEach((licenseObject) => {
+                        if (alObject.objectID >= licenseObject.rangeFrom && alObject.objectID <= licenseObject.rangeTo) {
+                            outOfRange = false;
+                        }
+                    });
+
+                    if (outOfRange) {
+                        alObjectsOutOfRange.push(alObject);
+                    }
+                });
+            });
+
+            resolve(alObjectsOutOfRange);
         });
     }
 
