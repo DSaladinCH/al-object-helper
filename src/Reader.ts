@@ -777,8 +777,8 @@ export class Reader {
         });
     }
 
-    checkLicense(): Promise<ALObject[]> {
-        return new Promise<ALObject[]>((resolve) => {
+    checkLicense(showOuput: Boolean): Promise<ALObject[]> {
+        return new Promise<ALObject[]>(async (resolve) => {
             var reader = this;
             var alObjectsOutOfRange: ALObject[] = [];
 
@@ -803,6 +803,28 @@ export class Reader {
                     }
                 });
             });
+
+            alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectID.localeCompare(b.objectID));
+            if (showOuput) {
+                if (alObjectsOutOfRange.length === 0) {
+                    vscode.window.showInformationMessage("All objects are in range of the license file");
+                    resolve(alObjectsOutOfRange);
+                    return;
+                }
+
+                const separator = "-----------------------------------------------------------------------------------\r\n";
+                var outputText = "";
+                outputText += separator;
+                outputText += "Not all objects are in range. Objects out of range:\r\n";
+                outputText += separator + "\r\n";
+                alObjectsOutOfRange.forEach(alObject => {
+                    outputText += `${ObjectType[alObject.objectType]} ${alObject.objectID} - ${alObject.objectName}\r\n`;
+                });
+                outputText += "\r\n" + separator;
+                outputText += `Total: ${alObjectsOutOfRange.length} objects`;
+                var textDocument = await vscode.workspace.openTextDocument({ content: outputText });
+                await vscode.window.showTextDocument(textDocument, vscode.ViewColumn.Active);
+            }
 
             resolve(alObjectsOutOfRange);
         });
