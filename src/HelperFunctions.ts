@@ -100,7 +100,9 @@ export class HelperFunctions {
                             }
                         }
                         catch (error) {
-                            console.log(extensionPrefix + error.message);
+                            if (error instanceof Error) {
+                                console.log(extensionPrefix + error.message);
+                            }
                         }
                     }
                     resolve(alFiles);
@@ -108,7 +110,9 @@ export class HelperFunctions {
                 });
             }
             catch (error) {
-                console.log(extensionPrefix + error.message);
+                if (error instanceof Error) {
+                    console.log(extensionPrefix + error.message);
+                }
                 resolve(alFiles);
                 return;
             }

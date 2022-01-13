@@ -1,7 +1,6 @@
 // The module "vscode" contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import clipboard = require("clipboardy");
 import { ALApp, ALDefinitionProvider, ALExtension, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, ALObjectHelperTreeDataProvider, AppType, FunctionType, HelperFunctions, ObjectType, Reader, UIManagement } from './internal';
 
 // this method is called when your extension is activated
@@ -32,11 +31,18 @@ export async function activate(context: vscode.ExtensionContext) {
 	// context.subscriptions.push(vscode.window.registerTreeDataProvider("alObjectHelperObjectList", new ALObjectHelperTreeDataProvider()));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
-		if (reader.autoReloadObjects){
+		if (reader.autoReloadObjects) {
 			await reader.startReading();
 		}
-		
-		const alObject = await UIManagement.selectALObjectInApps(reader.alApps);
+
+		var alObject: ALObject | undefined;
+		if (reader.onlyShowLocalFiles) {
+			alObject = await UIManagement.selectALObjectInApps(reader.alApps.filter(a => a.appType === AppType.local));
+		}
+		else {
+			alObject = await UIManagement.selectALObjectInApps(reader.alApps);
+		}
+
 		if (!alObject) {
 			return;
 		}
@@ -50,7 +56,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectOfApp", async function () {
-		if (reader.autoReloadObjects){
+		if (reader.autoReloadObjects) {
 			await reader.startReading();
 		}
 
@@ -73,10 +79,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.copyEvent", async function () {
-		if (reader.autoReloadObjects){
+		if (reader.autoReloadObjects) {
 			await reader.startReading();
 		}
-		
+
 		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
 			alApp.alObjects.forEach(alObject => {
@@ -100,15 +106,15 @@ export async function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		clipboard.writeSync(alFunction.getEventSubscriberText(alObject));
+		await vscode.env.clipboard.writeText(alFunction.getEventSubscriberText(alObject));
 		vscode.window.showInformationMessage("Copied to Clipboard!");
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.jumpToEventSubscriber", async function () {
-		if (reader.autoReloadObjects){
+		if (reader.autoReloadObjects) {
 			await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
 		}
-		
+
 		const alFunction = await UIManagement.selectEventSubscriber(reader.alApps.filter(alApp => alApp.appType === AppType.local));
 		if (!alFunction) {
 			return;
@@ -143,6 +149,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reloadObjects", async function () {
+		reader = new Reader(context);
 		await reader.startReading();
 	}));
 
