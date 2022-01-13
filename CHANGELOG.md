@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.1.4] - 2022-01-13
+### Changed
+- Minimum VS Code version to 1.60.0
+
 ## [2.1.3] - 2022-01-06
 ### Added
 - Option to suppress the auto reload
