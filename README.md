@@ -77,6 +77,9 @@ Please report these in the Git Repository.
 - Reloading of objects causes perfomance issues
 
 ## Release Notes
+### 2.1.4
+- Changed minimum VS Code version to 1.60.0
+
 ### 2.1.3
 - Added option to only load symbol files
 - Added option to only show local files when running the command "Open AL Object"
