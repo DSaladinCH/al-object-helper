@@ -145,7 +145,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectList", async function () {
-		UIManagement.showObjectListPanel(reader.alApps);
+		//UIManagement.showObjectListPanel(reader.alApps);
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reloadObjects", async function () {
@@ -170,7 +170,8 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage(`Loaded ${reader.licenseInformation?.licenseObjects.length} license objects for ${reader.licenseInformation?.customerName}`);
 		}
 
-		var alObjectsOutOfRange = await reader.checkLicense(true);
+		var alObjectsOutOfRange = await reader.checkLicense(false);
+		UIManagement.showLicenseCheckResult(alObjectsOutOfRange);
 	}));
 
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((textEditor) => {

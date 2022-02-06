@@ -185,26 +185,26 @@ export class UIManagement {
         });
     }
 
-    static async showObjectListPanel(alApps: ALApp[]) {
+    static async showLicenseCheckResult(alObjectsOutOfRange: ALObject[]) {
         // Create and show panel
         const panel = vscode.window.createWebviewPanel(
-            'alObjectList',
-            'AL Object List',
+            'licenseCheck',
+            'License check',
             vscode.ViewColumn.One,
             {}
         );
 
         // And set its HTML content
-        panel.webview.html = await this.getWebviewContent();
+        panel.webview.html = await this.getLicenseCheckWebviewContent(panel);
     }
 
-    private static async getWebviewContent(): Promise<string> {
+    private static async getLicenseCheckWebviewContent(panel: vscode.WebviewPanel): Promise<string> {
         return new Promise<string>((resolve) => {
             // Get path to resource on disk
             // And get the special URI to use with the webview
-            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'objectlist', 'index.html'));
-            //const appOnDiskPath = vscode.Uri.file(path.join(this._extensionPath, 'designer', 'scripts', 'vendor-bundle.js'));
-            //const appJsSrc: any = this._panel.webview.asWebviewUri(appOnDiskPath);
+            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'licenseCheck', 'index.html'));
+            const appOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'licenseCheck', 'css', 'styles.css'));
+            const appCssSrc: any = panel.webview.asWebviewUri(appOnDiskPath);
 
             fs.readFile(htmlOnDiskPath.fsPath, (error, data) => {
                 if (error) {
@@ -213,6 +213,7 @@ export class UIManagement {
                 }
 
                 let content = data.toString();
+                content = content.replace('${css/styles.css}', appCssSrc);
                 // content = content.replace('scripts/vendor-bundle.js', appJsSrc);
                 // content = content.replace('${panelMode}', this.panelMode);
                 // content = content.replace('${objectInfo}', JSON.stringify(this.objectInfo));
