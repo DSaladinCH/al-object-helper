@@ -768,7 +768,11 @@ export class Reader {
                     objectType = LicenseObject.getObjectType(objectTypeStr);
                     if (objectType === undefined) { return true; }
 
-                    if (moduleName === "Essentials Objects (hidden)") { return true; }
+                    if (moduleName === "Essentials Objects (hidden)") { 
+                        // No more important license data to import
+                        cb(false);
+                        return false;
+                     }
                     licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx, moduleName));
                 }
 
@@ -828,6 +832,38 @@ export class Reader {
 
             resolve(alObjectsOutOfRange);
         });
+    }
+
+    getFreeObjects(): Promise<ALObject[]> {
+        return new Promise<ALObject[]>((resolve => {
+            var reader = this;
+            var freeObjects: ALObject[] = [];
+
+            if (!reader.licenseInformation) {
+                resolve(freeObjects);
+                return freeObjects;
+            }
+
+            var localObjects: ALObject[] = [];
+            reader.alApps.filter(app => app.appType === AppType.local).forEach((alApp) => {
+                localObjects = localObjects.concat(alApp.alObjects);
+            });
+
+            reader.licenseInformation.licenseObjects.filter(licenseObject => !licenseObject.moduleName).forEach((licenseObject) => {
+                for (let i = parseInt(licenseObject.rangeFrom); i <= parseInt(licenseObject.rangeTo); i++) {
+                    const alObject = localObjects.find(alObject => alObject.objectType === licenseObject.objectType && parseInt(alObject.objectID) === i);
+                    if (alObject === undefined) {
+                        const tempFreeObject = ALObject.createByObjectType(licenseObject.objectType, "", i.toString(), "", ALApp.Empty());
+                        if (tempFreeObject) {
+                            freeObjects.push(tempFreeObject);
+                        }
+                    }
+                }
+            });
+
+            resolve(freeObjects);
+            return freeObjects;
+        }));
     }
 
     updateSetting(name: string, value: string) {
