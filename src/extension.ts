@@ -170,13 +170,13 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage(`Loaded ${reader.licenseInformation?.licenseObjects.length} license objects for ${reader.licenseInformation?.customerName}`);
 		}
 
-		var alObjectsOutOfRange = await reader.checkLicense(true);
+		var alObjectsOutOfRange = await reader.checkLicense(false);
 		var freeObjects = await reader.getFreeObjects();
 		freeObjects.forEach(alObject => {
 			reader.outputChannel.appendLine(`Type: ${ObjectType[alObject.objectType]} | ID: ${alObject.objectID}`);
 		});
 
-		//UIManagement.showLicenseCheckResult(alObjectsOutOfRange);
+		UIManagement.showLicenseCheckResult(alObjectsOutOfRange, freeObjects);
 	}));
 
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((textEditor) => {
