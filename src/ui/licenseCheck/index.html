@@ -5,41 +5,127 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
 
-    <link href="css/styles.css" rel="stylesheet">
+    <link href="${css/styles.css}" rel="stylesheet">
     <!-- FontAwesome -->
-    <link href="css/fontawesome.css" rel="stylesheet">
+    <link href="${css/fontawesome.css}" rel="stylesheet">
 </head>
 
 <body>
     <main>
-        <h1 style="margin-bottom: 0px">Not all objects are in range</h1>
-        <h4 style="margin-top: 0px">Total: 4 Objects</h4>
+        <h1 class="title">License Check</h1>
+        <h4 class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Objects not in range: 15 Objects</h4>
+        <h4 class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Free objects in license: 4 Objects</h4>
+        <h4 class="subtitle" style="margin-top: 0px">Status: </h4>
+        <!-- 1st Status (Color: Green): Everything is fine -->
+        <!-- 2nd Status (Color: Yellow): Some objects are out of range, but can be fixed -->
+        <!-- 3rd Status (Color: Yellow): All objects are covered by the license, but the license should be extended -->
+        <!-- 4th Status (Color: Red): Some objects are out of range and the license has no more free objects left -->
         <hr />
-        <table>
+        <table id="tbl_objects">
             <thead>
                 <tr>
-                    <td>Effected objects</td>
-                    <td>Possible fix</td>
+                    <td colspan="3">Effected objects</td>
+                    <td>Potential fix</td>
+                    <td colspan="2">Actions</td>
+                </tr>
+                <tr>
+                    <td>Type</td>
+                    <td>ID</td>
+                    <td>Name</td>
+                    <td>ID</td>
+                    <td>Accept fix</td>
+                    <td>Manual fix</td>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Table 50000</td>
+                <!-- <tr>
+                    <td>Table</td>
+                    <td>50042</td>
+                    <td>DS Test Table 1</td>
+                    <td>50055</td>
+                    <td><i class="fa-solid fa-circle-check"></i></td>
+                    <td></td>
                 </tr>
                 <tr>
-                    <td>Table 50001</td>
+                    <td>Table</td>
+                    <td>50043</td>
+                    <td>DS Test Table 2</td>
+                    <td>50056</td>
+                    <td><i class="fa-solid fa-circle-check"></i></td>
+                    <td></td>
                 </tr>
                 <tr>
-                    <td>Table 50002</td>
+                    <td>Table</td>
+                    <td>50044</td>
+                    <td>DS Test Table 3</td>
+                    <td>50057</td>
+                    <td><i class="fa-solid fa-circle-check"></i></td>
+                    <td></td>
                 </tr>
                 <tr>
-                    <td>Table 50003</td>
-                </tr>
+                    <td>Table</td>
+                    <td>50045</td>
+                    <td>DS Test Table 4</td>
+                    <td>50058</td>
+                    <td><i class="fa-solid fa-circle-check"></i></td>
+                    <td></td>
+                </tr> -->
             </tbody>
         </table>
     </main>
     <script>
         vscode = acquireVsCodeApi();
+
+        // Handle the message inside the webview
+        window.addEventListener('message', event => {
+            console.log("Received message");
+            const message = event.data; // The JSON data our extension sent
+
+            switch (message.command) {
+                case 'updateData':
+                    console.log("Received updateData command");
+                    var objects = JSON.parse(message.data);
+
+                    var tbl_objects = document.getElementById("tbl_objects");
+                    for (let i = 0; i < objects.length; i++) {
+                        const element = objects[i];
+                        
+                        // Create new row
+                        var tr = tbl_objects.insertRow(-1);
+
+                        // objectType
+                        let cell = tr.insertCell(-1);
+                        cell.textContent = element.objectType;
+
+                        // objectID
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.objectID;
+
+                        // objectName
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.objectName;
+
+                        // fixObjectID
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.fixObjectID;
+
+                        // acceptfixButton
+                        cell = tr.insertCell(-1);
+                        let fontAwesomeIcon = document.createElement("i");
+                        fontAwesomeIcon.classList.add("fa-solid");
+                        fontAwesomeIcon.classList.add("fa-circle-check");
+                        cell.appendChild(fontAwesomeIcon);
+
+                        // manualFixButton
+                        cell = tr.insertCell(-1);
+                        fontAwesomeIcon = document.createElement("i");
+                        fontAwesomeIcon.classList.add("fa-solid");
+                        fontAwesomeIcon.classList.add("fa-file-code");
+                        cell.appendChild(fontAwesomeIcon);
+                    }
+                    break;
+            }
+        });
     </script>
 </body>
 

@@ -26,28 +26,71 @@ body {
     color: var(--textColor);
     margin: 0px;
     height: 100%;
-    display: flex;
 }
 
 /* width */
- ::-webkit-scrollbar {
+/*::-webkit-scrollbar {
     width: 10px;
     border-radius: 0.25em;
-}
+}*/
 
 /* Track */
- ::-webkit-scrollbar-track {
+/*::-webkit-scrollbar-track {
     background: var(--scrollbarBackgroundColor);
     border-radius: 0.25em;
-}
+}*/
 
 /* Handle */
- ::-webkit-scrollbar-thumb {
+/*::-webkit-scrollbar-thumb {
     background: var(--scrollbarThumbColor);
     border-radius: 0.25em;
-}
+}*/
 
 /* Handle on hover */
- ::-webkit-scrollbar-thumb:hover {
+/*::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbarThumbHoverColor);
+}*/
+
+.title {
+    font-size: xx-large;
+}
+
+.subtitle {
+    font-size: larger;
+}
+
+table {
+    font-family: Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+}
+
+table td, table th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+table tr:nth-child(even) {
+    background-color: var(--vscode-tree-tableOddRowsBackground);
+}
+
+table tr:hover {
+    background-color: #ddd;
+}
+
+table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #04AA6D;
+    color: white;
+}
+
+thead {
+    font-size: large;
+}
+
+tbody {
+    font-size: medium;
 }
