@@ -13,28 +13,26 @@
 <body>
     <main>
         <h1 class="title">License Check</h1>
-        <h4 class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Objects not in range: 15 Objects</h4>
-        <h4 class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Free objects in license: 4 Objects</h4>
-        <h4 class="subtitle" style="margin-top: 0px">Status: </h4>
-        <!-- 1st Status (Color: Green): Everything is fine -->
-        <!-- 2nd Status (Color: Yellow): Some objects are out of range, but can be fixed -->
-        <!-- 3rd Status (Color: Yellow): All objects are covered by the license, but the license should be extended -->
-        <!-- 4th Status (Color: Red): Some objects are out of range and the license has no more free objects left -->
+        <h4 id="lbl_notInRange" class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Objects not in range: 15
+            Objects</h4>
+        <h4 id="lbl_freeObjects" class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Free objects in license: 4
+            Objects</h4>
+        <h4 id="lbl_status" class="subtitle" style="margin-top: 0px">Status: Everything is fine</h4>
         <hr />
         <table id="tbl_objects">
             <thead>
                 <tr>
-                    <td colspan="3">Effected objects</td>
-                    <td>Potential fix</td>
-                    <td colspan="2">Actions</td>
+                    <th colspan="3">Effected objects</th>
+                    <th>Potential fix</th>
+                    <th colspan="2">Actions</th>
                 </tr>
                 <tr>
-                    <td>Type</td>
-                    <td>ID</td>
-                    <td>Name</td>
-                    <td>ID</td>
-                    <td>Accept fix</td>
-                    <td>Manual fix</td>
+                    <th>Type</th>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th>Accept fix</th>
+                    <th>Manual fix</th>
                 </tr>
             </thead>
             <tbody>
@@ -77,21 +75,45 @@
         vscode = acquireVsCodeApi();
 
         // Handle the message inside the webview
-        window.addEventListener('message', event => {
-            console.log("Received message");
-            const message = event.data; // The JSON data our extension sent
+        window.addEventListener("message", event => {
+            // The data the extension sent
+            const message = event.data;
 
             switch (message.command) {
-                case 'updateData':
-                    console.log("Received updateData command");
-                    var objects = JSON.parse(message.data);
+                case "updateData":
+                    // Clear table before inserting the updated data
+                    var tbody = document.getElementById("tbl_objects").getElementsByTagName("tbody")[0];
+                    tbody.innerHTML = "";
 
-                    var tbl_objects = document.getElementById("tbl_objects");
+                    var licenseCheckInfo = JSON.parse(message.data);
+                    var objects = licenseCheckInfo.licenseCheckObjects;
+
+                    document.getElementById("lbl_notInRange").textContent = `Objects not in range: ${licenseCheckInfo.noOutOfRange} Objects`;
+                    document.getElementById("lbl_freeObjects").textContent = `Free objects in license: ${licenseCheckInfo.noFreeObjects} Objects`;
+                    var statusText = "Everything is fine";
+                    var statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-editor-foreground');
+
+                    if (licenseCheckInfo.noOutOfRange > 0 && licenseCheckInfo.noOutOfRange <= licenseCheckInfo.noFreeObjects) {
+                        statusText = "Some objects are out of range, but can be fixed";
+                        statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                    }
+                    else if (licenseCheckInfo.noOutOfRange === 0 && licenseCheckInfo.noFreeObjects > 0) {
+                        statusText = "All objects are covered by the license, but the license should be extended";
+                        statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                    }
+                    else if (licenseCheckInfo.noOutOfRange > 0 && licenseCheckInfo.noOutOfRange > licenseCheckInfo.noFreeObjects) {
+                        statusText = "Some objects are out of range and the license has no more or not enough free objects left to fix it";
+                        statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-errorForeground');
+                    }
+
+                    document.getElementById("lbl_status").textContent = `Status: ${statusText}`;
+                    document.getElementById("lbl_status").style.color = statusColor;
+
                     for (let i = 0; i < objects.length; i++) {
                         const element = objects[i];
-                        
+
                         // Create new row
-                        var tr = tbl_objects.insertRow(-1);
+                        var tr = tbody.insertRow(-1);
 
                         // objectType
                         let cell = tr.insertCell(-1);
@@ -111,21 +133,43 @@
 
                         // acceptfixButton
                         cell = tr.insertCell(-1);
+                        cell.classList.add("iconHolder");
+                        let fontAwesomeButton = document.createElement("button");
+                        fontAwesomeButton.setAttribute("onClick", `javascript: acceptFix("${element.fixObjectID}", "${element.objectPath}");`);
                         let fontAwesomeIcon = document.createElement("i");
                         fontAwesomeIcon.classList.add("fa-solid");
                         fontAwesomeIcon.classList.add("fa-circle-check");
-                        cell.appendChild(fontAwesomeIcon);
+                        fontAwesomeButton.appendChild(fontAwesomeIcon);
+                        cell.appendChild(fontAwesomeButton);
 
                         // manualFixButton
                         cell = tr.insertCell(-1);
+                        cell.classList.add("iconHolder");
+                        fontAwesomeButton = document.createElement("button");
+                        fontAwesomeButton.setAttribute("onClick", `javascript: manualFix("${element.objectPath}");`);
                         fontAwesomeIcon = document.createElement("i");
                         fontAwesomeIcon.classList.add("fa-solid");
                         fontAwesomeIcon.classList.add("fa-file-code");
-                        cell.appendChild(fontAwesomeIcon);
+                        fontAwesomeButton.appendChild(fontAwesomeIcon);
+                        cell.appendChild(fontAwesomeButton);
                     }
                     break;
             }
         });
+
+        function acceptFix(newID, sourcePath) {
+            vscode.postMessage({
+                command: "acceptFix",
+                data: { "newID": newID, "sourcePath": sourcePath }
+            });
+        }
+
+        function manualFix(sourcePath) {
+            vscode.postMessage({
+                command: "manualFix",
+                data: { "sourcePath": sourcePath }
+            });
+        }
     </script>
 </body>
 

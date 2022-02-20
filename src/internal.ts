@@ -66,6 +66,7 @@ export * from "./providers/ALObjectHelperTreeDataProvider";
 /***************/
 /*** License ***/
 /***************/
+export * from "./License/LicenseCheckInfo";
 export * from "./License/LicenseCheckObject";
 export * from "./license/LicenseInformation";
 export * from "./license/LicenseObject";

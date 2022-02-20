@@ -16,8 +16,4 @@ export class LicenseCheckObject {
         }
         this.objectPath = alObject.objectPath;
     }
-
-    public static getJson(licenseData: LicenseCheckObject[]): string {
-        return JSON.stringify(licenseData);
-    }
 }

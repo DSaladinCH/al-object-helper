@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import path = require("path");
-import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
+import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, LicenseCheckInfo, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
 import { resolve } from "path";
 
 export class UIManagement {
@@ -203,6 +203,17 @@ export class UIManagement {
                 }
             );
 
+            UIManagement.licenseCheckWebviewPanel.webview.onDidReceiveMessage((message) => {
+                switch (message.command) {
+                    case 'acceptFix':
+                        vscode.window.showInformationMessage("Accept fix: New ID: " + message.data.newID);
+                        return;
+                    case 'manualFix':
+                        vscode.window.showInformationMessage("Manual fix: Path: " + message.data.sourcePath);
+                        return;
+                }
+            });
+
             UIManagement.licenseCheckWebviewPanel.onDidDispose(() => {
                 UIManagement.licenseCheckWebviewPanel = undefined;
             });
@@ -245,7 +256,7 @@ export class UIManagement {
 
     private static async updateLicenseCheckPanel(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
         alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectType - b.objectType || Number(a.objectID) - Number(b.objectID));
-        
+
         var licenseData: LicenseCheckObject[] = [];
         alObjectsOutOfRange.forEach(alObject => {
             var index = freeObjects.findIndex(freeALObject => freeALObject.objectType === alObject.objectType);
@@ -259,7 +270,6 @@ export class UIManagement {
             freeObjects.splice(index, 1);
         });
 
-        const json = LicenseCheckObject.getJson(licenseData);
-        UIManagement.licenseCheckWebviewPanel?.webview.postMessage({ command: 'updateData', data: LicenseCheckObject.getJson(licenseData) });
+        UIManagement.licenseCheckWebviewPanel?.webview.postMessage({ command: 'updateData', data: LicenseCheckInfo.getJson(licenseData, freeObjects.length) });
     }
 }

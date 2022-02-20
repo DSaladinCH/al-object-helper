@@ -22,8 +22,8 @@ html {
 }
 
 body {
-    background-color: var(--mainbackgroundColor);
-    color: var(--textColor);
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
     margin: 0px;
     height: 100%;
 }
@@ -63,6 +63,7 @@ table {
     font-family: Arial, Helvetica, sans-serif;
     border-collapse: collapse;
     width: 100%;
+    max-width: 1000px;
     margin-top: 20px;
 }
 
@@ -75,16 +76,16 @@ table tr:nth-child(even) {
     background-color: var(--vscode-tree-tableOddRowsBackground);
 }
 
-table tr:hover {
-    background-color: #ddd;
+table tbody tr:hover {
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
 }
 
 table th {
+    font-weight: 600;
     padding-top: 12px;
     padding-bottom: 12px;
     text-align: left;
-    background-color: #04AA6D;
-    color: white;
 }
 
 thead {
@@ -93,4 +94,27 @@ thead {
 
 tbody {
     font-size: medium;
+}
+
+.iconHolder {
+    text-align: center;
+}
+
+button {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    border: none;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+    color: var(--vscode-editor-foreground);
+    font-size: large;
+}
+
+button:hover {
+    color: var(--vscode-button-hoverBackground);
+}
+
+button i {
+    padding-top: 2px;
 }
