@@ -78,12 +78,13 @@
         window.addEventListener("message", event => {
             // The data the extension sent
             const message = event.data;
+            console.log("Received message: " + message.command);
 
             switch (message.command) {
                 case "updateData":
                     // Clear table before inserting the updated data
                     var tbody = document.getElementById("tbl_objects").getElementsByTagName("tbody")[0];
-                    tbody.innerHTML = "";
+                    // tbody.innerHTML = "";
 
                     var licenseCheckInfo = JSON.parse(message.data);
                     var objects = licenseCheckInfo.licenseCheckObjects;
@@ -131,16 +132,19 @@
                         cell = tr.insertCell(-1);
                         cell.textContent = element.fixObjectID;
 
+                        let fontAwesomeButton, fontAwesomeIcon;
                         // acceptfixButton
                         cell = tr.insertCell(-1);
-                        cell.classList.add("iconHolder");
-                        let fontAwesomeButton = document.createElement("button");
-                        fontAwesomeButton.setAttribute("onClick", `javascript: acceptFix("${element.fixObjectID}", "${element.objectPath}");`);
-                        let fontAwesomeIcon = document.createElement("i");
-                        fontAwesomeIcon.classList.add("fa-solid");
-                        fontAwesomeIcon.classList.add("fa-circle-check");
-                        fontAwesomeButton.appendChild(fontAwesomeIcon);
-                        cell.appendChild(fontAwesomeButton);
+                        if (element.fixObjectID != "") {
+                            cell.classList.add("iconHolder");
+                            fontAwesomeButton = document.createElement("button");
+                            fontAwesomeButton.setAttribute("onClick", `javascript: acceptFix("${element.fixObjectID}", "${element.objectPath}");`);
+                            fontAwesomeIcon = document.createElement("i");
+                            fontAwesomeIcon.classList.add("fa-solid");
+                            fontAwesomeIcon.classList.add("fa-circle-check");
+                            fontAwesomeButton.appendChild(fontAwesomeIcon);
+                            cell.appendChild(fontAwesomeButton);
+                        }
 
                         // manualFixButton
                         cell = tr.insertCell(-1);
@@ -160,7 +164,7 @@
         function acceptFix(newID, sourcePath) {
             vscode.postMessage({
                 command: "acceptFix",
-                data: { "newID": newID, "sourcePath": sourcePath }
+                data: { "newObjectID": newID, "sourcePath": sourcePath }
             });
         }
 

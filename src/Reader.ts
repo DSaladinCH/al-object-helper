@@ -5,7 +5,6 @@ import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
 import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation } from "./internal";
-import { isModuleNamespaceObject } from "util/types";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -539,6 +538,18 @@ export class Reader {
         return alObject;
     }
 
+    replaceObjectID(line: string, newObjectID: string): string {
+        const alObjectStartPattern = /^([a-z]+)/i;
+        const alObjectIDPattern = /^[a-z]+\s([0-9]+)/i;
+        var newLine = line.replace(alObjectIDPattern, newObjectID);
+        var matches = alObjectStartPattern.exec(line);
+        if (!matches) {
+            return "";
+        }
+
+        return `${matches[1]} ${newLine}`;
+    }
+
     checkEventPublisher(lineText: string): FunctionType | undefined {
         const eventPattern = /\[([A-z]+)[^\]]*\]/i;
         let match = eventPattern.exec(lineText);
@@ -768,11 +779,11 @@ export class Reader {
                     objectType = LicenseObject.getObjectType(objectTypeStr);
                     if (objectType === undefined) { return true; }
 
-                    if (moduleName === "Essentials Objects (hidden)") { 
+                    if (moduleName === "Essentials Objects (hidden)") {
                         // No more important license data to import
                         cb(false);
                         return false;
-                     }
+                    }
                     licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx, moduleName));
                 }
 

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import path = require("path");
 import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, LicenseCheckInfo, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
 import { resolve } from "path";
+import { HelperFunctions } from "../HelperFunctions";
 
 export class UIManagement {
     static licenseCheckWebviewPanel: vscode.WebviewPanel | undefined = undefined;
@@ -199,17 +200,18 @@ export class UIManagement {
                 'License check',
                 vscode.ViewColumn.One,
                 {
-                    enableScripts: true
+                    enableScripts: true,
+                    retainContextWhenHidden: true
                 }
             );
 
-            UIManagement.licenseCheckWebviewPanel.webview.onDidReceiveMessage((message) => {
+            UIManagement.licenseCheckWebviewPanel.webview.onDidReceiveMessage(async (message) => {
                 switch (message.command) {
                     case 'acceptFix':
-                        vscode.window.showInformationMessage("Accept fix: New ID: " + message.data.newID);
+                        await HelperFunctions.changeObjectID(decodeURI(message.data.sourcePath), message.data.newObjectID);
                         return;
                     case 'manualFix':
-                        vscode.window.showInformationMessage("Manual fix: Path: " + message.data.sourcePath);
+                        HelperFunctions.openUriFile(vscode.Uri.file(decodeURI(message.data.sourcePath)));
                         return;
                 }
             });
@@ -255,6 +257,7 @@ export class UIManagement {
     }
 
     private static async updateLicenseCheckPanel(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
+        var noFreeObjects = freeObjects.length;
         alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectType - b.objectType || Number(a.objectID) - Number(b.objectID));
 
         var licenseData: LicenseCheckObject[] = [];
@@ -270,6 +273,6 @@ export class UIManagement {
             freeObjects.splice(index, 1);
         });
 
-        UIManagement.licenseCheckWebviewPanel?.webview.postMessage({ command: 'updateData', data: LicenseCheckInfo.getJson(licenseData, freeObjects.length) });
+        UIManagement.licenseCheckWebviewPanel?.webview.postMessage({ command: 'updateData', data: LicenseCheckInfo.getJson(licenseData, noFreeObjects) });
     }
 }

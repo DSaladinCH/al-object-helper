@@ -14,6 +14,6 @@ export class LicenseCheckObject {
         if (fixALObject) {
             this.fixObjectID = fixALObject.objectID;
         }
-        this.objectPath = alObject.objectPath;
+        this.objectPath = encodeURI(alObject.objectPath);
     }
 }
