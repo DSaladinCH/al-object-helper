@@ -1,31 +1,31 @@
 :root {
-    --mainbackgroundColor: #1a1d1e;
-    --menuBackgroundColor: #292929;
-    --headerBackgroundColor: #000000;
-    --backgroundLight: #282b2c;
-    --backgroundNormal: #1a1d1e;
-    --backgroundDark: #121414;
-    --backgroundBlack: #000000;
-    --borderColorDark: #3b4042;
-    --scrollbarBackgroundColor: #f1f1f1;
-    --scrollbarThumbColor: #888888;
-    --scrollbarThumbHoverColor: #555555;
-    --textColor: #ffffff;
-    --accentColorLight: #00d7ff;
-    --accentColor: #0533ff;
-    --accentColorDark: #0300a1;
+  --mainbackgroundColor: #1a1d1e;
+  --menuBackgroundColor: #292929;
+  --headerBackgroundColor: #000000;
+  --backgroundLight: #282b2c;
+  --backgroundNormal: #1a1d1e;
+  --backgroundDark: #121414;
+  --backgroundBlack: #000000;
+  --borderColorDark: #3b4042;
+  --scrollbarBackgroundColor: #f1f1f1;
+  --scrollbarThumbColor: #888888;
+  --scrollbarThumbHoverColor: #555555;
+  --textColor: #ffffff;
+  --accentColorLight: #00d7ff;
+  --accentColor: #0533ff;
+  --accentColorDark: #0300a1;
 }
 
 html {
-    height: 100%;
-    font-family: "Roboto", sans-serif;
+  height: 100%;
+  font-family: "Roboto", sans-serif;
 }
 
 body {
-    background-color: var(--vscode-editor-background);
-    color: var(--vscode-editor-foreground);
-    margin: 0px;
-    height: 100%;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  margin: 0px;
+  height: 100%;
 }
 
 /* width */
@@ -52,69 +52,81 @@ body {
 }*/
 
 .title {
-    font-size: xx-large;
+  font-size: xx-large;
 }
 
 .subtitle {
-    font-size: larger;
+  font-size: larger;
+}
+
+.reload {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  /* margin-top: 20px; */
+  margin-right: 20px;
+  font-size: xx-large;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 table {
-    font-family: Arial, Helvetica, sans-serif;
-    border-collapse: collapse;
-    width: 100%;
-    max-width: 1000px;
-    margin-top: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 1000px;
+  margin-top: 20px;
 }
 
-table td, table th {
-    border: 1px solid #ddd;
-    padding: 8px;
+table td,
+table th {
+  border: 1px solid #ddd;
+  padding: 8px;
 }
 
 table tr:nth-child(even) {
-    background-color: var(--vscode-tree-tableOddRowsBackground);
+  background-color: var(--vscode-tree-tableOddRowsBackground);
 }
 
 table tbody tr:hover {
-    background-color: var(--vscode-list-hoverBackground);
-    color: var(--vscode-list-hoverForeground);
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
 }
 
 table th {
-    font-weight: 600;
-    padding-top: 12px;
-    padding-bottom: 12px;
-    text-align: left;
+  font-weight: 600;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
 }
 
 thead {
-    font-size: large;
+  font-size: large;
 }
 
 tbody {
-    font-size: medium;
+  font-size: medium;
 }
 
 .iconHolder {
-    text-align: center;
+  text-align: center;
 }
 
 button {
-    background-color: transparent;
-    background-repeat: no-repeat;
-    border: none;
-    cursor: pointer;
-    overflow: hidden;
-    outline: none;
-    color: var(--vscode-editor-foreground);
-    font-size: large;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  outline: none;
+  color: var(--vscode-editor-foreground);
+  font-size: large;
 }
 
 button:hover {
-    color: var(--vscode-button-hoverBackground);
+  color: var(--vscode-button-hoverBackground);
 }
 
 button i {
-    padding-top: 2px;
+  padding-top: 2px;
 }
