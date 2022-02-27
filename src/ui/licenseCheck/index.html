@@ -12,10 +12,10 @@
 
 <body>
     <main>
-        <div style="position: absolute; width: 100%;">
-            <div style="position: relative;">
+        <div class="titleContainer">
+            <div>
                 <h1 class="title" style="float: left;">License Check</h1>
-                <button class="iconHolder reload" style="float: right;">
+                <button class="iconHolder reload" style="float: right;" title="Reload data">
                     <i class="fa-solid fa-arrow-rotate-right"></i>
                 </button>
             </div>
@@ -43,38 +43,6 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- <tr>
-                    <td>Table</td>
-                    <td>50042</td>
-                    <td>DS Test Table 1</td>
-                    <td>50055</td>
-                    <td><i class="fa-solid fa-circle-check"></i></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Table</td>
-                    <td>50043</td>
-                    <td>DS Test Table 2</td>
-                    <td>50056</td>
-                    <td><i class="fa-solid fa-circle-check"></i></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Table</td>
-                    <td>50044</td>
-                    <td>DS Test Table 3</td>
-                    <td>50057</td>
-                    <td><i class="fa-solid fa-circle-check"></i></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Table</td>
-                    <td>50045</td>
-                    <td>DS Test Table 4</td>
-                    <td>50058</td>
-                    <td><i class="fa-solid fa-circle-check"></i></td>
-                    <td></td>
-                </tr> -->
             </tbody>
         </table>
     </main>
@@ -91,7 +59,7 @@
                 case "updateData":
                     // Clear table before inserting the updated data
                     var tbody = document.getElementById("tbl_objects").getElementsByTagName("tbody")[0];
-                    // tbody.innerHTML = "";
+                    tbody.innerHTML = "";
 
                     var licenseCheckInfo = JSON.parse(message.data);
                     var objects = licenseCheckInfo.licenseCheckObjects;
@@ -145,6 +113,7 @@
                         if (element.fixObjectID != "") {
                             cell.classList.add("iconHolder");
                             fontAwesomeButton = document.createElement("button");
+                            fontAwesomeButton.title = `Change ID from ${element.objectID} to ${element.fixObjectID}`;
                             fontAwesomeButton.setAttribute("onClick", `javascript: acceptFix("${element.fixObjectID}", "${element.objectPath}");`);
                             fontAwesomeIcon = document.createElement("i");
                             fontAwesomeIcon.classList.add("fa-solid");
@@ -157,6 +126,7 @@
                         cell = tr.insertCell(-1);
                         cell.classList.add("iconHolder");
                         fontAwesomeButton = document.createElement("button");
+                        fontAwesomeButton.title = `Open ${element.objectType} ${element.objectID} to manual fix the ID`;
                         fontAwesomeButton.setAttribute("onClick", `javascript: manualFix("${element.objectPath}");`);
                         fontAwesomeIcon = document.createElement("i");
                         fontAwesomeIcon.classList.add("fa-solid");

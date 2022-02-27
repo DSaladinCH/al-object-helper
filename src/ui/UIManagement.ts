@@ -197,7 +197,7 @@ export class UIManagement {
             // Create and show panel
             UIManagement.licenseCheckWebviewPanel = vscode.window.createWebviewPanel(
                 'licenseCheck',
-                'License check',
+                'License Check',
                 vscode.ViewColumn.One,
                 {
                     enableScripts: true,

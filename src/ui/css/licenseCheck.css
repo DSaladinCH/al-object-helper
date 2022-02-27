@@ -28,29 +28,6 @@ body {
   height: 100%;
 }
 
-/* width */
-/*::-webkit-scrollbar {
-    width: 10px;
-    border-radius: 0.25em;
-}*/
-
-/* Track */
-/*::-webkit-scrollbar-track {
-    background: var(--scrollbarBackgroundColor);
-    border-radius: 0.25em;
-}*/
-
-/* Handle */
-/*::-webkit-scrollbar-thumb {
-    background: var(--scrollbarThumbColor);
-    border-radius: 0.25em;
-}*/
-
-/* Handle on hover */
-/*::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbarThumbHoverColor);
-}*/
-
 .title {
   font-size: xx-large;
 }
@@ -59,12 +36,26 @@ body {
   font-size: larger;
 }
 
+.titleContainer {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  height: 7em;
+}
+
+.titleContainer div {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0px;
+  width: 100%;
+}
+
 .reload {
   position: absolute;
   top: 0px;
   right: 0px;
   /* margin-top: 20px; */
-  margin-right: 20px;
   font-size: xx-large;
   top: 50%;
   transform: translateY(-50%);
