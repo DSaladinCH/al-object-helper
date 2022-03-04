@@ -41,6 +41,8 @@ export class LicenseObject {
                 return ObjectType.Xmlport;
             case "report":
                 return ObjectType.Report;
+            case "query":
+                return ObjectType.Query;
             default:
                 return undefined;
         }

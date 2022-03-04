@@ -70,3 +70,4 @@ export * from "./License/LicenseCheckInfo";
 export * from "./License/LicenseCheckObject";
 export * from "./license/LicenseInformation";
 export * from "./license/LicenseObject";
+export * from "./license/LicensePurchasedObject";

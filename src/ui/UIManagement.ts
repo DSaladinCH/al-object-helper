@@ -201,6 +201,7 @@ export class UIManagement {
                 vscode.ViewColumn.One,
                 {
                     enableScripts: true,
+                    enableFindWidget: true,
                     retainContextWhenHidden: true
                 }
             );
@@ -273,6 +274,11 @@ export class UIManagement {
             freeObjects.splice(index, 1);
         });
 
-        UIManagement.licenseCheckWebviewPanel?.webview.postMessage({ command: 'updateData', data: LicenseCheckInfo.getJson(licenseData, noFreeObjects) });
+        if (reader.licenseInformation) {
+            UIManagement.licenseCheckWebviewPanel?.webview.postMessage({
+                command: 'updateData',
+                data: LicenseCheckInfo.getJson(reader.licenseInformation.purchasedObjects, licenseData, noFreeObjects)
+            });
+        }
     }
 }

@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -690,9 +690,12 @@ export class Reader {
         return new Promise<void>((resolve) => {
             var customerName: string, productVersion: string, expiryDate: string;
             var licenseObjects: LicenseObject[] = [];
+            var licensePurchasedObjects: LicensePurchasedObject[] = [];
+            const purchaseObjectsInformationPattern: RegExp = /(Purchased|Assigned) ([a-z]+)[^:]+: ([0-9]+)/i;
             const licenseInformationPattern: RegExp = /^([^:]+):([^\r\n]+)$/i;
             const objectAssignmentPattern: RegExp = /^(.{30,60})(.{15})(.{15})(.{15,20})([RIMDX-]{5})/i;
             const unsupportedCharacterPattern: RegExp = /\uFFFD/g;
+            var purchaseObjectsInformation: Boolean;
             var licenseInformation: Boolean;
             var objectAssignment: Boolean;
             var moduleObjects: Boolean;
@@ -702,6 +705,7 @@ export class Reader {
                 // Callback
                 reader.licenseInformation = new LicenseInformation(customerName, productVersion, expiryDate);
                 reader.licenseInformation.licenseObjects = licenseObjects;
+                reader.licenseInformation.purchasedObjects = licensePurchasedObjects;
                 resolve();
                 return;
             }) {
@@ -711,22 +715,32 @@ export class Reader {
                 }
 
                 switch (line) {
+                    case "Custom Area Objects":
+                        purchaseObjectsInformation = true;
+                        licenseInformation = false;
+                        objectAssignment = false;
+                        moduleObjects = false;
+                        break;
                     case "License and Address Information":
+                        purchaseObjectsInformation = false;
                         licenseInformation = true;
                         objectAssignment = false;
                         moduleObjects = false;
                         break;
                     case "Object Assignment":
+                        purchaseObjectsInformation = false;
                         licenseInformation = false;
                         objectAssignment = true;
                         moduleObjects = false;
                         break;
                     case "Module Objects and Permissions":
+                        purchaseObjectsInformation = false;
                         licenseInformation = false;
                         objectAssignment = false;
                         moduleObjects = true;
                         break;
                     case "Limited Usage Ranges":
+                        purchaseObjectsInformation = false;
                         licenseInformation = false;
                         objectAssignment = false;
                         moduleObjects = false;
@@ -738,7 +752,28 @@ export class Reader {
                 var objectTypeStr: string, rangeFrom: string, rangeTo: string, rimdx: string, moduleName: string;
                 var objectType: ObjectType | undefined;
 
-                if (licenseInformation) {
+                if (purchaseObjectsInformation) {
+                    const match = purchaseObjectsInformationPattern.exec(line);
+                    if (!match) { return true; }
+
+                    const areaType = match[1].replace(unsupportedCharacterPattern, '').trim();
+                    objectTypeStr = match[2].replace(unsupportedCharacterPattern, '').trim();
+                    const areaCountStr = match[3].replace(unsupportedCharacterPattern, '').trim();
+                    objectType = LicenseObject.getObjectType(objectTypeStr);
+                    if (objectType === undefined) { return true; }
+
+                    if (areaType.toLowerCase() === "purchased") {
+                        licensePurchasedObjects.push(new LicensePurchasedObject(objectType, Number.parseInt(areaCountStr)));
+                    }
+                    // assigned
+                    else {
+                        var purchasedObject = licensePurchasedObjects.find(purchasedObject => purchasedObject.objectType === objectType);
+                        if (purchasedObject) {
+                            purchasedObject.noAssigned = Number.parseInt(areaCountStr);
+                        }
+                    }
+                }
+                else if (licenseInformation) {
                     const match = licenseInformationPattern.exec(line);
                     if (!match) { return true; }
 
@@ -819,6 +854,16 @@ export class Reader {
                 });
             });
 
+            reader.licenseInformation?.purchasedObjects.forEach(purchasedObject => {
+                var noOfObjects: number = 0;
+                reader.alApps.filter(alApp => alApp.appType === AppType.local).forEach(alApp => {
+                    noOfObjects += alApp.alObjects.filter(alObject => alObject.objectType === purchasedObject.objectType).length;
+                });
+
+                purchasedObject.noOfObjects = noOfObjects;
+                purchasedObject.noNotInRange = alObjectsOutOfRange.filter(alObject => alObject.objectType === purchasedObject.objectType).length;
+            });
+
             alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectID.localeCompare(b.objectID));
             if (showOuput) {
                 if (alObjectsOutOfRange.length === 0) {
@@ -870,6 +915,10 @@ export class Reader {
                         }
                     }
                 }
+            });
+
+            reader.licenseInformation.purchasedObjects.forEach(purchasedObject => {
+                purchasedObject.noOfFreeObjects = freeObjects.filter(alObject => alObject.objectType === purchasedObject.objectType).length;
             });
 
             resolve(freeObjects);

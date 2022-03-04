@@ -26,6 +26,21 @@
             Objects</h4>
         <h4 id="lbl_status" class="subtitle" style="margin-top: 0px">Status: Everything is fine</h4>
         <hr />
+        <table id="tbl_purchased">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Purchased</th>
+                    <th>Assigned</th>
+                    <th>Not Assigned</th>
+                    <th>No. of Objects</th>
+                    <th>Out of Range</th>
+                    <th>Free Objects</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
         <table id="tbl_objects">
             <thead>
                 <tr>
@@ -57,12 +72,9 @@
 
             switch (message.command) {
                 case "updateData":
-                    // Clear table before inserting the updated data
-                    var tbody = document.getElementById("tbl_objects").getElementsByTagName("tbody")[0];
-                    tbody.innerHTML = "";
-
                     var licenseCheckInfo = JSON.parse(message.data);
                     var objects = licenseCheckInfo.licenseCheckObjects;
+                    var purchasedObjects = licenseCheckInfo.purchasedObjects;
 
                     document.getElementById("lbl_notInRange").textContent = `Objects not in range: ${licenseCheckInfo.noOutOfRange} Objects`;
                     document.getElementById("lbl_freeObjects").textContent = `Free objects in license: ${licenseCheckInfo.noFreeObjects} Objects`;
@@ -85,30 +97,38 @@
                     document.getElementById("lbl_status").textContent = `Status: ${statusText}`;
                     document.getElementById("lbl_status").style.color = statusColor;
 
+                    /****************************/
+                    /*** Objects out of Range ***/
+                    /****************************/
+
+                    // Clear table before inserting the updated data
+                    var tbody = document.getElementById("tbl_objects").getElementsByTagName("tbody")[0];
+                    tbody.innerHTML = "";
+
                     for (let i = 0; i < objects.length; i++) {
                         const element = objects[i];
 
                         // Create new row
                         var tr = tbody.insertRow(-1);
 
-                        // objectType
+                        // Object Type
                         let cell = tr.insertCell(-1);
                         cell.textContent = element.objectType;
 
-                        // objectID
+                        // Object ID
                         cell = tr.insertCell(-1);
                         cell.textContent = element.objectID;
 
-                        // objectName
+                        // Object Name
                         cell = tr.insertCell(-1);
                         cell.textContent = element.objectName;
 
-                        // fixObjectID
+                        // Fix Object ID
                         cell = tr.insertCell(-1);
                         cell.textContent = element.fixObjectID;
 
                         let fontAwesomeButton, fontAwesomeIcon;
-                        // acceptfixButton
+                        // Accept Fix (Button)
                         cell = tr.insertCell(-1);
                         if (element.fixObjectID != "") {
                             cell.classList.add("iconHolder");
@@ -122,7 +142,7 @@
                             cell.appendChild(fontAwesomeButton);
                         }
 
-                        // manualFixButton
+                        // Manual Fix (Button)
                         cell = tr.insertCell(-1);
                         cell.classList.add("iconHolder");
                         fontAwesomeButton = document.createElement("button");
@@ -133,6 +153,56 @@
                         fontAwesomeIcon.classList.add("fa-file-code");
                         fontAwesomeButton.appendChild(fontAwesomeIcon);
                         cell.appendChild(fontAwesomeButton);
+                    }
+
+                    /************************************/
+                    /*** Purchased / Assigned Objects ***/
+                    /************************************/
+
+                    // Clear table before inserting the updated data
+                    tbody = document.getElementById("tbl_purchased").getElementsByTagName("tbody")[0];
+                    tbody.innerHTML = "";
+
+                    for (let i = 0; i < purchasedObjects.length; i++) {
+                        const element = purchasedObjects[i];
+
+                        // Create new row
+                        var tr = tbody.insertRow(-1);
+
+                        // Object Type
+                        let cell = tr.insertCell(-1);
+                        cell.textContent = element.objectTypeStr;
+
+                        // No. Purchased
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noPurchased;
+
+                        // No. Assigned
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noAssigned;
+
+                        // No. not Assigned
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noPurchased - element.noAssigned;
+
+                        // No. of Objects
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noOfObjects;
+
+                        // No. out of Range
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noNotInRange;
+
+                        // No. of free Objects
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noOfFreeObjects;
+
+                        if ((element.notAssigned + element.noOfFreeObjects) < element.noOutOfRange) {
+                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                        }
+                        else if (element.noOutOfRange > element.noOfFreeObjects && (element.notAssigned + element.noOfFreeObjects) > element.noOutOfRange) {
+                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                        }
                     }
                     break;
             }
