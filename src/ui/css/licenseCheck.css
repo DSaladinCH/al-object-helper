@@ -79,7 +79,7 @@ table tr:nth-child(even) {
   background-color: var(--vscode-tree-tableOddRowsBackground);
 }
 
-table tbody tr:hover {
+table tbody tr.hover:hover {
   background-color: var(--vscode-list-hoverBackground);
   color: var(--vscode-list-hoverForeground);
 }

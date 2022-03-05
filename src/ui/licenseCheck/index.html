@@ -32,10 +32,10 @@
                     <th>Type</th>
                     <th>Purchased</th>
                     <th>Assigned</th>
-                    <th>Not Assigned</th>
                     <th>No. of Objects</th>
                     <th>Out of Range</th>
                     <th>Free Objects</th>
+                    <th>Not Assigned</th>
                 </tr>
             </thead>
             <tbody>
@@ -110,6 +110,7 @@
 
                         // Create new row
                         var tr = tbody.insertRow(-1);
+                        tr.classList.add("hover");
 
                         // Object Type
                         let cell = tr.insertCell(-1);
@@ -181,10 +182,6 @@
                         cell = tr.insertCell(-1);
                         cell.textContent = element.noAssigned;
 
-                        // No. not Assigned
-                        cell = tr.insertCell(-1);
-                        cell.textContent = element.noPurchased - element.noAssigned;
-
                         // No. of Objects
                         cell = tr.insertCell(-1);
                         cell.textContent = element.noOfObjects;
@@ -197,11 +194,17 @@
                         cell = tr.insertCell(-1);
                         cell.textContent = element.noOfFreeObjects;
 
-                        if ((element.notAssigned + element.noOfFreeObjects) < element.noOutOfRange) {
-                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                        // No. not Assigned
+                        cell = tr.insertCell(-1);
+                        var notAssigned = element.noPurchased - element.noAssigned;
+                        cell.textContent = notAssigned;
+
+                        console.log(`Not Assigned: ${notAssigned} | Free Objects: ${element.noOfFreeObjects} | Out of Range: ${element.noNotInRange}`);
+                        if ((notAssigned + element.noOfFreeObjects) < element.noNotInRange) {
+                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-inputValidation-errorBackground');
                         }
-                        else if (element.noOutOfRange > element.noOfFreeObjects && (element.notAssigned + element.noOfFreeObjects) > element.noOutOfRange) {
-                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                        else if (element.noNotInRange > element.noOfFreeObjects && (notAssigned + element.noOfFreeObjects) > element.noNotInRange) {
+                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-inputValidation-warningBackground');
                         }
                     }
                     break;
