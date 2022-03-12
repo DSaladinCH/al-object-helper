@@ -1,21 +1,3 @@
-:root {
-  --mainbackgroundColor: #1a1d1e;
-  --menuBackgroundColor: #292929;
-  --headerBackgroundColor: #000000;
-  --backgroundLight: #282b2c;
-  --backgroundNormal: #1a1d1e;
-  --backgroundDark: #121414;
-  --backgroundBlack: #000000;
-  --borderColorDark: #3b4042;
-  --scrollbarBackgroundColor: #f1f1f1;
-  --scrollbarThumbColor: #888888;
-  --scrollbarThumbHoverColor: #555555;
-  --textColor: #ffffff;
-  --accentColorLight: #00d7ff;
-  --accentColor: #0533ff;
-  --accentColorDark: #0300a1;
-}
-
 html {
   height: 100%;
   font-family: "Roboto", sans-serif;
@@ -28,6 +10,19 @@ body {
   height: 100%;
 }
 
+header {
+  position: fixed;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  max-width: 1000px;
+  background-color: var(--vscode-editor-background);
+}
+
+main {
+  padding-top: 200px;
+}
+
 .title {
   font-size: xx-large;
 }
@@ -38,8 +33,6 @@ body {
 
 .titleContainer {
   position: relative;
-  width: 100%;
-  max-width: 1000px;
   height: 7em;
 }
 
@@ -91,6 +84,18 @@ table th {
   text-align: left;
 }
 
+#tbl_purchased th.smallWidth {
+  width: 85px;
+}
+
+#tbl_objects th.smallWidth {
+  width: 90px;
+}
+
+table th.longWidth {
+  width: 100px;
+}
+
 thead {
   font-size: large;
 }
@@ -116,6 +121,11 @@ button {
 
 button:hover {
   color: var(--vscode-button-hoverBackground);
+}
+
+button:disabled {
+  color: #666666;
+  cursor: default;
 }
 
 button i {

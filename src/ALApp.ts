@@ -69,4 +69,11 @@ export class ALApp {
         }
         // this._alObjects = this.alObjects.concat(newAlObjects);
     }
+
+    /**
+     * Remove all al objects of a app
+     */
+    clearALObjects() {
+        this._alObjects = [];
+    }
 }

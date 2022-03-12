@@ -165,7 +165,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		if (readLicense) {
 			const uri = await vscode.window.showOpenDialog({ title: "Select license report detailed", filters: { "Report detailed": ['txt'] }, canSelectMany: false });
 			if (!uri) { return; }
-			vscode.window.showInformationMessage(`Selected file: ${uri[0].fsPath}`);
 			await reader.loadLicense(uri[0]);
 			vscode.window.showInformationMessage(`Loaded ${reader.licenseInformation?.licenseObjects.length} license objects for ${reader.licenseInformation?.customerName}`);
 		}

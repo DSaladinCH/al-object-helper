@@ -89,6 +89,7 @@ export class Reader {
                     console.log(extensionPrefix + `Found ${filteredALApps.length} workspace folders`);
                     for (let i = 0; i < filteredALApps.length; i++) {
                         const alApp = filteredALApps[i];
+                        alApp.clearALObjects();
                         await reader.discoverAppPackagesOfLocalApp(alApp);
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
@@ -159,6 +160,7 @@ export class Reader {
                     var quotient = Math.floor(100 / filteredALApps.length);
                     for (let i = 0; i < filteredALApps.length; i++) {
                         var alApp = filteredALApps[i];
+                        alApp.clearALObjects();
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
                         // console.log(extensionPrefix + `Found app package "${alApp.appName}" with path "${alApp.appPath}"`);

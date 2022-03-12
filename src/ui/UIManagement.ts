@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import path = require("path");
-import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, LicenseCheckInfo, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
+import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, AppType, FunctionType, LicenseCheckInfo, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
 import { resolve } from "path";
 import { HelperFunctions } from "../HelperFunctions";
 
@@ -208,11 +208,16 @@ export class UIManagement {
 
             UIManagement.licenseCheckWebviewPanel.webview.onDidReceiveMessage(async (message) => {
                 switch (message.command) {
-                    case 'acceptFix':
+                    case "acceptFix":
                         await HelperFunctions.changeObjectID(decodeURI(message.data.sourcePath), message.data.newObjectID);
                         return;
-                    case 'manualFix':
+                    case "manualFix":
                         HelperFunctions.openUriFile(vscode.Uri.file(decodeURI(message.data.sourcePath)));
+                        return;
+                    case "reload":
+                        await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+                        // Send data update
+                        UIManagement.updateLicenseCheckPanel(await reader.checkLicense(false), await reader.getFreeObjects());
                         return;
                 }
             });
@@ -258,6 +263,10 @@ export class UIManagement {
     }
 
     private static async updateLicenseCheckPanel(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
+        if (!UIManagement.licenseCheckWebviewPanel) {
+            return;
+        }
+
         var noFreeObjects = freeObjects.length;
         alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectType - b.objectType || Number(a.objectID) - Number(b.objectID));
 
