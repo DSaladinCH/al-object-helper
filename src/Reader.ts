@@ -17,6 +17,9 @@ export class Reader {
     onlyLoadSymbolFiles: boolean = false;
     onlyShowLocalFiles: boolean = false;
 
+    private isReadingLocalApp: boolean = false;
+    private isReadingApp: boolean = false;
+
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context;
         this.loadConfiguration(this);
@@ -72,6 +75,12 @@ export class Reader {
     }
 
     async startReadingLocalApps(alApps: ALApp[]) {
+        console.log(extensionPrefix + `Already reading: ${this.isReadingLocalApp}`);
+        if (this.isReadingLocalApp) {
+            return;
+        }
+        this.isReadingLocalApp = true;
+
         if (this.printDebug) { this.outputChannel.appendLine("Start reading local apps!"); }
         let alFiles: string[] = [];
 
@@ -125,23 +134,17 @@ export class Reader {
                 }
             }
 
-            // var file = fs.createWriteStream('C:\\temp\\alFiles.txt');
-            // file.on('error', function (err) { /* error handling */ });
-            // alFiles.forEach(function (v) { file.write(v + '\n'); });
-            // file.end();
-
-            // var file2 = fs.createWriteStream('C:\\temp\\alObjects.txt');
-            // file2.on('error', function (err) { /* error handling */ });
-            // this.alApps.filter(app => app.appType === AppType.local).forEach(alApp => {
-            //     alApp.alObjects.forEach(function (v) { file2.write(v.objectPath + '\n'); });
-            // });
-            // file2.end();
-
+            this.isReadingLocalApp = false;
             return true;
         });
     }
 
     async startReadingAppPackages(alApps: ALApp[]) {
+        if (this.isReadingApp) {
+            return;
+        }
+        this.isReadingApp = true;
+
         if (this.printDebug) { this.outputChannel.appendLine("Start reading app packages!"); }
         if (alApps.length === 0) {
             return;
@@ -180,6 +183,7 @@ export class Reader {
                 start();
             });
 
+            this.isReadingApp = false;
             return true;
         });
     }

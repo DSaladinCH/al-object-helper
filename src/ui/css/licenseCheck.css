@@ -7,20 +7,16 @@ body {
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
   margin: 0px;
-  height: 100%;
+  height: max-content;
 }
 
 header {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 20px;
   right: 20px;
   max-width: 1000px;
   background-color: var(--vscode-editor-background);
-}
-
-main {
-  padding-top: 200px;
 }
 
 .title {

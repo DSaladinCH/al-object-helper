@@ -166,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			const uri = await vscode.window.showOpenDialog({ title: "Select license report detailed", filters: { "Report detailed": ['txt'] }, canSelectMany: false });
 			if (!uri) { return; }
 			await reader.loadLicense(uri[0]);
-			vscode.window.showInformationMessage(`Loaded ${reader.licenseInformation?.licenseObjects.length} license objects for ${reader.licenseInformation?.customerName}`);
+			vscode.window.showInformationMessage(`Successfully loaded license for ${reader.licenseInformation?.customerName}`);
 		}
 
 		var alObjectsOutOfRange = await reader.checkLicense(false);
