@@ -75,7 +75,6 @@ export class Reader {
     }
 
     async startReadingLocalApps(alApps: ALApp[]) {
-        console.log(extensionPrefix + `Already reading: ${this.isReadingLocalApp}`);
         if (this.isReadingLocalApp) {
             return;
         }
