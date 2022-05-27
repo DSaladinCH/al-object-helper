@@ -8,6 +8,7 @@ body {
   color: var(--vscode-editor-foreground);
   margin: 0px;
   height: max-content;
+  padding-bottom: 20px;
 }
 
 header {
@@ -17,6 +18,13 @@ header {
   right: 20px;
   max-width: 1000px;
   background-color: var(--vscode-editor-background);
+}
+
+hr {
+  background-color: var(--vscode-editor-background);
+  padding-bottom: 20px;
+  border-width: 0px;
+  border-top-width: 2px;
 }
 
 .title {
