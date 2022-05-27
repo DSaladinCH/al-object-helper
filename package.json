@@ -41,7 +41,8 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
-        "commands": [{
+        "commands": [
+            {
                 "command": "al-object-helper.openALObject",
                 "title": "AL Helper: Open AL Object"
             },
@@ -68,9 +69,14 @@
             {
                 "command": "al-object-helper.reloadObjects",
                 "title": "AL Helper: Reload Objects"
+            },
+            {
+                "command": "al-object-helper.checkLicense",
+                "title": "AL Helper: Check license"
             }
         ],
-        "keybindings": [{
+        "keybindings": [
+            {
                 "command": "al-object-helper.openALObject",
                 "key": "Ctrl+Alt+O"
             },
@@ -80,7 +86,8 @@
             }
         ],
         "menus": {
-            "commandPalette": [{
+            "commandPalette": [
+                {
                     "command": "al-object-helper.openExtendedObject",
                     "when": "al-object-helper.isALExtension"
                 },

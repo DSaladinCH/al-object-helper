@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <link href="${css/styles.css}" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="${css/fontawesome.css}" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <div class="titleContainer">
+            <div>
+                <h1 class="title" style="float: left;">License Check</h1>
+                <button id="btn_reload" class="iconHolder reload" style="float: right;" title="Reload data"
+                    onclick="javascript: reload();">
+                    <i class="fa-solid fa-arrow-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+        <h4 id="lbl_notInRange" class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Objects not in range: 15
+            Objects</h4>
+        <h4 id="lbl_freeObjects" class="subtitle" style="margin-top: 0px; margin-bottom: 0px">Free objects in license: 4
+            Objects</h4>
+        <h4 id="lbl_status" class="subtitle" style="margin-top: 0px">Status: Everything is fine</h4>
+        <hr />
+    </header>
+    <main>
+        <table id="tbl_purchased" style="margin-top: 0px">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th class="smallWidth">Purchased</th>
+                    <th class="smallWidth">Assigned</th>
+                    <th class="smallWidth">Local Objects</th>
+                    <th class="smallWidth">Out of Range</th>
+                    <th class="smallWidth">Free Objects</th>
+                    <th class="smallWidth">Not Assigned</th>
+                    <th class="smallWidth">Objects to buy</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <table id="tbl_objects">
+            <thead>
+                <tr>
+                    <th colspan="3">Effected objects</th>
+                    <th class="smallWidth">Fix</th>
+                    <th colspan="2">Actions</th>
+                </tr>
+                <tr>
+                    <th class="longWidth">Type</th>
+                    <th class="smallWidth">ID</th>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th class="smallWidth">Accept fix</th>
+                    <th class="smallWidth">Manual fix</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </main>
+    <script>
+        vscode = acquireVsCodeApi();
+
+        // Handle the message inside the webview
+        window.addEventListener("message", event => {
+            // The data the extension sent
+            const message = event.data;
+            console.log("Received message: " + message.command);
+
+            switch (message.command) {
+                case "updateData":
+                    document.getElementById("btn_reload").disabled = false;
+
+                    var licenseCheckInfo = JSON.parse(message.data);
+                    var objects = licenseCheckInfo.licenseCheckObjects;
+                    var purchasedObjects = licenseCheckInfo.purchasedObjects;
+
+                    document.getElementById("lbl_notInRange").textContent = `Objects not in range: ${licenseCheckInfo.noOutOfRange} Objects`;
+                    document.getElementById("lbl_freeObjects").textContent = `Free objects in license: ${licenseCheckInfo.noFreeObjects} Objects`;
+                    var statusText = "Everything is fine";
+                    var statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-editor-foreground');
+
+                    if (licenseCheckInfo.noOutOfRange > 0 && licenseCheckInfo.noOutOfRange <= licenseCheckInfo.noFreeObjects) {
+                        statusText = "Some objects are out of range, but can be fixed";
+                        statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                    }
+                    else if (licenseCheckInfo.noOutOfRange === 0 && licenseCheckInfo.noFreeObjects > 0) {
+                        statusText = "All objects are covered by the license, but the license should be extended";
+                        statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
+                    }
+                    else if (licenseCheckInfo.noOutOfRange > 0 && licenseCheckInfo.noOutOfRange > licenseCheckInfo.noFreeObjects) {
+                        statusText = "Some objects are out of range and the license has no more or not enough free objects to cover them";
+                        statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-errorForeground');
+                    }
+
+                    document.getElementById("lbl_status").textContent = `Status: ${statusText}`;
+                    document.getElementById("lbl_status").style.color = statusColor;
+
+                    /****************************/
+                    /*** Objects out of Range ***/
+                    /****************************/
+
+                    // Clear table before inserting the updated data
+                    var tbody = document.getElementById("tbl_objects").getElementsByTagName("tbody")[0];
+                    tbody.innerHTML = "";
+
+                    for (let i = 0; i < objects.length; i++) {
+                        const element = objects[i];
+
+                        // Create new row
+                        var tr = tbody.insertRow(-1);
+                        tr.classList.add("hover");
+
+                        // Object Type
+                        let cell = tr.insertCell(-1);
+                        cell.textContent = element.objectType;
+
+                        // Object ID
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.objectID;
+
+                        // Object Name
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.objectName;
+
+                        // Fix Object ID
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.fixObjectID;
+
+                        let fontAwesomeButton, fontAwesomeIcon;
+                        // Accept Fix (Button)
+                        cell = tr.insertCell(-1);
+                        if (element.fixObjectID != "") {
+                            cell.classList.add("iconHolder");
+                            fontAwesomeButton = document.createElement("button");
+                            fontAwesomeButton.title = `Change ID from ${element.objectID} to ${element.fixObjectID}`;
+                            fontAwesomeButton.setAttribute("onClick", `javascript: acceptFix("${element.fixObjectID}", "${element.objectPath}");`);
+                            fontAwesomeIcon = document.createElement("i");
+                            fontAwesomeIcon.classList.add("fa-solid");
+                            fontAwesomeIcon.classList.add("fa-circle-check");
+                            fontAwesomeButton.appendChild(fontAwesomeIcon);
+                            cell.appendChild(fontAwesomeButton);
+                        }
+
+                        // Manual Fix (Button)
+                        cell = tr.insertCell(-1);
+                        cell.classList.add("iconHolder");
+                        fontAwesomeButton = document.createElement("button");
+                        fontAwesomeButton.title = `Open ${element.objectType} ${element.objectID} to manual fix the ID`;
+                        fontAwesomeButton.setAttribute("onClick", `javascript: manualFix("${element.objectPath}");`);
+                        fontAwesomeIcon = document.createElement("i");
+                        fontAwesomeIcon.classList.add("fa-solid");
+                        fontAwesomeIcon.classList.add("fa-file-code");
+                        fontAwesomeButton.appendChild(fontAwesomeIcon);
+                        cell.appendChild(fontAwesomeButton);
+                    }
+
+                    /************************************/
+                    /*** Purchased / Assigned Objects ***/
+                    /************************************/
+
+                    // Clear table before inserting the updated data
+                    tbody = document.getElementById("tbl_purchased").getElementsByTagName("tbody")[0];
+                    tbody.innerHTML = "";
+
+                    for (let i = 0; i < purchasedObjects.length; i++) {
+                        const element = purchasedObjects[i];
+
+                        // Create new row
+                        var tr = tbody.insertRow(-1);
+
+                        // Object Type
+                        let cell = tr.insertCell(-1);
+                        cell.textContent = element.objectTypeStr;
+
+                        // No. Purchased
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noPurchased;
+
+                        // No. Assigned
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noAssigned;
+
+                        // No. of Objects
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noOfObjects;
+
+                        // No. out of Range
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noNotInRange;
+
+                        // No. of free Objects
+                        cell = tr.insertCell(-1);
+                        cell.textContent = element.noOfFreeObjects;
+
+                        // No. not Assigned
+                        cell = tr.insertCell(-1);
+                        var notAssigned = element.noPurchased - element.noAssigned;
+                        cell.textContent = notAssigned;
+
+                        // Objects to buy
+                        cell = tr.insertCell(-1);
+                        var objectsToBuy = element.noNotInRange - element.noOfFreeObjects - notAssigned;
+                        if (objectsToBuy < 0) {
+                            objectsToBuy = 0;
+                        }
+                        cell.textContent = objectsToBuy;
+
+                        console.log(`Not Assigned: ${notAssigned} | Free Objects: ${element.noOfFreeObjects} | Out of Range: ${element.noNotInRange}`);
+                        if ((notAssigned + element.noOfFreeObjects) < element.noNotInRange) {
+                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-inputValidation-errorBackground');
+                        }
+                        else if (element.noNotInRange > element.noOfFreeObjects && (notAssigned + element.noOfFreeObjects) > element.noNotInRange) {
+                            tr.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-inputValidation-warningBackground');
+                        }
+                    }
+                    break;
+            }
+        });
+
+        function acceptFix(newID, sourcePath) {
+            vscode.postMessage({
+                command: "acceptFix",
+                data: { "newObjectID": newID, "sourcePath": sourcePath }
+            });
+        }
+
+        function manualFix(sourcePath) {
+            vscode.postMessage({
+                command: "manualFix",
+                data: { "sourcePath": sourcePath }
+            });
+        }
+
+        function reload() {
+            console.log("Hello");
+            document.getElementById("btn_reload").disabled = true;
+            vscode.postMessage({
+                command: "reload"
+            });
+        }
+    </script>
+</body>
+
+</html>

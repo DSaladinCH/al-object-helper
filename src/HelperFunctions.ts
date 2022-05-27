@@ -4,6 +4,7 @@ import path = require("path");
 import fs = require("fs-extra");
 import JSZip = require("jszip");
 import { ALApp, ALExtension, ALFunction, ALObject, ALPage, ALPageExtension, ALPageField, ALTable, ALTableExtension, ALTableField, ALVariable, AppType, extensionPrefix, FunctionType, ObjectType, reader, shortcutRegex } from "./internal";
+import lineReader = require("line-reader");
 
 export class HelperFunctions {
     static getObjectTypeFromString(type: string): ObjectType {
@@ -579,4 +580,46 @@ export class HelperFunctions {
         return alFunction;
     }
     //#endregion
+
+    static async changeObjectID(sourcePath: string, newObjectID: string): Promise<Boolean> {
+        return await new Promise<Boolean>(async (resolve) => {
+            var {line, index} = await this.getFirstObjectLine(sourcePath);
+            line = reader.replaceObjectID(line, newObjectID);
+
+            if (line === "") {
+                resolve(false);
+                return;
+            }
+
+            var textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(sourcePath));
+            var textEditor = await vscode.window.showTextDocument(textDocument, 1, false);
+            await textEditor.edit(textEditorEdit => {
+                textEditorEdit.replace(textDocument.lineAt(index).range, line);
+                resolve(true);
+                return true;
+            });
+
+            resolve(false);
+            return false;
+        });
+    }
+
+    private static getFirstObjectLine(objectPath: string): Promise<{ line: string, index: number }> {
+        return new Promise<{ line: string, index: number }>((resolve) => {
+            var index: number = 0;
+            lineReader.eachLine(objectPath, (line, last, cb) => {
+                if (reader.readFirstObjectLine(line, objectPath, ALApp.Empty())) {
+                    resolve({ line, index });
+                    return false;
+                }
+
+                if (last) {
+                    resolve({ line: "", index: -1 });
+                    return false;
+                }
+
+                index++;
+            });
+        });
+    }
 }

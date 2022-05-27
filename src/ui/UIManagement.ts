@@ -1,10 +1,13 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import path = require("path");
-import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, FunctionType, ObjectType, reader, shortcutRegex } from "../internal";
+import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, AppType, FunctionType, LicenseCheckInfo, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
 import { resolve } from "path";
+import { HelperFunctions } from "../HelperFunctions";
 
 export class UIManagement {
+    static licenseCheckWebviewPanel: vscode.WebviewPanel | undefined = undefined;
+
     static async selectALApp(alApps: ALApp[]): Promise<ALApp | undefined> {
         var alAppItems: ALAppItem[] = [];
         alApps.forEach(alApp => {
@@ -32,7 +35,7 @@ export class UIManagement {
         var alObjectItems: ALObjectItem[] = [];
         alApps.forEach(alApp => {
             const realALApp = reader.alApps.find(a => a.appName === alApp.appName);
-            if (realALApp){
+            if (realALApp) {
                 realALApp.alObjects.forEach(alObject => {
                     alObjectItems.push(new ALObjectItem(alObject));
                 });
@@ -185,26 +188,61 @@ export class UIManagement {
         });
     }
 
-    static async showObjectListPanel(alApps: ALApp[]) {
-        // Create and show panel
-        const panel = vscode.window.createWebviewPanel(
-            'alObjectList',
-            'AL Object List',
-            vscode.ViewColumn.One,
-            {}
-        );
+    static async showLicenseCheckResult(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
+        // Check if a license check panel already exists
+        if (UIManagement.licenseCheckWebviewPanel) {
+            UIManagement.licenseCheckWebviewPanel.reveal();
+        }
+        else {
+            // Create and show panel
+            UIManagement.licenseCheckWebviewPanel = vscode.window.createWebviewPanel(
+                'licenseCheck',
+                'License Check',
+                vscode.ViewColumn.One,
+                {
+                    enableScripts: true,
+                    enableFindWidget: true,
+                    retainContextWhenHidden: true
+                }
+            );
 
-        // And set its HTML content
-        panel.webview.html = await this.getWebviewContent();
+            UIManagement.licenseCheckWebviewPanel.webview.onDidReceiveMessage(async (message) => {
+                switch (message.command) {
+                    case "acceptFix":
+                        await HelperFunctions.changeObjectID(decodeURI(message.data.sourcePath), message.data.newObjectID);
+                        return;
+                    case "manualFix":
+                        HelperFunctions.openUriFile(vscode.Uri.file(decodeURI(message.data.sourcePath)));
+                        return;
+                    case "reload":
+                        await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+                        // Send data update
+                        UIManagement.updateLicenseCheckPanel(await reader.checkLicense(false), await reader.getFreeObjects());
+                        return;
+                }
+            });
+
+            UIManagement.licenseCheckWebviewPanel.onDidDispose(() => {
+                UIManagement.licenseCheckWebviewPanel = undefined;
+            });
+
+            // And set its HTML content
+            UIManagement.licenseCheckWebviewPanel.webview.html = await this.getLicenseCheckWebviewContent(UIManagement.licenseCheckWebviewPanel);
+        }
+
+        // Send data update
+        UIManagement.updateLicenseCheckPanel(alObjectsOutOfRange, freeObjects);
     }
 
-    private static async getWebviewContent(): Promise<string> {
+    private static async getLicenseCheckWebviewContent(panel: vscode.WebviewPanel): Promise<string> {
         return new Promise<string>((resolve) => {
             // Get path to resource on disk
             // And get the special URI to use with the webview
-            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'objectlist', 'index.html'));
-            //const appOnDiskPath = vscode.Uri.file(path.join(this._extensionPath, 'designer', 'scripts', 'vendor-bundle.js'));
-            //const appJsSrc: any = this._panel.webview.asWebviewUri(appOnDiskPath);
+            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'licenseCheck', 'index.html'));
+            const cssOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'css', 'licenseCheck.css'));
+            const fontawesomeOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'css', 'fontawesome.all.min.css'));
+            const cssSrc: any = panel.webview.asWebviewUri(cssOnDiskPath);
+            const fontAwesomeSrc: any = panel.webview.asWebviewUri(fontawesomeOnDiskPath);
 
             fs.readFile(htmlOnDiskPath.fsPath, (error, data) => {
                 if (error) {
@@ -213,6 +251,8 @@ export class UIManagement {
                 }
 
                 let content = data.toString();
+                content = content.replace('${css/styles.css}', cssSrc);
+                content = content.replace('${css/fontawesome.css}', fontAwesomeSrc);
                 // content = content.replace('scripts/vendor-bundle.js', appJsSrc);
                 // content = content.replace('${panelMode}', this.panelMode);
                 // content = content.replace('${objectInfo}', JSON.stringify(this.objectInfo));
@@ -220,5 +260,34 @@ export class UIManagement {
                 return content;
             });
         });
+    }
+
+    private static async updateLicenseCheckPanel(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
+        if (!UIManagement.licenseCheckWebviewPanel) {
+            return;
+        }
+
+        var noFreeObjects = freeObjects.length;
+        alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectType - b.objectType || Number(a.objectID) - Number(b.objectID));
+
+        var licenseData: LicenseCheckObject[] = [];
+        alObjectsOutOfRange.forEach(alObject => {
+            var index = freeObjects.findIndex(freeALObject => freeALObject.objectType === alObject.objectType);
+
+            if (index === -1) {
+                licenseData.push(new LicenseCheckObject(alObject, undefined));
+                return;
+            }
+
+            licenseData.push(new LicenseCheckObject(alObject, freeObjects[index]));
+            freeObjects.splice(index, 1);
+        });
+
+        if (reader.licenseInformation) {
+            UIManagement.licenseCheckWebviewPanel?.webview.postMessage({
+                command: 'updateData',
+                data: LicenseCheckInfo.getJson(reader.licenseInformation.purchasedObjects, licenseData, noFreeObjects)
+            });
+        }
     }
 }

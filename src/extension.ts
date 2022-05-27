@@ -145,12 +145,37 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectList", async function () {
-		UIManagement.showObjectListPanel(reader.alApps);
+		//UIManagement.showObjectListPanel(reader.alApps);
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reloadObjects", async function () {
 		reader = new Reader(context);
 		await reader.startReading();
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.checkLicense", async function () {
+		var readLicense = true;
+
+		if (reader.licenseInformation) {
+			const selection = await vscode.window.showQuickPick(["New file", `${reader.licenseInformation?.customerName} for BC ${reader.licenseInformation?.productVersion}`]);
+			if (!selection) { return; }
+			if (selection !== "New file") { readLicense = false; }
+		}
+
+		if (readLicense) {
+			const uri = await vscode.window.showOpenDialog({ title: "Select license report detailed", filters: { "Report detailed": ['txt'] }, canSelectMany: false });
+			if (!uri) { return; }
+			await reader.loadLicense(uri[0]);
+			vscode.window.showInformationMessage(`Successfully loaded license for ${reader.licenseInformation?.customerName}`);
+		}
+
+		var alObjectsOutOfRange = await reader.checkLicense(false);
+		var freeObjects = await reader.getFreeObjects();
+		freeObjects.forEach(alObject => {
+			reader.outputChannel.appendLine(`Type: ${ObjectType[alObject.objectType]} | ID: ${alObject.objectID}`);
+		});
+
+		UIManagement.showLicenseCheckResult(alObjectsOutOfRange, freeObjects);
 	}));
 
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((textEditor) => {
