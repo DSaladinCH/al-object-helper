@@ -6,7 +6,7 @@
   <h3 align="center">AL Object Helper</h3>
 
   <p align="center">
-    Helper Commands for the AL Language
+    Quick and easy access to any al object in your project
     <br />
 <div>
 

@@ -2,17 +2,18 @@
     "name": "al-object-helper",
     "publisher": "DSaladin",
     "displayName": "AL Object Helper",
+    "description": "Quick and easy access to any al object in your project",
     "author": {
         "email": "git@dsaladin.ch",
         "name": "Dominic Saladin"
     },
     "license": "MIT",
-    "description": "",
-    "version": "2.1.4",
+    "version": "2.2.0",
     "icon": "Images/ALObjectHelper_Small.png",
     "engines": {
         "vscode": "^1.60.0"
     },
+    "homepage": "https://github.com/DSaladinCH/al-object-helper/blob/main/README.md",
     "repository": {
         "type": "git",
         "url": "https://github.com/DSaladinCH/al-object-helper.git"
@@ -21,7 +22,13 @@
         "url": "https://github.com/DSaladinCH/al-object-helper/issues",
         "email": "git@dsaladin.ch"
     },
+    "galleryBanner": {
+		"color": "#1e65d9",
+		"theme": "dark"
+	},
     "categories": [
+        "Programming Languages",
+        "Visualization",
         "Other"
     ],
     "keywords": [
