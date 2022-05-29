@@ -104,6 +104,9 @@ Please report these in the Git Repository.
 - Reloading of objects causes perfomance issues
 
 # Release Notes
+### 2.2.0
+- Added License Checker to check for objects out of range
+
 ## 2.1.4
 - Changed minimum VS Code version to 1.60.0
 
