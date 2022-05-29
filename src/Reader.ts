@@ -4,17 +4,21 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
     outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("AL Object Helper");
     workspaceConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration();
     alApps: ALApp[] = [];
+    licenseInformation: LicenseInformation | undefined;
     printDebug: boolean = false;
     autoReloadObjects: boolean = false;
     onlyLoadSymbolFiles: boolean = false;
     onlyShowLocalFiles: boolean = false;
+
+    private isReadingLocalApp: boolean = false;
+    private isReadingApp: boolean = false;
 
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context;
@@ -71,6 +75,11 @@ export class Reader {
     }
 
     async startReadingLocalApps(alApps: ALApp[]) {
+        if (this.isReadingLocalApp) {
+            return;
+        }
+        this.isReadingLocalApp = true;
+
         if (this.printDebug) { this.outputChannel.appendLine("Start reading local apps!"); }
         let alFiles: string[] = [];
 
@@ -88,6 +97,7 @@ export class Reader {
                     console.log(extensionPrefix + `Found ${filteredALApps.length} workspace folders`);
                     for (let i = 0; i < filteredALApps.length; i++) {
                         const alApp = filteredALApps[i];
+                        alApp.clearALObjects();
                         await reader.discoverAppPackagesOfLocalApp(alApp);
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
@@ -123,23 +133,17 @@ export class Reader {
                 }
             }
 
-            // var file = fs.createWriteStream('C:\\temp\\alFiles.txt');
-            // file.on('error', function (err) { /* error handling */ });
-            // alFiles.forEach(function (v) { file.write(v + '\n'); });
-            // file.end();
-
-            // var file2 = fs.createWriteStream('C:\\temp\\alObjects.txt');
-            // file2.on('error', function (err) { /* error handling */ });
-            // this.alApps.filter(app => app.appType === AppType.local).forEach(alApp => {
-            //     alApp.alObjects.forEach(function (v) { file2.write(v.objectPath + '\n'); });
-            // });
-            // file2.end();
-
+            this.isReadingLocalApp = false;
             return true;
         });
     }
 
     async startReadingAppPackages(alApps: ALApp[]) {
+        if (this.isReadingApp) {
+            return;
+        }
+        this.isReadingApp = true;
+
         if (this.printDebug) { this.outputChannel.appendLine("Start reading app packages!"); }
         if (alApps.length === 0) {
             return;
@@ -158,6 +162,7 @@ export class Reader {
                     var quotient = Math.floor(100 / filteredALApps.length);
                     for (let i = 0; i < filteredALApps.length; i++) {
                         var alApp = filteredALApps[i];
+                        alApp.clearALObjects();
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
                         // console.log(extensionPrefix + `Found app package "${alApp.appName}" with path "${alApp.appPath}"`);
@@ -177,6 +182,7 @@ export class Reader {
                 start();
             });
 
+            this.isReadingApp = false;
             return true;
         });
     }
@@ -537,6 +543,18 @@ export class Reader {
         return alObject;
     }
 
+    replaceObjectID(line: string, newObjectID: string): string {
+        const alObjectStartPattern = /^([a-z]+)/i;
+        const alObjectIDPattern = /^[a-z]+\s([0-9]+)/i;
+        var newLine = line.replace(alObjectIDPattern, newObjectID);
+        var matches = alObjectStartPattern.exec(line);
+        if (!matches) {
+            return "";
+        }
+
+        return `${matches[1]} ${newLine}`;
+    }
+
     checkEventPublisher(lineText: string): FunctionType | undefined {
         const eventPattern = /\[([A-z]+)[^\]]*\]/i;
         let match = eventPattern.exec(lineText);
@@ -671,6 +689,246 @@ export class Reader {
             }
             resolve();
         });
+    }
+
+    loadLicense(licenseFilePath: vscode.Uri): Promise<void> {
+        return new Promise<void>((resolve) => {
+            var customerName: string, productVersion: string, expiryDate: string;
+            var licenseObjects: LicenseObject[] = [];
+            var licensePurchasedObjects: LicensePurchasedObject[] = [];
+            const purchaseObjectsInformationPattern: RegExp = /(Purchased|Assigned) ([a-z]+)[^:]+: ([0-9]+)/i;
+            const licenseInformationPattern: RegExp = /^([^:]+):([^\r\n]+)$/i;
+            const objectAssignmentPattern: RegExp = /^(.{30,60})(.{15})(.{15})(.{15,20})([RIMDX-]{5})/i;
+            const unsupportedCharacterPattern: RegExp = /\uFFFD/g;
+            var purchaseObjectsInformation: Boolean;
+            var licenseInformation: Boolean;
+            var objectAssignment: Boolean;
+            var moduleObjects: Boolean;
+            var reader = this;
+
+            lineReader.eachLine(licenseFilePath.fsPath, function (line, isLast, cb = async () => {
+                // Callback
+                reader.licenseInformation = new LicenseInformation(customerName, productVersion, expiryDate);
+                reader.licenseInformation.licenseObjects = licenseObjects;
+                reader.licenseInformation.purchasedObjects = licensePurchasedObjects;
+                resolve();
+                return;
+            }) {
+                if (isLast) {
+                    cb(false);
+                    return false;
+                }
+
+                switch (line) {
+                    case "Custom Area Objects":
+                        purchaseObjectsInformation = true;
+                        licenseInformation = false;
+                        objectAssignment = false;
+                        moduleObjects = false;
+                        break;
+                    case "License and Address Information":
+                        purchaseObjectsInformation = false;
+                        licenseInformation = true;
+                        objectAssignment = false;
+                        moduleObjects = false;
+                        break;
+                    case "Object Assignment":
+                        purchaseObjectsInformation = false;
+                        licenseInformation = false;
+                        objectAssignment = true;
+                        moduleObjects = false;
+                        break;
+                    case "Module Objects and Permissions":
+                        purchaseObjectsInformation = false;
+                        licenseInformation = false;
+                        objectAssignment = false;
+                        moduleObjects = true;
+                        break;
+                    case "Limited Usage Ranges":
+                        purchaseObjectsInformation = false;
+                        licenseInformation = false;
+                        objectAssignment = false;
+                        moduleObjects = false;
+
+                        cb(false);
+                        return false;
+                }
+
+                var objectTypeStr: string, rangeFrom: string, rangeTo: string, rimdx: string, moduleName: string;
+                var objectType: ObjectType | undefined;
+
+                if (purchaseObjectsInformation) {
+                    const match = purchaseObjectsInformationPattern.exec(line);
+                    if (!match) { return true; }
+
+                    const areaType = match[1].replace(unsupportedCharacterPattern, '').trim();
+                    objectTypeStr = match[2].replace(unsupportedCharacterPattern, '').trim();
+                    const areaCountStr = match[3].replace(unsupportedCharacterPattern, '').trim();
+                    objectType = LicenseObject.getObjectType(objectTypeStr);
+                    if (objectType === undefined) { return true; }
+
+                    if (areaType.toLowerCase() === "purchased") {
+                        licensePurchasedObjects.push(new LicensePurchasedObject(objectType, Number.parseInt(areaCountStr)));
+                    }
+                    // assigned
+                    else {
+                        var purchasedObject = licensePurchasedObjects.find(purchasedObject => purchasedObject.objectType === objectType);
+                        if (purchasedObject) {
+                            purchasedObject.noAssigned = Number.parseInt(areaCountStr);
+                        }
+                    }
+                }
+                else if (licenseInformation) {
+                    const match = licenseInformationPattern.exec(line);
+                    if (!match) { return true; }
+
+                    switch (match[1].replace(unsupportedCharacterPattern, '').trim()) {
+                        case "Name": {
+                            customerName = match[2].replace(unsupportedCharacterPattern, '').trim();
+                        }
+                        case "Product Version": {
+                            productVersion = match[2].replace(unsupportedCharacterPattern, '').trim();
+                        }
+                        case "Enhancement Expiry Date": {
+                            expiryDate = match[2].replace(unsupportedCharacterPattern, '').trim();
+                        }
+                    }
+                }
+                else if (objectAssignment && line.length === 80) {
+                    const match = objectAssignmentPattern.exec(line);
+                    if (!match) { return true; }
+
+                    objectTypeStr = match[1].replace(unsupportedCharacterPattern, '').trim();
+                    rangeFrom = match[3].replace(unsupportedCharacterPattern, '').trim();
+                    rangeTo = match[4].replace(unsupportedCharacterPattern, '').trim();
+                    rimdx = match[5].replace(unsupportedCharacterPattern, '').trim();
+                    objectType = LicenseObject.getObjectType(objectTypeStr);
+                    if (objectType === undefined) { return true; }
+
+                    licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx));
+                }
+                else if (moduleObjects && line.length === 115) {
+                    const match = objectAssignmentPattern.exec(line);
+                    if (!match) { return true; }
+
+                    objectTypeStr = match[4].replace(unsupportedCharacterPattern, '').trim();
+                    moduleName = match[1].replace(unsupportedCharacterPattern, '').trim();
+                    rangeFrom = match[2].replace(unsupportedCharacterPattern, '').trim();
+                    rangeTo = match[3].replace(unsupportedCharacterPattern, '').trim();
+                    rimdx = match[5].replace(unsupportedCharacterPattern, '').trim();
+                    objectType = LicenseObject.getObjectType(objectTypeStr);
+                    if (objectType === undefined) { return true; }
+
+                    if (moduleName === "Essentials Objects (hidden)") {
+                        // No more important license data to import
+                        cb(false);
+                        return false;
+                    }
+                    licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx, moduleName));
+                }
+
+                return true;
+            });
+        });
+    }
+
+    checkLicense(showOuput: Boolean): Promise<ALObject[]> {
+        return new Promise<ALObject[]>(async (resolve) => {
+            var reader = this;
+            var alObjectsOutOfRange: ALObject[] = [];
+
+            if (!reader.licenseInformation) {
+                resolve(alObjectsOutOfRange);
+                return alObjectsOutOfRange;
+            }
+
+            this.alApps.filter(a => a.appType === AppType.local).forEach((app) => {
+                app.alObjects.forEach((alObject) => {
+                    if (!LicenseObject.isLicenseImportant(alObject.objectType)) { return; }
+
+                    var outOfRange = true;
+                    reader.licenseInformation?.licenseObjects.filter(l => l.objectType === alObject.objectType).forEach((licenseObject) => {
+                        if (alObject.objectID >= licenseObject.rangeFrom && alObject.objectID <= licenseObject.rangeTo) {
+                            outOfRange = false;
+                        }
+                    });
+
+                    if (outOfRange) {
+                        alObjectsOutOfRange.push(alObject);
+                    }
+                });
+            });
+
+            reader.licenseInformation?.purchasedObjects.forEach(purchasedObject => {
+                var noOfObjects: number = 0;
+                reader.alApps.filter(alApp => alApp.appType === AppType.local).forEach(alApp => {
+                    noOfObjects += alApp.alObjects.filter(alObject => alObject.objectType === purchasedObject.objectType).length;
+                });
+
+                purchasedObject.noOfObjects = noOfObjects;
+                purchasedObject.noNotInRange = alObjectsOutOfRange.filter(alObject => alObject.objectType === purchasedObject.objectType).length;
+            });
+
+            alObjectsOutOfRange = alObjectsOutOfRange.sort((a, b) => a.objectID.localeCompare(b.objectID));
+            if (showOuput) {
+                if (alObjectsOutOfRange.length === 0) {
+                    vscode.window.showInformationMessage("All objects are in range of the license file");
+                    resolve(alObjectsOutOfRange);
+                    return;
+                }
+
+                const separator = "-----------------------------------------------------------------------------------\r\n";
+                var outputText = "";
+                outputText += separator;
+                outputText += "Not all objects are in range. Objects out of range:\r\n";
+                outputText += separator + "\r\n";
+                alObjectsOutOfRange.forEach(alObject => {
+                    outputText += `${ObjectType[alObject.objectType]} ${alObject.objectID} - ${alObject.objectName}\r\n`;
+                });
+                outputText += "\r\n" + separator;
+                outputText += `Total: ${alObjectsOutOfRange.length} objects`;
+                var textDocument = await vscode.workspace.openTextDocument({ content: outputText });
+                await vscode.window.showTextDocument(textDocument, vscode.ViewColumn.Active);
+            }
+
+            resolve(alObjectsOutOfRange);
+        });
+    }
+
+    getFreeObjects(): Promise<ALObject[]> {
+        return new Promise<ALObject[]>((resolve => {
+            var reader = this;
+            var freeObjects: ALObject[] = [];
+
+            if (!reader.licenseInformation) {
+                resolve(freeObjects);
+                return freeObjects;
+            }
+
+            var localObjects: ALObject[] = [];
+            reader.alApps.filter(app => app.appType === AppType.local).forEach((alApp) => {
+                localObjects = localObjects.concat(alApp.alObjects);
+            });
+
+            reader.licenseInformation.licenseObjects.filter(licenseObject => !licenseObject.moduleName).forEach((licenseObject) => {
+                for (let i = parseInt(licenseObject.rangeFrom); i <= parseInt(licenseObject.rangeTo); i++) {
+                    const alObject = localObjects.find(alObject => alObject.objectType === licenseObject.objectType && parseInt(alObject.objectID) === i);
+                    if (alObject === undefined) {
+                        const tempFreeObject = ALObject.createByObjectType(licenseObject.objectType, "", i.toString(), "", ALApp.Empty());
+                        if (tempFreeObject) {
+                            freeObjects.push(tempFreeObject);
+                        }
+                    }
+                }
+            });
+
+            reader.licenseInformation.purchasedObjects.forEach(purchasedObject => {
+                purchasedObject.noOfFreeObjects = freeObjects.filter(alObject => alObject.objectType === purchasedObject.objectType).length;
+            });
+
+            resolve(freeObjects);
+            return freeObjects;
+        }));
     }
 
     updateSetting(name: string, value: string) {

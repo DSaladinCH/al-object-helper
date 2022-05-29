@@ -1,0 +1,155 @@
+html {
+  height: 100%;
+  font-family: "Roboto", sans-serif;
+}
+
+body {
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  margin: 0px;
+  height: max-content;
+  padding-bottom: 20px;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  max-width: 1000px;
+  background-color: var(--vscode-editor-background);
+  z-index: 1;
+}
+
+hr {
+  background-color: var(--vscode-editor-background);
+  padding-bottom: 20px;
+  border-width: 0px;
+  border-top-width: 2px;
+}
+
+.title {
+  font-size: xx-large;
+}
+
+.subtitle {
+  font-size: larger;
+}
+
+.titleContainer {
+  position: relative;
+  height: 7em;
+}
+
+.titleContainer div {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0px;
+  width: 100%;
+}
+
+.reload {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  /* margin-top: 20px; */
+  font-size: xx-large;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+table {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 1000px;
+  margin-top: 20px;
+}
+
+table td,
+table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+table tr:nth-child(even) {
+  background-color: var(--vscode-tree-tableOddRowsBackground);
+}
+
+table tbody tr.hover:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  color: var(--vscode-list-hoverForeground);
+}
+
+table th {
+  font-weight: 600;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  position: relative;
+}
+
+table th .title {
+  font-size: large;
+  margin: 0px;
+  margin-right: 30px;
+}
+
+table th .info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+table th .info:hover {
+  color: var(--vscode-button-hoverBackground);
+}
+
+#tbl_purchased th.smallWidth {
+  width: 85px;
+}
+
+#tbl_objects th.smallWidth {
+  width: 90px;
+}
+
+table th.longWidth {
+  width: 100px;
+}
+
+thead {
+  font-size: large;
+}
+
+tbody {
+  font-size: medium;
+}
+
+.iconHolder {
+  text-align: center;
+}
+
+button {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  outline: none;
+  color: var(--vscode-editor-foreground);
+  font-size: large;
+}
+
+button:hover {
+  color: var(--vscode-button-hoverBackground);
+}
+
+button:disabled {
+  color: #666666;
+  cursor: default;
+}
+
+button i {
+  padding-top: 2px;
+}

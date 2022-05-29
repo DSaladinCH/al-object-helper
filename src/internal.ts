@@ -62,3 +62,12 @@ export * from "./providers/ALDefinitionProvider";
 export * from "./providers/ALHoverProvider";
 export * from "./providers/ALObjectHelperDocumentProvider";
 export * from "./providers/ALObjectHelperTreeDataProvider";
+
+/***************/
+/*** License ***/
+/***************/
+export * from "./License/LicenseCheckInfo";
+export * from "./License/LicenseCheckObject";
+export * from "./license/LicenseInformation";
+export * from "./license/LicenseObject";
+export * from "./license/LicensePurchasedObject";
