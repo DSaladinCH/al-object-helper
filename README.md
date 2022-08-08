@@ -53,8 +53,9 @@ If you are in a extension object (for example a table extension) you can navigat
 # Object Shortcuts
 To quickly open any object you can use a object shortcut. <br />
 Just run the command **Open AL Object** and use the type shortcut and the object id as follow:
+
 | Shortcut | Description                                     |
-| -------- | ----------------------------------------------- |
+|----------|-------------------------------------------------|
 | T        | Open a table                                    |
 | TE       | Open a table extension by the parent table id   |
 | TED      | Open a table extension                          |

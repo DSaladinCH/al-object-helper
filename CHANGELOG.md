@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.2.10] - 2022-08-08
+### Fixed
+- License Checker not rendering
+
 ## [2.2.0] - 2022-05-29
 ### Added
 - License Checker to check for objects out of range
