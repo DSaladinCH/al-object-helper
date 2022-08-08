@@ -8,7 +8,7 @@
         "name": "Dominic Saladin"
     },
     "license": "MIT",
-    "version": "2.2.0",
+    "version": "2.2.5",
     "icon": "Images/ALObjectHelper_Small.png",
     "engines": {
         "vscode": "^1.60.0"
@@ -23,9 +23,9 @@
         "email": "git@dsaladin.ch"
     },
     "galleryBanner": {
-		"color": "#1e65d9",
-		"theme": "dark"
-	},
+        "color": "#1e65d9",
+        "theme": "dark"
+    },
     "categories": [
         "Programming Languages",
         "Visualization",

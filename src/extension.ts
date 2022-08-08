@@ -156,6 +156,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.checkLicense", async function () {
 		var readLicense = true;
 
+		if (reader.printDebug) {
+			reader.outputChannel.appendLine("License Check: Preparing quick panel");
+		}
+
 		if (reader.licenseInformation) {
 			const selection = await vscode.window.showQuickPick(["New file", `${reader.licenseInformation?.customerName} for BC ${reader.licenseInformation?.productVersion}`]);
 			if (!selection) { return; }
@@ -163,17 +167,26 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (readLicense) {
+			if (reader.printDebug) {
+				reader.outputChannel.appendLine("License Check: Try to read license file");
+			}
+
 			const uri = await vscode.window.showOpenDialog({ title: "Select license report detailed", filters: { "Report detailed": ['txt'] }, canSelectMany: false });
 			if (!uri) { return; }
 			await reader.loadLicense(uri[0]);
 			vscode.window.showInformationMessage(`Successfully loaded license for ${reader.licenseInformation?.customerName}`);
+
+			if (reader.printDebug){
+				reader.outputChannel.appendLine(`License Check: Read license file. ${reader.licenseInformation?.licenseObjects.length} license objects found`);
+			}
 		}
 
 		var alObjectsOutOfRange = await reader.checkLicense(false);
 		var freeObjects = await reader.getFreeObjects();
-		freeObjects.forEach(alObject => {
-			reader.outputChannel.appendLine(`Type: ${ObjectType[alObject.objectType]} | ID: ${alObject.objectID}`);
-		});
+
+		if (reader.printDebug){
+			reader.outputChannel.appendLine(`License Check: Found ${alObjectsOutOfRange.length} objects out of range and ${freeObjects.length} free object ids`);
+		}
 
 		UIManagement.showLicenseCheckResult(alObjectsOutOfRange, freeObjects);
 	}));

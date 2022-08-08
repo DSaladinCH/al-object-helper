@@ -236,13 +236,21 @@ export class UIManagement {
 
     private static async getLicenseCheckWebviewContent(panel: vscode.WebviewPanel): Promise<string> {
         return new Promise<string>((resolve) => {
+            if (reader.printDebug) {
+                reader.outputChannel.appendLine("License Check: Creating webview panel");
+            }
+
             // Get path to resource on disk
             // And get the special URI to use with the webview
-            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'licenseCheck', 'index.html'));
-            const cssOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'css', 'licenseCheck.css'));
-            const fontawesomeOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'src', 'ui', 'css', 'fontawesome.all.min.css'));
+            const htmlOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'web-ui', 'licenseCheck', 'index.html'));
+            const cssOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'web-ui', 'css', 'licenseCheck.css'));
+            const fontawesomeOnDiskPath = vscode.Uri.file(path.join(reader.extensionContext.extensionPath, 'web-ui', 'css', 'fontawesome.all.min.css'));
             const cssSrc: any = panel.webview.asWebviewUri(cssOnDiskPath);
             const fontAwesomeSrc: any = panel.webview.asWebviewUri(fontawesomeOnDiskPath);
+
+            if (reader.printDebug) {
+                reader.outputChannel.appendLine(`License Check: Creating webview panel with html ${htmlOnDiskPath.fsPath}`);
+            }
 
             fs.readFile(htmlOnDiskPath.fsPath, (error, data) => {
                 if (error) {
@@ -263,6 +271,10 @@ export class UIManagement {
     }
 
     private static async updateLicenseCheckPanel(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
+        if (reader.printDebug) {
+            reader.outputChannel.appendLine("License Check: Preparing data to update the license panel");
+        }
+        
         if (!UIManagement.licenseCheckWebviewPanel) {
             return;
         }
@@ -282,6 +294,10 @@ export class UIManagement {
             licenseData.push(new LicenseCheckObject(alObject, freeObjects[index]));
             freeObjects.splice(index, 1);
         });
+
+        if (reader.printDebug) {
+            reader.outputChannel.appendLine(`License Check: Sending data update to license panel. Sending ${licenseData.length} license data objects and ${noFreeObjects} free objects`);
+        }
 
         if (reader.licenseInformation) {
             UIManagement.licenseCheckWebviewPanel?.webview.postMessage({
