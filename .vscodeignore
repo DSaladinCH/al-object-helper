@@ -1,7 +1,8 @@
+.github/**
 .vscode/**
 .vscode-test/**
+cpuprofiles/**
 out/test/**
-out/ui/objectlist/**
 src/**
 Images/**
 !Images/ALObjectHelper_Small.png
