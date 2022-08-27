@@ -7,7 +7,7 @@ import { ALApp, ALDefinitionProvider, ALExtension, ALHoverProvider, ALObject, AL
 // your extension is activated the very first time the command is executed
 export var reader: Reader;
 export var extensionPrefix: string = "AL Object Helper: ";
-export var shortcutRegex = RegExp("^((?:t|p|e|r)(?:e|ed)?|(?:c|x|q))([0-9]+)$", "mi");
+export var shortcutRegex = RegExp("^((?:t|p|e|r|ps)(?:e|ed)?|(?:c|x|q))([0-9]+)$", "mi");
 export var variablePattern = /\s(\"[^\"\r\n\t]+\"|[a-z0-9\_]+)\s?\:\s([a-z\[\]0-9]+)\s?(\'[^\'\;]+\'|\"[^\"\;]+\"|of [^\"\;]+|[^\"\s\;]+|)( temporary)?\;/i;
 export var textDocumentScheme = "alObjectHelper";
 

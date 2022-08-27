@@ -1,4 +1,7 @@
-import { ALApp, ALCodeunit, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALPage, ALPageExtension, ALQuery, ALReport, ALReportExtension, ALTable, ALTableExtension, ALVariable, ALXmlport, ObjectType, reader, shortcutRegex } from "../internal";
+import {
+    ALApp, ALCodeunit, ALControlAddIn, ALDotNet, ALEntitlement, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALInterface, ALPage, ALPageExtension, ALPermissionSet, ALPermissionSetExtension,
+    ALProfile, ALQuery, ALReport, ALReportExtension, ALRequestPage, ALTable, ALTableExtension, ALVariable, ALXmlport, ObjectType, reader, shortcutRegex
+} from "../internal";
 
 export abstract class ALObject {
     objectType: ObjectType;
@@ -111,6 +114,22 @@ export abstract class ALObject {
                 return new ALEnum(objectPath, objectID, objectName, alApp);
             case ObjectType.EnumExtension:
                 return new ALEnumExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.ControlAddIn:
+                return new ALControlAddIn(objectPath, objectID, objectName, alApp);
+            case ObjectType.DotNet:
+                return new ALDotNet(objectPath, objectID, objectName, alApp);
+            case ObjectType.Entitlement:
+                return new ALEntitlement(objectPath, objectID, objectName, alApp);
+            case ObjectType.Interface:
+                return new ALInterface(objectPath, objectID, objectName, alApp);
+            case ObjectType.PermissionSet:
+                return new ALPermissionSet(objectPath, objectID, objectName, alApp);
+            case ObjectType.PermissionSetExtension:
+                return new ALPermissionSetExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.Profile:
+                return new ALProfile(objectPath, objectID, objectName, alApp);
+            case ObjectType.RequestPage:
+                return new ALRequestPage(objectPath, objectID, objectName, alApp);
             default:
                 return undefined;
         }
@@ -122,7 +141,7 @@ export abstract class ALObject {
             return undefined;
         }
         let objectType: ObjectType | undefined = ALObject.getObjectTypeByShortcut(matches[1]);
-        let searchExtension: boolean = (matches[1].length === 2 && matches[1].toLowerCase().endsWith("e"));
+        let searchExtension: boolean = (matches[1].length >= 2 && matches[1].toLowerCase().endsWith("e"));
         let objectID: string = matches[2];
         if (objectType === undefined) {
             return undefined;
@@ -149,32 +168,37 @@ export abstract class ALObject {
 
     static getObjectTypeByShortcut(shortcut: string): ObjectType | undefined {
         switch (shortcut.toLowerCase()) {
-            case 't':
+            case "t":
                 return ObjectType.Table;
-            case 'te':
-            case 'ted':
+            case "te":
+            case "ted":
                 return ObjectType.TableExtension;
-            case 'p':
+            case "p":
                 return ObjectType.Page;
-            case 'pe':
-            case 'ped':
+            case "pe":
+            case "ped":
                 return ObjectType.PageExtension;
-            case 'e':
+            case "e":
                 return ObjectType.Enum;
-            case 'ee':
-            case 'eed':
+            case "ee":
+            case "eed":
                 return ObjectType.EnumExtension;
-            case 'r':
+            case "r":
                 return ObjectType.Report;
-            case 're':
-            case 'red':
+            case "re":
+            case "red":
                 return ObjectType.ReportExtension;
-            case 'c':
+            case "pse":
+            case "psed":
+                return ObjectType.PermissionSetExtension;
+            case "c":
                 return ObjectType.Codeunit;
-            case 'x':
+            case "x":
                 return ObjectType.Xmlport;
-            case 'q':
+            case "q":
                 return ObjectType.Query;
+            case "ps":
+                return ObjectType.PermissionSet;
             default:
                 return undefined;
         }

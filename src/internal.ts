@@ -47,6 +47,16 @@ export * from "./objects/Enum/ALEnum";
 export * from "./objects/Enum/ALEnumExtension";
 export * from "./objects/Enum/ALEnumField";
 
+/* Misc */
+export * from "./objects/Misc/ALControlAddIn";
+export * from "./objects/Misc/ALDotNet";
+export * from "./objects/Misc/ALEntitlement";
+export * from "./objects/Misc/ALInterface";
+export * from "./objects/Misc/ALPermissionSet";
+export * from "./objects/Misc/ALPermissionSetExtension";
+export * from "./objects/Misc/ALProfile";
+export * from "./objects/Misc/ALRequestPage";
+
 /**********/
 /*** UI ***/
 /**********/

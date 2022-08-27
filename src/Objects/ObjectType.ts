@@ -12,5 +12,13 @@ export enum ObjectType {
     Query,
     Enum,
     EnumExtension,
+    ControlAddIn,
+    DotNet,
+    Entitlement,
+    Interface,
+    PermissionSet,
+    PermissionSetExtension,
+    Profile,
+    RequestPage,
     NotAvailable
 }

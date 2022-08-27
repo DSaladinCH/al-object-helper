@@ -508,9 +508,28 @@ export class Reader {
 
     readFirstObjectLine(lineText: string, filePath: string, alApp: ALApp): ALObject | undefined {
         const alObjectPattern = /^([a-z]+)\s([0-9]+)\s([a-z0-9\_]+|\"[^\"]+\")(\sextends\s([a-z0-9\_]+|\"[^\"]+\")|[\s\{]?|)[\s\{]?/i;
+        const alObjectNonIDPattern = /^([^\s]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)$/i;
+
         let matches = alObjectPattern.exec(lineText);
         if (matches === null) {
-            return undefined;
+            matches = alObjectNonIDPattern.exec(lineText);
+            if (matches !== null) {
+                let typeStr = matches[1];
+                let name = "Type " + ObjectType[HelperFunctions.getObjectTypeFromString(typeStr)];
+                if (matches[2] !== undefined) {
+                    name = HelperFunctions.removeNameSurrounding(matches[2]);
+                }
+                matches.splice(0);
+                matches.push(lineText);
+                matches.push(typeStr);
+                matches.push("");
+                matches.push(name);
+                matches.push("");
+                matches.push("");
+            }
+            else {
+                return undefined;
+            }
         }
         if (matches.length < 6) {
             return undefined;
@@ -530,8 +549,8 @@ export class Reader {
             return undefined;
         }
 
-        // if group 4 is empty, it is not a extension object
-        if (matches[5] === undefined) {
+        // if group 5 is empty, it is not a extension object
+        if (matches[5] === undefined || matches[5] === "") {
 
         }
         // if group 4 is not empty, it is a extension object

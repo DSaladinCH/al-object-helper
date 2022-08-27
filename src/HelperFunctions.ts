@@ -32,6 +32,22 @@ export class HelperFunctions {
                 return ObjectType.Enum;
             case "enumextension":
                 return ObjectType.EnumExtension;
+            case "controladdin":
+                return ObjectType.ControlAddIn;
+            case "dotnet":
+                return ObjectType.DotNet;
+            case "entitlement":
+                return ObjectType.Entitlement;
+            case "interface":
+                return ObjectType.Interface;
+            case "permissionset":
+                return ObjectType.PermissionSet;
+            case "permissionsetextension":
+                return ObjectType.PermissionSetExtension;
+            case "profile":
+                return ObjectType.Profile;
+            case "requestpage":
+                return ObjectType.RequestPage;
             default:
                 console.info(extensionPrefix + `Type "${type}" is not available`);
                 return ObjectType.NotAvailable;
@@ -583,7 +599,7 @@ export class HelperFunctions {
 
     static async changeObjectID(sourcePath: string, newObjectID: string): Promise<Boolean> {
         return await new Promise<Boolean>(async (resolve) => {
-            var {line, index} = await this.getFirstObjectLine(sourcePath);
+            var { line, index } = await this.getFirstObjectLine(sourcePath);
             line = reader.replaceObjectID(line, newObjectID);
 
             if (line === "") {
