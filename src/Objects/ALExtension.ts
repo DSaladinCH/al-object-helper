@@ -1,4 +1,4 @@
-import { ALApp, ALEnum, ALObject, ALPage, ALReport, ALTable, ObjectType } from "../internal";
+import { ALApp, ALEnum, ALObject, ALPage, ALPermissionSet, ALReport, ALTable, ObjectType } from "../internal";
 
 export abstract class ALExtension extends ALObject {
     parent: ALObject | undefined = undefined;
@@ -19,6 +19,8 @@ export abstract class ALExtension extends ALObject {
                 return new ALReport(objectPath, objectID, objectName, alApp);
             case ObjectType.EnumExtension:
                 return new ALEnum(objectPath, objectID, objectName, alApp);
+            case ObjectType.PermissionSetExtension:
+                return new ALPermissionSet(objectPath, objectID, objectName, alApp);
             default:
                 return undefined;
         }

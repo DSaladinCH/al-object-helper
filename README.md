@@ -10,9 +10,9 @@
     <br />
 <div>
 
-[![GitHub issues](https://img.shields.io/github/issues/DSaladinCH/al-object-helper?style=for-the-badge)](https://github.com/DSaladinCH/al-object-helper/issues)
 [![GitHub license](https://img.shields.io/github/license/DSaladinCH/al-object-helper?style=for-the-badge)](https://github.com/DSaladinCH/al-object-helper/blob/master/LICENSE.txt)
-[![VS Code Version (DSaladin.al-object-helper)](https://img.shields.io/visual-studio-marketplace/v/DSaladin.al-object-helper?label=VS%20Code%20Marketplace&style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper)  
+[![VS Code Version (DSaladin.al-object-helper)](https://img.shields.io/visual-studio-marketplace/v/DSaladin.al-object-helper?label=Version&style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper)
+[![Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/DSaladin.al-object-helper?color=darkgreen&label=Downloads&style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper)
 
 </div>
     <a href="https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper">Download</a>

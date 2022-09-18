@@ -109,6 +109,7 @@ export class ALFunction {
             case ObjectType.PageExtension:
             case ObjectType.ReportExtension:
             case ObjectType.EnumExtension:
+            case ObjectType.PermissionSetExtension:
                 var parent = (alObject as ALExtension).parent;
                 if (parent) {
                     objectType = parent.objectType;
