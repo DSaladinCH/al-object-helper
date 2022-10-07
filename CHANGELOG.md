@@ -1,7 +1,7 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
-## [2.2.11] - 2022-10-07
+## [2.2.12] - 2022-10-07
 ### Fixed
 - Checking AppPath on macOS and Linux
 
