@@ -1,4 +1,5 @@
 import { ALObject, AppType } from './internal';
+import os = require('os');
 
 export class ALApp {
     appType: AppType;
@@ -31,8 +32,15 @@ export class ALApp {
         this.appRunTimeVersion = alRunTimeVersion.trim();
         this.appPath = appPath;
         if (!this.appPath.endsWith(".app")) {
-            if (!this.appPath.endsWith("\\")) {
-                this.appPath += "\\";
+            if (os.type() == "Windows_NT") {
+                if (!this.appPath.endsWith("\\")) {
+                    this.appPath += "\\";
+                }
+            }
+            else {
+                if (!this.appPath.endsWith("/")) {
+                    this.appPath += "/";
+                }
             }
         }
         this.appDate = appDate;

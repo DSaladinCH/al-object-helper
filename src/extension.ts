@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { ALApp, ALDefinitionProvider, ALExtension, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, ALObjectHelperTreeDataProvider, AppType, FunctionType, HelperFunctions, ObjectType, Reader, UIManagement } from './internal';
+import os = require('os');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -231,9 +232,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(async (workspaceFoldersChange) => {
 		for (let i = 0; i < workspaceFoldersChange.removed.length; i++) {
 			let appPath = workspaceFoldersChange.removed[i].uri.fsPath;
-			if (!appPath.endsWith("\\")) {
-				appPath += "\\";
-			}
+			if (os.type() == "Windows_NT") {
+                if (!appPath.endsWith("\\")) {
+					appPath += "\\";
+				}
+            }
+            else {
+                if (!appPath.endsWith("/")) {
+					appPath += "/";
+				}
+            }
 			const index = reader.alApps.findIndex(alApp => alApp.appPath === appPath);
 			if (index === -1) {
 				continue;

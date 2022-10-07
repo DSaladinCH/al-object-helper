@@ -8,10 +8,10 @@
         "name": "Dominic Saladin"
     },
     "license": "MIT",
-    "version": "2.2.10",
+    "version": "2.2.12",
     "icon": "Images/ALObjectHelper_Small.png",
     "engines": {
-        "vscode": "^1.60.0"
+        "vscode": "^1.63.0"
     },
     "homepage": "https://github.com/DSaladinCH/al-object-helper/blob/main/README.md",
     "repository": {
