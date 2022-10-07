@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.2.11] - 2022-10-07
+### Fixed
+- Checking AppPath on macOS and Linux
+
 ## [2.2.10] - 2022-08-08
 ### Fixed
 - License Checker not rendering
