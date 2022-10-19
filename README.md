@@ -14,6 +14,8 @@
 [![VS Code Version (DSaladin.al-object-helper)](https://img.shields.io/visual-studio-marketplace/v/DSaladin.al-object-helper?label=Version&style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper)
 [![Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/DSaladin.al-object-helper?color=darkgreen&label=Downloads&style=for-the-badge)](https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper)
 
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/dsaladin)
+
 </div>
     <a href="https://marketplace.visualstudio.com/items?itemName=DSaladin.al-object-helper">Download</a>
     ·
