@@ -303,7 +303,7 @@ export class Reader {
                 if (updateCallback) { updateCallback(); }
 
                 const contentBuffer: Buffer | undefined = await jsZip.file(alFile)?.async("nodebuffer");
-                if (!contentBuffer) {
+                if (!contentBuffer || contentBuffer.length <= 0) {
                     continue;
                 }
 
