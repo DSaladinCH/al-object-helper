@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.2.13] - 2022-11-05
+### Fixed
+- Empty files in app freezes object loading
+
 ## [2.2.12] - 2022-10-07
 ### Fixed
 - Checking AppPath on macOS and Linux
@@ -208,6 +212,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.2.13]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.12...2.2.13
 [2.2.12]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.10...2.2.12
 [2.2.10]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.0...2.2.10
 [2.2.0]: https://github.com/DSaladinCH/al-object-helper/compare/2.1.4...2.2.0
