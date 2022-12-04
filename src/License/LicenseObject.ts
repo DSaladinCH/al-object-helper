@@ -56,6 +56,13 @@ export class LicenseObject {
             case ObjectType.Enum:
             case ObjectType.EnumExtension:
             case ObjectType.Query:
+            case ObjectType.ControlAddIn:
+            case ObjectType.Entitlement:
+            case ObjectType.Interface:
+            case ObjectType.DotNet:
+            case ObjectType.PermissionSet:
+            case ObjectType.PermissionSetExtension:
+            case ObjectType.Profile:
                 return false;
         }
 
