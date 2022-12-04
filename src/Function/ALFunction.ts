@@ -28,7 +28,7 @@ export class ALFunction {
         if (settings.parameters) { this.parameters = settings.parameters; }
         this.returnValue = settings.returnValue;
 
-        if (functionType === FunctionType.EventSubscriber){
+        if (functionType === FunctionType.EventSubscriber) {
             // event subscribers are allways local
             this.isLocal = true;
         }
@@ -132,9 +132,7 @@ export class ALFunction {
 
         //#region Function declaration
         let functionText = "";
-        if (this.isLocal) {
-            functionText += "local ";
-        }
+        functionText += "local ";
 
         let parameters = "";
         if (this.parameters.length > 0) {
