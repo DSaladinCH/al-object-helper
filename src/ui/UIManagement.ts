@@ -215,7 +215,7 @@ export class UIManagement {
                         HelperFunctions.openUriFile(vscode.Uri.file(decodeURI(message.data.sourcePath)));
                         return;
                     case "reload":
-                        await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+                        await reader.readLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
                         // Send data update
                         UIManagement.updateLicenseCheckPanel(await reader.checkLicense(false), await reader.getFreeObjects());
                         return;

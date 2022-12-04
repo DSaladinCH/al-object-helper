@@ -7,7 +7,7 @@ export class ALApp {
     appPublisher: string;
     appVersion: string;
     appRunTimeVersion: string;
-    appPath: string;
+    appRootPath: string;
     appDate: Date;
     appChanged: boolean = true;
     private _alObjects: ALObject[] = [];
@@ -30,16 +30,16 @@ export class ALApp {
         this.appPublisher = publisher.trim();
         this.appVersion = version;
         this.appRunTimeVersion = alRunTimeVersion.trim();
-        this.appPath = appPath;
-        if (!this.appPath.endsWith(".app")) {
+        this.appRootPath = appPath;
+        if (!this.appRootPath.endsWith(".app")) {
             if (os.type() == "Windows_NT") {
-                if (!this.appPath.endsWith("\\")) {
-                    this.appPath += "\\";
+                if (!this.appRootPath.endsWith("\\")) {
+                    this.appRootPath += "\\";
                 }
             }
             else {
-                if (!this.appPath.endsWith("/")) {
-                    this.appPath += "/";
+                if (!this.appRootPath.endsWith("/")) {
+                    this.appRootPath += "/";
                 }
             }
         }

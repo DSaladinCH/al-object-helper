@@ -24,7 +24,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	setIsALExtension(false);
 
 	reader = new Reader(context);
-	await reader.startReading();
+	await reader.start();
 
 	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(textDocumentScheme, new ALObjectHelperDocumentProvider()));
 	context.subscriptions.push(vscode.languages.registerDefinitionProvider("al", new ALDefinitionProvider(reader)));
@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
 		if (reader.autoReloadObjects) {
-			await reader.startReading();
+			await reader.start();
 		}
 
 		var alObject: ALObject | undefined;
@@ -58,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObjectOfApp", async function () {
 		if (reader.autoReloadObjects) {
-			await reader.startReading();
+			await reader.start();
 		}
 
 		const alApp = await UIManagement.selectALApp(reader.alApps);
@@ -81,26 +81,30 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.copyEvent", async function () {
 		if (reader.autoReloadObjects) {
-			await reader.startReading();
+			await reader.start();
 		}
 
 		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
 			alApp.alObjects.forEach(alObject => {
-				if (alObject.functions.find(alFunction =>
-					alFunction.functionType === FunctionType.InternalEvent ||
-					alFunction.functionType === FunctionType.BusinessEvent ||
-					alFunction.functionType === FunctionType.IntegrationEvent
-				)) {
-					alObjects.push(alObject);
-				}
+				// if (alObject.functions.find(alFunction =>
+				// 	alFunction.functionType === FunctionType.InternalEvent ||
+				// 	alFunction.functionType === FunctionType.BusinessEvent ||
+				// 	alFunction.functionType === FunctionType.IntegrationEvent
+				// )) {
+				// 	alObjects.push(alObject);
+				// }
+
+				alObjects.push(alObject);
 			});
 		});
 
-		const alObject = await UIManagement.selectALObject(alObjects);
+		let alObject = await UIManagement.selectALObject(alObjects);
 		if (!alObject) {
 			return;
 		}
+
+		alObject = await reader.readAlObject(alObject);
 
 		const alFunction = await UIManagement.selectEventPublisher(alObject);
 		if (!alFunction) {
@@ -113,7 +117,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.jumpToEventSubscriber", async function () {
 		if (reader.autoReloadObjects) {
-			await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+			await reader.readLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
 		}
 
 		const alFunction = await UIManagement.selectEventSubscriber(reader.alApps.filter(alApp => alApp.appType === AppType.local));
@@ -151,7 +155,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reloadObjects", async function () {
 		reader = new Reader(context);
-		await reader.startReading();
+		await reader.start();
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.checkLicense", async function () {
@@ -174,7 +178,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 			const uri = await vscode.window.showOpenDialog({ title: "Select license report detailed", filters: { "Report detailed": ['txt'] }, canSelectMany: false });
 			if (!uri) { return; }
-			await reader.loadLicense(uri[0]);
+			await reader.readLicenseReport(uri[0]);
 			vscode.window.showInformationMessage(`Successfully loaded license for ${reader.licenseInformation?.customerName}`);
 
 			if (reader.printDebug){
@@ -242,7 +246,7 @@ export async function activate(context: vscode.ExtensionContext) {
 					appPath += "/";
 				}
             }
-			const index = reader.alApps.findIndex(alApp => alApp.appPath === appPath);
+			const index = reader.alApps.findIndex(alApp => alApp.appRootPath === appPath);
 			if (index === -1) {
 				continue;
 			}
@@ -261,7 +265,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (newApps.length > 0) {
-			await reader.startReadingLocalApps(newApps);
+			await reader.readLocalApps(newApps);
 		}
 	}));
 }

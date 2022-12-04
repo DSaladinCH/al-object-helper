@@ -258,7 +258,7 @@ export class HelperFunctions {
             return;
         }
 
-        return alApp.appPath;
+        return alApp.appRootPath;
     }
 
     static async readZip(zipPath: string): Promise<JSZip | undefined> {
@@ -624,7 +624,7 @@ export class HelperFunctions {
         return new Promise<{ line: string, index: number }>((resolve) => {
             var index: number = 0;
             lineReader.eachLine(objectPath, (line, last, cb) => {
-                if (reader.readFirstObjectLine(line, objectPath, ALApp.Empty())) {
+                if (reader.readObjectDefinition(line, objectPath, ALApp.Empty())) {
                     resolve({ line, index });
                     return false;
                 }

@@ -3,6 +3,7 @@ export * from "./AppType";
 export * from "./extension";
 export * from "./HelperFunctions";
 export * from "./Reader";
+export * from "./Mode";
 
 /***************/
 /*** Objects ***/
