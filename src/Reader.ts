@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -14,7 +14,7 @@ export class Reader {
     licenseInformation: LicenseInformation | undefined;
     printDebug: boolean = false;
     autoReloadObjects: boolean = false;
-    onlyLoadSymbolFiles: boolean = false;
+    mode: Mode = Mode.Performance;
     onlyShowLocalFiles: boolean = false;
 
     private isReadingLocalApp: boolean = false;
@@ -41,24 +41,27 @@ export class Reader {
         });
     }
 
-    loadConfiguration(reader: Reader) {
+    private loadConfiguration(reader: Reader) {
         reader.workspaceConfig = vscode.workspace.getConfiguration();
         reader.printDebug = reader.workspaceConfig.get("alObjectHelper.printDebug") as boolean;
         reader.autoReloadObjects = !reader.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
-        reader.onlyLoadSymbolFiles = reader.workspaceConfig.get("alObjectHelper.onlyLoadSymbolFiles") as boolean;
+        reader.mode = Mode[(reader.workspaceConfig.get("alObjectHelper.mode") as string).replace(/\s/g, '') as keyof typeof Mode];
         reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
     }
 
-    async startReading() {
-        for (let index = 0; index < this.alApps.length; index++) {
+    /**
+     * Starts the complete reading of all apps and .al files
+     */
+    async start() {
+        for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
             const alApp = this.alApps[index];
-            await this.discoverAppPackagesOfLocalApp(alApp);
+            await this.searchAppPackages(alApp.appRootPath);
         }
         if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
 
         await Promise.all([
-            this.startReadingLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
-            this.startReadingAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
+            this.readLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
+            this.readAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
         ]);
     }
 
@@ -74,7 +77,7 @@ export class Reader {
         return null;
     }
 
-    async startReadingLocalApps(alApps: ALApp[]) {
+    async readLocalApps(alApps: ALApp[]) {
         if (this.isReadingLocalApp) {
             return;
         }
@@ -95,19 +98,21 @@ export class Reader {
                     var filteredALApps = alApps.filter(app => app.appType === AppType.local);
                     var quotient = Math.floor(100 / filteredALApps.length);
                     console.log(extensionPrefix + `Found ${filteredALApps.length} workspace folders`);
+
                     for (let i = 0; i < filteredALApps.length; i++) {
                         const alApp = filteredALApps[i];
                         alApp.clearALObjects();
-                        await reader.discoverAppPackagesOfLocalApp(alApp);
+                        await reader.searchAppPackages(alApp.appRootPath);
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
-                        console.log(extensionPrefix + `Found project "${alApp.appName}" with path "${alApp.appPath}"`);
+                        console.log(extensionPrefix + `Found project "${alApp.appName}" with path "${alApp.appRootPath}"`);
                         if (reader.printDebug) { reader.outputChannel.appendLine(`Search al files in local project "${alApp.appName}"`); }
 
-                        let files = await HelperFunctions.getFiles(alApp.appPath, 'al');
+                        let files = await HelperFunctions.getFiles(alApp.appRootPath, 'al');
                         if (reader.printDebug) { reader.outputChannel.appendLine(`Found ${files.length} al files in local project "${alApp.appName}"`); }
                         alFiles = alFiles.concat(files);
-                        await reader.getALSymbols(files, alApp, (a, m) => {
+
+                        await reader.getAlFiles(files, alApp, (a, m) => {
                             progress.report({ message: `${alApp.appName} (${a} of ${m})` });
                         });
                     }
@@ -121,9 +126,12 @@ export class Reader {
 
             console.log(extensionPrefix + `Found ${alFiles.length} AL Files in all local projects`);
             if (this.printDebug) { this.outputChannel.appendLine(`Found ${alFiles.length} al files in all local projects`); }
+
             let objectCount = 0;
             this.alApps.filter(app => app.appType === AppType.local).forEach(app => objectCount += app.alObjects.length);
+
             console.log(extensionPrefix + `Found ${objectCount} AL Objects in all local projects`);
+
             if (this.printDebug) {
                 if (alFiles.length - objectCount > 0) {
                     this.outputChannel.appendLine(`Found ${objectCount} al objects, so ${alFiles.length - objectCount} objects could not be read or are not supported yet`);
@@ -138,13 +146,97 @@ export class Reader {
         });
     }
 
-    async startReadingAppPackages(alApps: ALApp[]) {
+    private searchAppPackages(searchPath: string): Promise<void> {
+        return new Promise<void>(async (resolve) => {
+            if (this.printDebug) { this.outputChannel.appendLine(`Now search all app files in path ${searchPath}`); }
+
+            if (!searchPath.endsWith(".alpackages")) {
+                searchPath = path.join(searchPath, ".alpackages");
+            }
+
+            let appFiles = await HelperFunctions.getFiles(searchPath, 'app');
+            if (this.printDebug) { this.outputChannel.appendLine(`Found ${appFiles.length} app files in path ${searchPath}`); }
+
+            for await (const appPath of appFiles) {
+                if (this.printDebug) {
+                    this.outputChannel.appendLine("");
+                    this.outputChannel.appendLine(`Now reading app file ${appPath}`);
+                }
+
+                const jsZip = await HelperFunctions.readZip(appPath);
+                if (!jsZip) {
+                    if (this.printDebug) { this.outputChannel.appendLine(`Stop reading app file ${appPath} because of an error or a non existing app file`); }
+                    continue;
+                }
+
+                if (this.printDebug) { this.outputChannel.appendLine(`Now extracting NavxManifest.xml from app file ${appPath}`); }
+
+                const manifest = Object.keys(jsZip.files).find(fileName => fileName.endsWith("NavxManifest.xml"));
+                if (!manifest) {
+                    continue;
+                }
+
+                if (this.printDebug) { this.outputChannel.appendLine(`Creating buffer of NavxManifest.xml from app file ${appPath}`); }
+
+                const contentBuffer: Buffer | undefined = await jsZip.file(manifest)?.async("nodebuffer");
+                if (!contentBuffer) {
+                    continue;
+                }
+                const content = contentBuffer.toString();
+                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)"/i;
+
+                if (this.printDebug) { this.outputChannel.appendLine(`Extracting data of NavxManifest.xml from app file ${appPath}`); }
+
+                const matches = manifestAppPattern.exec(content);
+                if (!matches) {
+                    continue;
+                }
+
+                const appDate = await HelperFunctions.getFileModifyDate(appPath);
+                if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
+
+                if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
+                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate));
+                }
+                else {
+                    var existingALApp = this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2]);
+                    if (existingALApp && existingALApp.appType === AppType.appPackage) {
+                        // app did not change by default
+                        existingALApp.appChanged = false;
+                        // if the date is not the same as the saved date, then the app changed
+                        if (existingALApp.appDate.getTime() !== appDate.getTime()) {
+                            existingALApp.appDate = appDate;
+                            existingALApp.appChanged = true;
+                        }
+                    }
+                }
+            }
+
+            const appPackages = this.alApps.filter(alApp => alApp.appType === AppType.appPackage);
+            for (let i = 0; i < appPackages.length; i++) {
+                if (!await HelperFunctions.pathExists(appPackages[i].appRootPath)) {
+                    console.log(extensionPrefix + `Did not find apppackage ${appPackages[i].appName}, so it gets deleted`);
+                    this.alApps.splice(this.alApps.findIndex(alApp => alApp.appRootPath === appPackages[i].appRootPath));
+                }
+            }
+
+            if (this.printDebug) {
+                this.outputChannel.appendLine("");
+                this.outputChannel.appendLine(`Found all app files in ${searchPath}`);
+            }
+
+            resolve();
+        });
+    }
+
+    async readAppPackages(alApps: ALApp[]) {
         if (this.isReadingApp) {
             return;
         }
         this.isReadingApp = true;
 
         if (this.printDebug) { this.outputChannel.appendLine("Start reading app packages!"); }
+
         if (alApps.length === 0) {
             return;
         }
@@ -160,6 +252,7 @@ export class Reader {
 
                     var filteredALApps = alApps.filter(app => app.appType === AppType.appPackage);
                     var quotient = Math.floor(100 / filteredALApps.length);
+
                     for (let i = 0; i < filteredALApps.length; i++) {
                         var alApp = filteredALApps[i];
                         alApp.clearALObjects();
@@ -167,11 +260,13 @@ export class Reader {
 
                         // console.log(extensionPrefix + `Found app package "${alApp.appName}" with path "${alApp.appPath}"`);
                         console.log(extensionPrefix + `Found app package "${alApp.appName}"`);
+
                         if (reader.printDebug) { reader.outputChannel.appendLine(`Search al files in app package "${alApp.appName}"`); }
 
-                        await reader.getAppALSymbols(alApp, (a, m) => {
+                        await reader.getAppAlFiles(alApp, (a, m) => {
                             progress.report({ message: `${alApp.appName} (${a} of ${m})` });
                         });
+
                         alApp.appChanged = false;
                     }
 
@@ -187,21 +282,14 @@ export class Reader {
         });
     }
 
-    getLstat(filePath: string): Promise<fs.Stats> {
-        return new Promise<fs.Stats>(async (resolve) => {
-            await fs.lstat(filePath, function (error, stats) {
-                resolve(stats);
-            });
-        });
-    }
-
     /**
-     * Get all al objects out of real al files
-     * @param alFiles Paths of al files
-     * @param alApp The app file which these al files belong to
+     * Gets a list of ALObjects out of a list of .al files
+     * @param alFiles Paths of the .al files
+     * @param alApp The app file the .al files belong to
+     * @param updateCallback The callback function for updates
      * @returns 
      */
-    getALSymbols(alFiles: string[], alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
+    private getAlFiles(alFiles: string[], alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
         return new Promise<void>(async (resolve) => {
 
             let alreadyDoneCounter = 0;
@@ -215,8 +303,8 @@ export class Reader {
                 }
             };
 
-            let promise1 = this.getAlSymbolsRange(alFiles.splice(0, length), alApp, () => { update(); });
-            let promise2 = this.getAlSymbolsRange(alFiles, alApp, () => { update(); });
+            let promise1 = this.getAlFilesPromise(alFiles.splice(0, length), alApp, () => { update(); });
+            let promise2 = this.getAlFilesPromise(alFiles, alApp, () => { update(); });
             let alObjects: ALObject[] = [];
             await Promise.all([promise1, promise2]).then((results: ALObject[][]) => {
                 results.forEach(element => {
@@ -229,14 +317,21 @@ export class Reader {
         });
     }
 
-    getAlSymbolsRange(alFiles: string[], alApp: ALApp, updateCallback?: () => void): Promise<ALObject[]> {
+    /**
+     * Reads a list of ALObjects out of a list of .al files
+     * @param alFiles Paths of the .al files
+     * @param alApp The app file the .al files belong to
+     * @param updateCallback The callback function for updates
+     * @returns Returns a list of ALObjects
+     */
+    private getAlFilesPromise(alFiles: string[], alApp: ALApp, updateCallback?: () => void): Promise<ALObject[]> {
         return new Promise<ALObject[]>(async (resolve) => {
             let reader = this;
             let alObjects: ALObject[] = [];
             for (let i = 0; i < alFiles.length; i++) {
                 if (updateCallback) { updateCallback(); }
 
-                let alObject = await reader.searchObjectInContent(alFiles[i], alApp);
+                let alObject = await reader.readAlFile(alFiles[i], alApp);
                 if (alObject) {
                     alObjects.push(alObject);
                 }
@@ -246,15 +341,16 @@ export class Reader {
     }
 
     /**
-     * Get all al objects out of a app file
-     * @param alApp The app file which should be read
+     * Gets a list of ALObjects out of a app package
+     * @param alApp The app file from which the .al files should be read
+     * @param updateCallback The callback function for updates
      * @returns 
      */
-    getAppALSymbols(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
+    private getAppAlFiles(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
         return new Promise<void>(async (resolve) => {
             let reader = this;
 
-            const jsZip = await HelperFunctions.readZip(alApp.appPath);
+            const jsZip = await HelperFunctions.readZip(alApp.appRootPath);
             if (!jsZip) {
                 resolve();
                 return;
@@ -281,8 +377,8 @@ export class Reader {
                 }
             };
 
-            let promise1 = this.getAppAlSymbolsRange(jsZip, alFiles.splice(0, length), alApp, () => { update(); });
-            let promise2 = this.getAppAlSymbolsRange(jsZip, alFiles, alApp, () => { update(); });
+            let promise1 = this.getAppAlFilesPromise(jsZip, alFiles.splice(0, length), alApp, () => { update(); });
+            let promise2 = this.getAppAlFilesPromise(jsZip, alFiles, alApp, () => { update(); });
             await Promise.all([promise1, promise2]).then((results: ALObject[][]) => {
                 results.forEach(element => {
                     alObjects = alObjects.concat(element);
@@ -295,7 +391,15 @@ export class Reader {
         });
     }
 
-    getAppAlSymbolsRange(jsZip: JSZip, alFiles: string[], alApp: ALApp, updateCallback?: () => void): Promise<ALObject[]> {
+    /**
+     * Reads a list of ALObjects out of a list of .al files in a zip
+     * @param jsZip The app as zip file
+     * @param alFiles Paths of the .al files
+     * @param alApp The app file the .al files belong to
+     * @param updateCallback The callback function for updates
+     * @returns 
+     */
+    private getAppAlFilesPromise(jsZip: JSZip, alFiles: string[], alApp: ALApp, updateCallback?: () => void): Promise<ALObject[]> {
         return new Promise<ALObject[]>(async (resolve) => {
             let reader = this;
             let alObjects: ALObject[] = [];
@@ -308,7 +412,7 @@ export class Reader {
                 }
 
                 const readable = Readable.from(contentBuffer);
-                let alObject = await reader.searchObjectInContent(alFile, alApp, readable);
+                let alObject = await reader.readAlFile(alFile, alApp, readable);
                 if (alObject) {
                     alObjects.push(alObject);
                 }
@@ -317,7 +421,50 @@ export class Reader {
         });
     }
 
-    searchObjectInContent(filePath: string, alApp: ALApp, readable?: Readable): Promise<ALObject | undefined> {
+    //#region Read single .al file
+    readAlObject(alObject: ALObject): Promise<ALObject> {
+        return new Promise<ALObject>(async (resolve) => {
+            let reader = this;
+
+            if (!alObject) {
+                return;
+            }
+
+            let zipPath: string | undefined = HelperFunctions.getZipPath(alObject);
+            if (!zipPath) {
+                return undefined;
+            }
+            let jsZip = await HelperFunctions.readZip(zipPath);
+            if (!jsZip) {
+                return undefined;
+            }
+
+            const contentBuffer: Buffer | undefined = await jsZip.file(alObject.objectPath)?.async("nodebuffer");
+            if (!contentBuffer || contentBuffer.length <= 0) {
+                resolve(alObject);
+                return alObject;
+            }
+
+            const readable = Readable.from(contentBuffer);
+            let newAlObject = await reader.readAlFile(alObject.objectPath, alObject.alApp, readable, true);
+
+            if (newAlObject) {
+                alObject = newAlObject;
+            }
+
+            resolve(alObject);
+            return alObject;
+        });
+    }
+
+    /**
+     * Reads a .al file for it symbols
+     * @param filePath The path to the .al file
+     * @param alApp The app file the .al file belongs to
+     * @param readable The file as readable (if it exists)
+     * @returns Returns the read ALObject or undefined if no object was found
+     */
+    private readAlFile(filePath: string, alApp: ALApp, readable?: Readable, forceReadAll: boolean = false): Promise<ALObject | undefined> {
         return new Promise<ALObject | undefined>(async (resolve) => {
             let reader = this;
             let alObject: ALObject;
@@ -351,7 +498,7 @@ export class Reader {
                     // each line
                     lineNo++;
                     if (firstLine) {
-                        const tempALObject = reader.readFirstObjectLine(line, filePath, alApp);
+                        const tempALObject = reader.readObjectDefinition(line, filePath, alApp);
                         if (!tempALObject) {
                             if (isLast) {
                                 cb(false);
@@ -363,11 +510,21 @@ export class Reader {
                         alObject = tempALObject;
                         firstLine = false;
                         alObject.addLocalEvents();
+
                         // Finish searching because of user preferences
-                        if (reader.onlyLoadSymbolFiles) {
+                        if (forceReadAll && reader.mode === Mode.HyperPerformance) {
                             cb(false);
                             return false;
                         }
+
+                        if (!forceReadAll) {
+                            // Finish searching because of user preferences
+                            if (reader.mode == Mode.Performance || reader.mode == Mode.HyperPerformance) {
+                                cb(false);
+                                return false;
+                            }
+                        }
+
                         return true;
                     }
 
@@ -464,16 +621,16 @@ export class Reader {
                             return true;
                         }
 
-                        currentFunction = reader.getProcedure(line, lineNo, alObject, nextFunctionType, nextFunctionArgument);
+                        currentFunction = reader.checkIfProcedure(line, lineNo, alObject, nextFunctionType, nextFunctionArgument);
                         if (currentFunction) {
                             collectionVariables = false;
                         }
                         nextFunctionArgument = undefined;
-                        nextFunctionType = reader.checkEventPublisher(line);
+                        nextFunctionType = reader.checkIfEvent(line);
 
                         // if event subscriber, get informations of the subscriber
                         if (nextFunctionType === FunctionType.EventSubscriber) {
-                            nextFunctionArgument = reader.getEventSubscriber(line);
+                            nextFunctionArgument = reader.checkIfEventSubscriber(line);
                         }
 
                         // check for a global variable after checking for a new function
@@ -488,6 +645,7 @@ export class Reader {
                             else if (match[3].endsWith(" temporary")) {
                                 isTemporary = true;
                             }
+
                             alObject.variables.push(new ALVariable(match[1], match[2], match[3], lineNo, { isTemporary: isTemporary, isVar: false }));
 
                             return true;
@@ -501,14 +659,15 @@ export class Reader {
                 if (error instanceof Error) {
                     console.log(extensionPrefix + error.message);
                 }
+
                 resolve(undefined);
             }
         });
     }
 
-    readFirstObjectLine(lineText: string, filePath: string, alApp: ALApp): ALObject | undefined {
+    readObjectDefinition(lineText: string, filePath: string, alApp: ALApp): ALObject | undefined {
         const alObjectPattern = /^([a-z]+)\s([0-9]+)\s([a-z0-9\_]+|\"[^\"]+\")(\sextends\s([a-z0-9\_]+|\"[^\"]+\")|[\s\{]?|)[\s\{]?/i;
-        const alObjectNonIDPattern = /^([^\s]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)$/i;
+        const alObjectNonIDPattern = /^([a-z0-9\_]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)$/i;
 
         let matches = alObjectPattern.exec(lineText);
         if (matches === null) {
@@ -574,7 +733,12 @@ export class Reader {
         return `${matches[1]} ${newLine}`;
     }
 
-    checkEventPublisher(lineText: string): FunctionType | undefined {
+    /**
+     * Checks if the current line is any type of event
+     * @param lineText The current line of code
+     * @returns Returns the FunctionType found or undefined if it was no match
+     */
+    private checkIfEvent(lineText: string): FunctionType | undefined {
         const eventPattern = /\[([A-z]+)[^\]]*\]/i;
         let match = eventPattern.exec(lineText);
 
@@ -585,7 +749,12 @@ export class Reader {
         return ALFunction.getFunctionTypeByString(match[1]);
     }
 
-    getEventSubscriber(lineText: string): ALFunctionArgument | undefined {
+    /**
+     * Checks if the current line is a event subscriber
+     * @param lineText The current line of code
+     * @returns Returns the ALFunctionArgument found or undefined if it was no match
+     */
+    private checkIfEventSubscriber(lineText: string): ALFunctionArgument | undefined {
         const eventSubscriberPattern = /\[EventSubscriber\(ObjectType::([^,]+),\s?[^:]+::("[^"]+"|[^,]+),\s?'([^']*)',\s?'([^']*)'/i;
         let match = eventSubscriberPattern.exec(lineText);
 
@@ -596,7 +765,16 @@ export class Reader {
         return ALFunctionArgument.createEventSubscriber(match[1], match[2], match[3], match[4]);
     }
 
-    getProcedure(lineText: string, lineNo: number, alObject: ALObject, customFunctionType?: FunctionType, functionArgument?: ALFunctionArgument): ALFunction | undefined {
+    /**
+     * Checks if the current line is a procedure
+     * @param lineText The current line of code
+     * @param lineNo The current line number
+     * @param alObject The ALObject the file belongs to
+     * @param customFunctionType The current FunctionType, if not default function
+     * @param functionArgument Any defined FunctionArguments, if any
+     * @returns Return the ALFunction found or undefined if it was no match
+     */
+    private checkIfProcedure(lineText: string, lineNo: number, alObject: ALObject, customFunctionType?: FunctionType, functionArgument?: ALFunctionArgument): ALFunction | undefined {
         try {
             const procedurePattern = /(local)?\s?(procedure|trigger) ([^(]*)\(([^)]*)?\)(?::\s?([^\s]+))?/i;
             let match = procedurePattern.exec(lineText);
@@ -635,82 +813,15 @@ export class Reader {
             return undefined;
         }
     }
+    //#endregion
 
-    discoverAppPackagesOfLocalApp(alApp: ALApp): Promise<void> {
-        return new Promise<void>(async (resolve) => {
-            if (alApp.appType !== AppType.local) {
-                resolve();
-                return;
-            }
-            if (this.printDebug) { this.outputChannel.appendLine(`Now search all app files in path ${alApp.appPath}`); }
-            let appFiles = await HelperFunctions.getFiles(alApp.appPath + '.alpackages', 'app');
-            if (this.printDebug) { this.outputChannel.appendLine(`Found ${appFiles.length} app files in path ${alApp.appPath}`); }
-            for await (const appPath of appFiles) {
-                if (this.printDebug) {
-                    this.outputChannel.appendLine("");
-                    this.outputChannel.appendLine(`Now reading app file ${appPath}`);
-                }
-                const jsZip = await HelperFunctions.readZip(appPath);
-                if (!jsZip) {
-                    if (this.printDebug) { this.outputChannel.appendLine(`Stop reading app file ${appPath} because of an error or a non existing app file`); }
-                    continue;
-                }
-
-                if (this.printDebug) { this.outputChannel.appendLine(`Now extracting NavxManifest.xml from app file ${appPath}`); }
-                const manifest = Object.keys(jsZip.files).find(fileName => fileName.endsWith("NavxManifest.xml"));
-                if (!manifest) {
-                    continue;
-                }
-
-                if (this.printDebug) { this.outputChannel.appendLine(`Creating buffer of NavxManifest.xml from app file ${appPath}`); }
-                const contentBuffer: Buffer | undefined = await jsZip.file(manifest)?.async("nodebuffer");
-                if (!contentBuffer) {
-                    continue;
-                }
-                const content = contentBuffer.toString();
-                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)"/i;
-                if (this.printDebug) { this.outputChannel.appendLine(`Extracting data of NavxManifest.xml from app file ${appPath}`); }
-                const matches = manifestAppPattern.exec(content);
-                if (!matches) {
-                    continue;
-                }
-
-                const appDate = await HelperFunctions.getFileModifyDate(appPath);
-                if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
-                if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
-                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate));
-                }
-                else {
-                    var existingALApp = this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2]);
-                    if (existingALApp && existingALApp.appType === AppType.appPackage) {
-                        // app did not change by default
-                        existingALApp.appChanged = false;
-                        // if the date is not the same as the saved date, then the app changed
-                        if (existingALApp.appDate.getTime() !== appDate.getTime()) {
-                            existingALApp.appDate = appDate;
-                            existingALApp.appChanged = true;
-                        }
-                    }
-                }
-            }
-
-            const appPackages = this.alApps.filter(alApp => alApp.appType === AppType.appPackage);
-            for (let i = 0; i < appPackages.length; i++) {
-                if (!await HelperFunctions.pathExists(appPackages[i].appPath)) {
-                    console.log(extensionPrefix + `Did not find apppackage ${appPackages[i].appName}, so it gets deleted`);
-                    this.alApps.splice(this.alApps.findIndex(alApp => alApp.appPath === appPackages[i].appPath));
-                }
-            }
-
-            if (this.printDebug) {
-                this.outputChannel.appendLine("");
-                this.outputChannel.appendLine(`Found all app files in ${alApp.appPath}`);
-            }
-            resolve();
-        });
-    }
-
-    loadLicense(licenseFilePath: vscode.Uri): Promise<void> {
+    //#region License Validation
+    /**
+     * Reads the detailed license report for license validation
+     * @param licenseFilePath The detailed license report .txt file
+     * @returns 
+     */
+    readLicenseReport(licenseFilePath: vscode.Uri): Promise<void> {
         return new Promise<void>((resolve) => {
             var customerName: string, productVersion: string, expiryDate: string;
             var licenseObjects: LicenseObject[] = [];
@@ -949,6 +1060,7 @@ export class Reader {
             return freeObjects;
         }));
     }
+    //#endregion
 
     updateSetting(name: string, value: string) {
         const target = vscode.ConfigurationTarget.Global;
