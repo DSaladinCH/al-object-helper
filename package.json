@@ -134,7 +134,7 @@
                 },
                 "alObjectHelper.mode": {
                     "enum": [
-						"Normal",
+                        "Normal",
                         "Performance",
                         "Hyper Performance"
 					],
