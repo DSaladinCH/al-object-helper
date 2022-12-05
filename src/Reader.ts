@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit, ALEnum, ALEnumField } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit } from "./internal";
 import { compareVersions } from 'compare-versions';
 
 export class Reader {
