@@ -1,7 +1,7 @@
 // The module "vscode" contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { ALApp, ALDefinitionProvider, ALExtension, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, ALObjectHelperTreeDataProvider, AppType, FunctionType, HelperFunctions, ObjectType, Reader, UIManagement } from './internal';
+import { ALApp, ALDefinitionProvider, ALExtension, ALFunction, ALFunctionItem, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, ALObjectHelperTreeDataProvider, AppType, FunctionType, HelperFunctions, ObjectType, QuickPickManagement, Reader, UIManagement } from './internal';
 import os = require('os');
 
 // this method is called when your extension is activated
@@ -87,14 +87,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		var alObjects: ALObject[] = [];
 		reader.alApps.forEach(alApp => {
 			alApp.alObjects.forEach(alObject => {
-				// if (alObject.functions.find(alFunction =>
-				// 	alFunction.functionType === FunctionType.InternalEvent ||
-				// 	alFunction.functionType === FunctionType.BusinessEvent ||
-				// 	alFunction.functionType === FunctionType.IntegrationEvent
-				// )) {
-				// 	alObjects.push(alObject);
-				// }
-
 				alObjects.push(alObject);
 			});
 		});
@@ -104,9 +96,24 @@ export async function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
+		const quickPick = new QuickPickManagement<ALFunction>();
+		const picked = quickPick.create(`Select event from ${ObjectType[alObject.objectType]} "${alObject.objectName}" to copy`);
+
 		alObject = await reader.readAlObject(alObject);
 
-		const alFunction = await UIManagement.selectEventPublisher(alObject);
+		if (!alObject)
+			return;
+			
+		const alFunctionItems: ALFunctionItem[] = [];
+        alObject.functions.filter(alFunction =>
+            alFunction.functionType === FunctionType.InternalEvent ||
+            alFunction.functionType === FunctionType.BusinessEvent ||
+            alFunction.functionType === FunctionType.IntegrationEvent
+        ).forEach(alFunction => alFunctionItems.push(new ALFunctionItem(alObject!, alFunction, true)));
+
+		quickPick.updateValue(alFunctionItems);
+		const alFunction = await picked;
+
 		if (!alFunction) {
 			return;
 		}
@@ -153,7 +160,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		//UIManagement.showObjectListPanel(reader.alApps);
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reload", async function () {		
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reload", async function () {
 		reader = new Reader(context);
 		await reader.start();
 	}));
@@ -190,7 +197,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			await reader.readLicenseReport(uri[0]);
 			vscode.window.showInformationMessage(`Successfully loaded license for ${reader.licenseInformation?.customerName}`);
 
-			if (reader.printDebug){
+			if (reader.printDebug) {
 				reader.outputChannel.appendLine(`License Check: Read license file. ${reader.licenseInformation?.licenseObjects.length} license objects found`);
 			}
 		}
@@ -198,7 +205,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		var alObjectsOutOfRange = await reader.checkLicense(false);
 		var freeObjects = await reader.getFreeObjects();
 
-		if (reader.printDebug){
+		if (reader.printDebug) {
 			reader.outputChannel.appendLine(`License Check: Found ${alObjectsOutOfRange.length} objects out of range and ${freeObjects.length} free object ids`);
 		}
 
@@ -246,15 +253,15 @@ export async function activate(context: vscode.ExtensionContext) {
 		for (let i = 0; i < workspaceFoldersChange.removed.length; i++) {
 			let appPath = workspaceFoldersChange.removed[i].uri.fsPath;
 			if (os.type() == "Windows_NT") {
-                if (!appPath.endsWith("\\")) {
+				if (!appPath.endsWith("\\")) {
 					appPath += "\\";
 				}
-            }
-            else {
-                if (!appPath.endsWith("/")) {
+			}
+			else {
+				if (!appPath.endsWith("/")) {
 					appPath += "/";
 				}
-            }
+			}
 			const index = reader.alApps.findIndex(alApp => alApp.appRootPath === appPath);
 			if (index === -1) {
 				continue;

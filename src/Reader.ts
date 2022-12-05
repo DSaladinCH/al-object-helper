@@ -16,6 +16,7 @@ export class Reader {
     autoReloadObjects: boolean = false;
     mode: Mode = Mode.Performance;
     onlyShowLocalFiles: boolean = false;
+    alPackageCachePath: string = "";
 
     private isReadingLocalApp: boolean = false;
     private isReadingApp: boolean = false;
@@ -47,16 +48,25 @@ export class Reader {
         reader.autoReloadObjects = !reader.workspaceConfig.get("alObjectHelper.suppressAutoReloadObjects") as boolean;
         reader.mode = Mode[(reader.workspaceConfig.get("alObjectHelper.mode") as string).replace(/\s/g, '') as keyof typeof Mode];
         reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
+
+        reader.alPackageCachePath = reader.workspaceConfig.get("al.packageCachePath") as string;
+        console.log(extensionPrefix + `Cache Path: ${reader.alPackageCachePath} - Is Absolute: ${path.isAbsolute(reader.alPackageCachePath)}`);
     }
 
     /**
      * Starts the complete reading of all apps and .al files
      */
     async start() {
-        for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
-            const alApp = this.alApps[index];
-            await this.searchAppPackages(alApp.appRootPath);
+        if (!path.isAbsolute(this.alPackageCachePath)) {
+            for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
+                const alApp = this.alApps[index];
+                await this.searchAppPackages(alApp.appRootPath);
+            }
         }
+        else {
+            await this.searchAppPackages(this.alPackageCachePath);
+        }
+
         if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
 
         await Promise.all([

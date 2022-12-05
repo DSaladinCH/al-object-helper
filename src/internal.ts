@@ -2,6 +2,7 @@ export * from "./ALApp";
 export * from "./AppType";
 export * from "./extension";
 export * from "./HelperFunctions";
+export * from "./QuickPickManagement";
 export * from "./Reader";
 export * from "./Mode";
 
