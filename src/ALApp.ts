@@ -12,6 +12,7 @@ export class ALApp {
     appRootPath: string;
     appDate: Date;
     appChanged: boolean = true;
+    showMyCode: boolean = true;
     private _alObjects: ALObject[] = [];
 
     get alObjects() {
@@ -37,6 +38,7 @@ export class ALApp {
         this.appSupportedVersion = appSupportedVersion.trim();
         this.appRunTimeVersion = alRunTimeVersion.trim();
         this.appRootPath = appPath;
+
         if (!this.appRootPath.endsWith(".app")) {
             if (os.type() == "Windows_NT") {
                 if (!this.appRootPath.endsWith("\\")) {
@@ -49,7 +51,9 @@ export class ALApp {
                 }
             }
         }
+
         this.appDate = appDate;
+        this.showMyCode = showMyCode;
     }
 
     static Empty(): ALApp {
