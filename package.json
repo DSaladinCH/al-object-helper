@@ -134,13 +134,13 @@
                 },
                 "alObjectHelper.mode": {
                     "enum": [
-						"Normal",
+                        "Normal",
                         "Performance",
                         "Hyper Performance"
-					],
-					"description": "Specifies in which mode AL Object Helper should run. Normal = Read everything, Performance = Only read necessary files on startup, but read additional informations on certain commands, Performance+ = Only read necessary files on startup",
-					"scope": "resource",
-					"default": "Performance"
+                    ],
+                    "description": "Specifies in which mode AL Object Helper should run. Normal = Read everything, Performance = Only read necessary files on startup, but read additional informations on certain commands, Performance+ = Only read necessary files on startup",
+                    "scope": "resource",
+                    "default": "Performance"
                 },
                 "alObjectHelper.onlyShowLocalFiles": {
                     "type": "boolean",

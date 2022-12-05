@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -50,7 +50,6 @@ export class Reader {
         reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
 
         reader.alPackageCachePath = reader.workspaceConfig.get("al.packageCachePath") as string;
-        console.log(extensionPrefix + `Cache Path: ${reader.alPackageCachePath} - Is Absolute: ${path.isAbsolute(reader.alPackageCachePath)}`);
     }
 
     /**
@@ -79,7 +78,16 @@ export class Reader {
         var appPath = path.join(folderPath, "app.json");
         if (fs.existsSync(appPath)) {
             var json = fs.readJSONSync(appPath);
-            const alApp = new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, folderPath, new Date());
+
+            let showMyCode = false;
+            if (json.showMyCode !== undefined) {
+                showMyCode = JSON.parse(json.showMyCode);
+            }
+            else if (json.resourceExposurePolicy.includeSourceInSymbolFile !== undefined) {
+                showMyCode = JSON.parse(json.resourceExposurePolicy.includeSourceInSymbolFile);
+            }
+
+            const alApp = new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, folderPath, new Date(), showMyCode);
             this.alApps.push(alApp);
             return alApp;
         }
@@ -193,7 +201,7 @@ export class Reader {
                     continue;
                 }
                 const content = contentBuffer.toString();
-                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)"/i;
+                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)".+ShowMyCode="([^"]+)"/i;
 
                 if (this.printDebug) { this.outputChannel.appendLine(`Extracting data of NavxManifest.xml from app file ${appPath}`); }
 
@@ -206,7 +214,7 @@ export class Reader {
                 if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
 
                 if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
-                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate));
+                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate, JSON.parse(matches[5].toLowerCase())));
                 }
                 else {
                     var existingALApp = this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2]);
@@ -366,6 +374,13 @@ export class Reader {
                 return;
             }
 
+            if (!alApp.showMyCode) {
+                await reader.getAlFilesSymbolReference(alApp, updateCallback);
+
+                resolve();
+                return;
+            }
+
             const alFiles = Object.keys(jsZip.files).filter(file => file.endsWith(".al"));
             if (alFiles.length === 0) {
                 resolve();
@@ -399,6 +414,120 @@ export class Reader {
             alApp.addObjects(alObjects);
             resolve();
         });
+    }
+
+    private getAlFilesSymbolReference(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
+        return new Promise<void>(async (resolve) => {
+            let reader = this;
+
+            const jsZip = await HelperFunctions.readZip(alApp.appRootPath);
+            if (!jsZip) {
+                resolve();
+                return;
+            }
+
+            const symbolReferenceBuffer: Buffer | undefined = await jsZip.file('SymbolReference.json')?.async("nodebuffer");
+            if (!symbolReferenceBuffer) {
+                resolve();
+                return;
+            }
+
+            const UTF8_BOM = "\u{FEFF}"
+            let json = symbolReferenceBuffer.toString('utf8').replace(/\0/g, '');
+
+            if (json.startsWith(UTF8_BOM)) {
+                // Remove the BOM
+                json = json.substring(UTF8_BOM.length);
+            }
+
+            let symbolReference = JSON.parse(json);
+            const codeunits: Array<any> = symbolReference.Codeunits;
+            const controlAddIns: Array<any> = symbolReference.ControlAddIns;
+            const enumExtensions: Array<any> = symbolReference.EnumExtensionTypes;
+            const enums: Array<any> = symbolReference.EnumTypes;
+            const interfaces: Array<any> = symbolReference.Interfaces;
+            const pageExtensions: Array<any> = symbolReference.PageExtensions;
+            const pages: Array<any> = symbolReference.Pages;
+            const profileExtensions: Array<any> = symbolReference.ProfileExtensions;
+            const profiles: Array<any> = symbolReference.Profiles;
+            const queries: Array<any> = symbolReference.Queries;
+            const reports: Array<any> = symbolReference.Reports;
+            const tableExtensions: Array<any> = symbolReference.TableExtensions;
+            const tables: Array<any> = symbolReference.Tables;
+            const xmlPorts: Array<any> = symbolReference.XmlPorts;
+
+            let alreadyDoneCounter = 0;
+            let maxLength = codeunits.length + controlAddIns.length + enumExtensions.length + enums.length + interfaces.length + pageExtensions.length + pages.length +
+                profileExtensions.length + profiles.length + queries.length + reports.length + tableExtensions.length + tables.length + xmlPorts.length;
+
+            var update = (): void => {
+                alreadyDoneCounter++;
+                if (updateCallback) {
+                    updateCallback(alreadyDoneCounter, maxLength);
+                }
+            };
+
+            for (let i = 0; i < codeunits.length; i++) {
+                const codeunit = codeunits[i];
+                let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
+
+                if (codeunit.Methods !== undefined) {
+                    for (let j = 0; j < codeunit.Methods.length; j++) {
+                        const method = codeunit.Methods[j];
+
+                        const parameters: ALVariable[] = [];
+                        if (method.Parameters !== undefined) {
+                            for (let k = 0; k < method.Parameters.length; k++) {
+                                const parameter = method.Parameters[k];
+                                let subtype = "";
+                                if (parameter.TypeDefinition.Subtype !== undefined) {
+                                    subtype = `"${parameter.TypeDefinition.Subtype.Name}"`;
+                                }
+
+                                const isVar: boolean = (parameter.IsVar === undefined) ? false : parameter.IsVar;
+                                const isTemporary: boolean = (parameter.TypeDefinition.Temporary === undefined) ? false : parameter.TypeDefinition.Temporary;
+                                parameters.push(new ALVariable(parameter.Name, parameter.TypeDefinition.Name, subtype, 0, { isTemporary: isTemporary, isVar: isVar }))
+                            }
+                        }
+
+                        // TODO: Check Attributes.Name if function is Event
+
+                        const isLocal: boolean = (method.IsLocal === undefined) ? false : method.IsLocal;
+                        alObject.functions.push(new ALFunction(FunctionType.Standard, method.Name, { lineNo: 0, parameters: parameters, returnValue: undefined, isLocal: isLocal }));
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+
+            for (let i = 0; i < tables.length; i++) {
+                const table = tables[i];
+                let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
+
+                if (table.Fields !== undefined) {
+                    for (let j = 0; j < table.Fields.length; j++) {
+                        const field = table.Fields[j];
+                        alObject.fields.push(new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0));
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+
+            resolve();
+            return;
+        });
+    }
+
+    private getSymbolReferenceTypeDefinition(typeDefinition: any): string {
+        let type = typeDefinition.Name;
+        if (typeDefinition.Subtype !== undefined) {
+            type += ` "${typeDefinition.Subtype.Name}"`;
+        }
+
+        return type;
     }
 
     /**
