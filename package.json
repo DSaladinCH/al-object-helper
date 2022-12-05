@@ -22,6 +22,12 @@
         "url": "https://github.com/DSaladinCH/al-object-helper/issues",
         "email": "git@dsaladin.ch"
     },
+    "funding": [
+        {
+            "type": "Buy Me a Coffee",
+            "url": "https://www.buymeacoffee.com/dsaladin"
+        }
+    ],
     "galleryBanner": {
         "color": "#1e65d9",
         "theme": "dark"
@@ -74,8 +80,12 @@
                 "title": "AL Helper: Show Extensions"
             },
             {
-                "command": "al-object-helper.reloadObjects",
-                "title": "AL Helper: Reload Objects"
+                "command": "al-object-helper.reload",
+                "title": "AL Helper: Reload"
+            },
+            {
+                "command": "al-object-helper.rereadApps",
+                "title": "AL Helper: Reread Apps"
             },
             {
                 "command": "al-object-helper.checkLicense",

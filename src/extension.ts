@@ -153,9 +153,18 @@ export async function activate(context: vscode.ExtensionContext) {
 		//UIManagement.showObjectListPanel(reader.alApps);
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reloadObjects", async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.reload", async function () {		
 		reader = new Reader(context);
 		await reader.start();
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.rereadApps", async function () {
+		const alApp = await UIManagement.selectALApp(reader.alApps);
+		if (!alApp) {
+			return;
+		}
+
+		await reader.readAppPackages([alApp]);
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.checkLicense", async function () {
