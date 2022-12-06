@@ -479,32 +479,7 @@ export class Reader {
                 const codeunit = codeunits[i];
                 let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
                 alObject.properties = reader.getSymbolReferenceProperties(codeunit.Properties);
-
-                if (codeunit.Methods !== undefined) {
-                    for (let j = 0; j < codeunit.Methods.length; j++) {
-                        const method = codeunit.Methods[j];
-
-                        const parameters: ALVariable[] = [];
-                        if (method.Parameters !== undefined) {
-                            for (let k = 0; k < method.Parameters.length; k++) {
-                                const parameter = method.Parameters[k];
-                                let subtype = "";
-                                if (parameter.TypeDefinition.Subtype !== undefined) {
-                                    subtype = `"${parameter.TypeDefinition.Subtype.Name}"`;
-                                }
-
-                                const isVar: boolean = (parameter.IsVar === undefined) ? false : parameter.IsVar;
-                                const isTemporary: boolean = (parameter.TypeDefinition.Temporary === undefined) ? false : parameter.TypeDefinition.Temporary;
-                                parameters.push(new ALVariable(parameter.Name, parameter.TypeDefinition.Name, subtype, 0, { isTemporary: isTemporary, isVar: isVar }))
-                            }
-                        }
-
-                        // TODO: Check Attributes.Name if function is Event
-
-                        const isLocal: boolean = (method.IsLocal === undefined) ? false : method.IsLocal;
-                        alObject.functions.push(new ALFunction(FunctionType.Standard, method.Name, { lineNo: 0, parameters: parameters, returnValue: undefined, isLocal: isLocal }));
-                    }
-                }
+                alObject.functions = reader.getSymbolReferenceFunctions(codeunit.Methods);
 
                 alApp.alObjects.push(alObject);
                 update();
@@ -514,6 +489,7 @@ export class Reader {
                 const table = tables[i];
                 let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
                 alObject.properties = reader.getSymbolReferenceProperties(table.Properties);
+                alObject.functions = reader.getSymbolReferenceFunctions(table.Methods);
 
                 if (table.Fields !== undefined) {
                     for (let j = 0; j < table.Fields.length; j++) {
@@ -541,6 +517,39 @@ export class Reader {
         }
 
         return type;
+    }
+
+    private getSymbolReferenceFunctions(methodsArray: any): ALFunction[] {
+        const methods: ALFunction[] = [];
+
+        if (methodsArray === undefined)
+            return methods;
+
+        for (let j = 0; j < methodsArray.length; j++) {
+            const method = methodsArray[j];
+
+            const parameters: ALVariable[] = [];
+            if (method.Parameters !== undefined) {
+                for (let k = 0; k < method.Parameters.length; k++) {
+                    const parameter = method.Parameters[k];
+                    let subtype = "";
+                    if (parameter.TypeDefinition.Subtype !== undefined) {
+                        subtype = `"${parameter.TypeDefinition.Subtype.Name}"`;
+                    }
+
+                    const isVar: boolean = (parameter.IsVar === undefined) ? false : parameter.IsVar;
+                    const isTemporary: boolean = (parameter.TypeDefinition.Temporary === undefined) ? false : parameter.TypeDefinition.Temporary;
+                    parameters.push(new ALVariable(parameter.Name, parameter.TypeDefinition.Name, subtype, 0, { isTemporary: isTemporary, isVar: isVar }))
+                }
+            }
+
+            // TODO: Check Attributes.Name if function is Event
+
+            const isLocal: boolean = (method.IsLocal === undefined) ? false : method.IsLocal;
+            methods.push(new ALFunction(FunctionType.Standard, method.Name, { lineNo: 0, parameters: parameters, returnValue: undefined, isLocal: isLocal }));
+        }
+
+        return methods;
     }
 
     private getSymbolReferenceProperties(propertiesArray: any): Map<string, string> {
