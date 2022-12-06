@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit, ALEnum, ALEnumField } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -498,6 +498,27 @@ export class Reader {
                         tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
 
                         alObject.fields.push(tableField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+
+            for (let i = 0; i < enums.length; i++) {
+                const alEnum = enums[i];
+
+                let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(alEnum.Properties);
+                alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
+
+                if (alEnum.Values !== undefined) {
+                    for (let j = 0; j < alEnum.Values.length; j++) {
+                        const enumValue = alEnum.Values[j];
+                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
+                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
+
+                        alObject.fields.push(enumField);
                     }
                 }
 
