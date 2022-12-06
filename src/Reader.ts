@@ -703,6 +703,27 @@ export class Reader {
             }
             //#endregion
 
+            for (let i = 0; i < enums.length; i++) {
+                const alEnum = enums[i];
+
+                let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(alEnum.Properties);
+                alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
+
+                if (alEnum.Values !== undefined) {
+                    for (let j = 0; j < alEnum.Values.length; j++) {
+                        const enumValue = alEnum.Values[j];
+                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
+                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
+
+                        alObject.fields.push(enumField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+
             resolve();
             return;
         });
