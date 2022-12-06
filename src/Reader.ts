@@ -202,22 +202,29 @@ export class Reader {
                 }
                 const content = contentBuffer.toString();
                 const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)".+ShowMyCode="([^"]+)"/i;
+                const manifestREPPattern = /<ResourceExposurePolicy.+IncludeSourceInSymbolFile="([^"]+)"/i;
 
                 if (this.printDebug) { this.outputChannel.appendLine(`Extracting data of NavxManifest.xml from app file ${appPath}`); }
 
-                const matches = manifestAppPattern.exec(content);
-                if (!matches) {
+                const appMatches = manifestAppPattern.exec(content);
+                const repMatches = manifestREPPattern.exec(content);
+                if (!appMatches) {
                     continue;
+                }
+
+                let showMyCode: boolean = JSON.parse(appMatches[5].toLowerCase());
+                if (repMatches) {
+                    showMyCode = JSON.parse(repMatches[1].toLowerCase());
                 }
 
                 const appDate = await HelperFunctions.getFileModifyDate(appPath);
                 if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
 
-                if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
-                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate, JSON.parse(matches[5].toLowerCase())));
+                if (!this.alApps.find(app => app.appName === appMatches[1] && app.appPublisher === appMatches[2])) {
+                    this.alApps.push(new ALApp(AppType.appPackage, appMatches[1], appMatches[2], appMatches[3], appMatches[4], appPath, appDate, showMyCode));
                 }
                 else {
-                    var existingALApp = this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2]);
+                    var existingALApp = this.alApps.find(app => app.appName === appMatches[1] && app.appPublisher === appMatches[2]);
                     if (existingALApp && existingALApp.appType === AppType.appPackage) {
                         // app did not change by default
                         existingALApp.appChanged = false;
@@ -416,6 +423,7 @@ export class Reader {
         });
     }
 
+    //#region Symbol Reference
     private getAlFilesSymbolReference(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
         return new Promise<void>(async (resolve) => {
             let reader = this;
@@ -470,6 +478,7 @@ export class Reader {
             for (let i = 0; i < codeunits.length; i++) {
                 const codeunit = codeunits[i];
                 let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(codeunit.Properties);
 
                 if (codeunit.Methods !== undefined) {
                     for (let j = 0; j < codeunit.Methods.length; j++) {
@@ -504,11 +513,15 @@ export class Reader {
             for (let i = 0; i < tables.length; i++) {
                 const table = tables[i];
                 let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(table.Properties);
 
                 if (table.Fields !== undefined) {
                     for (let j = 0; j < table.Fields.length; j++) {
                         const field = table.Fields[j];
-                        alObject.fields.push(new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0));
+                        const tableField = new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0);
+                        tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
+
+                        alObject.fields.push(tableField);
                     }
                 }
 
@@ -529,6 +542,21 @@ export class Reader {
 
         return type;
     }
+
+    private getSymbolReferenceProperties(propertiesArray: any): Map<string, string> {
+        const properties: Map<string, string> = new Map<string, string>();
+
+        if (propertiesArray === undefined)
+            return properties;
+
+        for (let i = 0; i < propertiesArray.length; i++) {
+            const element = propertiesArray[i];
+            properties.set(element.Name, element.Value);
+        }
+
+        return properties;
+    }
+    //#endregion
 
     /**
      * Reads a list of ALObjects out of a list of .al files in a zip
