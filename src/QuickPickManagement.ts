@@ -35,8 +35,8 @@ export class QuickPickManagement<T> {
                     return undefined;
                 }
                 else {
-                    resolve(this.quickPick.selectedItems[0] as T);
-                    return this.quickPick.selectedItems[0] as T;
+                    resolve((this.quickPick.selectedItems[0] as unknown) as T);
+                    return (this.quickPick.selectedItems[0] as unknown) as T;
                 }
             });
 

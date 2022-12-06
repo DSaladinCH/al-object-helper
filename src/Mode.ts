@@ -1,5 +1,6 @@
 export enum Mode {
-    "Normal" = 0,
-    "Performance" = 10,
-    "HyperPerformance" = 20
+    "ForceInternal" = 0,
+    "Normal" = 10,
+    "Performance" = 20,
+    "HyperPerformance" = 30,
 }
