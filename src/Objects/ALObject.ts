@@ -11,6 +11,7 @@ export abstract class ALObject {
     alApp: ALApp;
     functions: ALFunction[] = [];
     variables: ALVariable[] = [];
+    properties: Map<string, string> = new Map<string, string>();
 
     constructor(objectPath: string, objectType: ObjectType, objectID: string, objectName: string, alApp: ALApp) {
         this.objectPath = objectPath;
