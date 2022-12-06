@@ -87,7 +87,7 @@ export class Reader {
         return null;
     }
 
-    async readLocalApps(alApps: ALApp[]) {
+    async readLocalApps(alApps: ALApp[], mode?: Mode) {
         if (this.isReadingLocalApp) {
             return;
         }
@@ -122,7 +122,7 @@ export class Reader {
                         if (reader.printDebug) { reader.outputChannel.appendLine(`Found ${files.length} al files in local project "${alApp.appName}"`); }
                         alFiles = alFiles.concat(files);
 
-                        await reader.getAlFiles(files, alApp, (a, m) => {
+                        await reader.getAlFiles(files, alApp, mode, (a, m) => {
                             progress.report({ message: `${alApp.appName} (${a} of ${m})` });
                         });
                     }
@@ -239,7 +239,7 @@ export class Reader {
         });
     }
 
-    async readAppPackages(alApps: ALApp[]) {
+    async readAppPackages(alApps: ALApp[], mode?: Mode) {
         if (this.isReadingApp) {
             return;
         }
@@ -273,7 +273,7 @@ export class Reader {
 
                         if (reader.printDebug) { reader.outputChannel.appendLine(`Search al files in app package "${alApp.appName}"`); }
 
-                        await reader.getAppAlFiles(alApp, (a, m) => {
+                        await reader.getAppAlFiles(alApp, mode, (a, m) => {
                             progress.report({ message: `${alApp.appName} (${a} of ${m})` });
                         });
 
@@ -299,7 +299,7 @@ export class Reader {
      * @param updateCallback The callback function for updates
      * @returns 
      */
-    private getAlFiles(alFiles: string[], alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
+    private getAlFiles(alFiles: string[], alApp: ALApp, mode?: Mode, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
         return new Promise<void>(async (resolve) => {
 
             let alreadyDoneCounter = 0;
@@ -313,8 +313,8 @@ export class Reader {
                 }
             };
 
-            let promise1 = this.getAlFilesPromise(alFiles.splice(0, length), alApp, () => { update(); });
-            let promise2 = this.getAlFilesPromise(alFiles, alApp, () => { update(); });
+            let promise1 = this.getAlFilesPromise(alFiles.splice(0, length), alApp, mode, () => { update(); });
+            let promise2 = this.getAlFilesPromise(alFiles, alApp, mode, () => { update(); });
             let alObjects: ALObject[] = [];
             await Promise.all([promise1, promise2]).then((results: ALObject[][]) => {
                 results.forEach(element => {
@@ -334,14 +334,14 @@ export class Reader {
      * @param updateCallback The callback function for updates
      * @returns Returns a list of ALObjects
      */
-    private getAlFilesPromise(alFiles: string[], alApp: ALApp, updateCallback?: () => void): Promise<ALObject[]> {
+    private getAlFilesPromise(alFiles: string[], alApp: ALApp, mode?: Mode, updateCallback?: () => void): Promise<ALObject[]> {
         return new Promise<ALObject[]>(async (resolve) => {
             let reader = this;
             let alObjects: ALObject[] = [];
             for (let i = 0; i < alFiles.length; i++) {
                 if (updateCallback) { updateCallback(); }
 
-                let alObject = await reader.readAlFile(alFiles[i], alApp);
+                let alObject = await reader.readAlFile(alFiles[i], alApp, undefined, mode);
                 if (alObject) {
                     alObjects.push(alObject);
                 }
@@ -356,7 +356,7 @@ export class Reader {
      * @param updateCallback The callback function for updates
      * @returns 
      */
-    private getAppAlFiles(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
+    private getAppAlFiles(alApp: ALApp, mode?: Mode, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
         return new Promise<void>(async (resolve) => {
             let reader = this;
 
@@ -387,8 +387,8 @@ export class Reader {
                 }
             };
 
-            let promise1 = this.getAppAlFilesPromise(jsZip, alFiles.splice(0, length), alApp, () => { update(); });
-            let promise2 = this.getAppAlFilesPromise(jsZip, alFiles, alApp, () => { update(); });
+            let promise1 = this.getAppAlFilesPromise(jsZip, alFiles.splice(0, length), alApp, mode, () => { update(); });
+            let promise2 = this.getAppAlFilesPromise(jsZip, alFiles, alApp, mode, () => { update(); });
             await Promise.all([promise1, promise2]).then((results: ALObject[][]) => {
                 results.forEach(element => {
                     alObjects = alObjects.concat(element);
@@ -409,7 +409,7 @@ export class Reader {
      * @param updateCallback The callback function for updates
      * @returns 
      */
-    private getAppAlFilesPromise(jsZip: JSZip, alFiles: string[], alApp: ALApp, updateCallback?: () => void): Promise<ALObject[]> {
+    private getAppAlFilesPromise(jsZip: JSZip, alFiles: string[], alApp: ALApp, mode?: Mode, updateCallback?: () => void): Promise<ALObject[]> {
         return new Promise<ALObject[]>(async (resolve) => {
             let reader = this;
             let alObjects: ALObject[] = [];
@@ -422,7 +422,7 @@ export class Reader {
                 }
 
                 const readable = Readable.from(contentBuffer);
-                let alObject = await reader.readAlFile(alFile, alApp, readable);
+                let alObject = await reader.readAlFile(alFile, alApp, readable, mode);
                 if (alObject) {
                     alObjects.push(alObject);
                 }
@@ -432,6 +432,11 @@ export class Reader {
     }
 
     //#region Read single .al file
+    /**
+     * Read a ALObject again with full scan
+     * @param alObject The ALObject which should be read again
+     * @returns The new ALObject
+     */
     readAlObject(alObject: ALObject): Promise<ALObject> {
         return new Promise<ALObject>(async (resolve) => {
             let reader = this;
@@ -456,7 +461,7 @@ export class Reader {
             }
 
             const readable = Readable.from(contentBuffer);
-            let newAlObject = await reader.readAlFile(alObject.objectPath, alObject.alApp, readable, true);
+            let newAlObject = await reader.readAlFile(alObject.objectPath, alObject.alApp, readable, Mode.Normal);
 
             if (newAlObject) {
                 alObject = newAlObject;
@@ -474,7 +479,7 @@ export class Reader {
      * @param readable The file as readable (if it exists)
      * @returns Returns the read ALObject or undefined if no object was found
      */
-    private readAlFile(filePath: string, alApp: ALApp, readable?: Readable, forceReadAll: boolean = false): Promise<ALObject | undefined> {
+    private readAlFile(filePath: string, alApp: ALApp, readable?: Readable, forcedMode?: Mode): Promise<ALObject | undefined> {
         return new Promise<ALObject | undefined>(async (resolve) => {
             let reader = this;
             let alObject: ALObject;
@@ -522,14 +527,21 @@ export class Reader {
                         alObject.addLocalEvents();
 
                         // Finish searching because of user preferences
-                        if (forceReadAll && reader.mode === Mode.HyperPerformance) {
+                        if ((forcedMode && (forcedMode as Mode) != Mode.ForceInternal) && reader.mode === Mode.HyperPerformance) {
                             cb(false);
                             return false;
                         }
 
-                        if (!forceReadAll) {
+                        if (forcedMode === undefined) {
                             // Finish searching because of user preferences
                             if (reader.mode == Mode.Performance || reader.mode == Mode.HyperPerformance) {
+                                cb(false);
+                                return false;
+                            }
+                        }
+
+                        if (forcedMode !== undefined) {
+                            if (forcedMode == Mode.Performance || forcedMode == Mode.HyperPerformance) {
                                 cb(false);
                                 return false;
                             }

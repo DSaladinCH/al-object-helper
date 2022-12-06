@@ -84,8 +84,8 @@
                 "title": "AL Helper: Reload"
             },
             {
-                "command": "al-object-helper.rereadApps",
-                "title": "AL Helper: Reread Apps"
+                "command": "al-object-helper.rereadApp",
+                "title": "AL Helper: Reread App"
             },
             {
                 "command": "al-object-helper.checkLicense",

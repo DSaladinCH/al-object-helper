@@ -103,13 +103,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		if (!alObject)
 			return;
-			
+
 		const alFunctionItems: ALFunctionItem[] = [];
-        alObject.functions.filter(alFunction =>
-            alFunction.functionType === FunctionType.InternalEvent ||
-            alFunction.functionType === FunctionType.BusinessEvent ||
-            alFunction.functionType === FunctionType.IntegrationEvent
-        ).forEach(alFunction => alFunctionItems.push(new ALFunctionItem(alObject!, alFunction, true)));
+		alObject.functions.filter(alFunction =>
+			alFunction.functionType === FunctionType.InternalEvent ||
+			alFunction.functionType === FunctionType.BusinessEvent ||
+			alFunction.functionType === FunctionType.IntegrationEvent
+		).forEach(alFunction => alFunctionItems.push(new ALFunctionItem(alObject!, alFunction, true)));
 
 		quickPick.updateValue(alFunctionItems);
 		const alFunction = await picked;
@@ -165,13 +165,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		await reader.start();
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.rereadApps", async function () {
+	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.rereadApp", async function () {
 		const alApp = await UIManagement.selectALApp(reader.alApps);
-		if (!alApp) {
+		if (!alApp)
 			return;
-		}
 
-		await reader.readAppPackages([alApp]);
+		const mode = await UIManagement.selectReloadOption();
+		if (mode === undefined)
+			return;
+
+		if (alApp.appType == AppType.local)
+			await reader.readLocalApps([alApp], mode);
+		else
+			await reader.readAppPackages([alApp], mode);
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.checkLicense", async function () {
