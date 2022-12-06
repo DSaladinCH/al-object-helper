@@ -478,6 +478,7 @@ export class Reader {
         });
     }
 
+    //#region Symbol Reference
     private getAlFilesSymbolReference(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
         return new Promise<void>(async (resolve) => {
             let reader = this;
@@ -532,6 +533,7 @@ export class Reader {
             for (let i = 0; i < codeunits.length; i++) {
                 const codeunit = codeunits[i];
                 let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(codeunit.Properties);
 
                 if (codeunit.Methods !== undefined) {
                     for (let j = 0; j < codeunit.Methods.length; j++) {
@@ -566,11 +568,15 @@ export class Reader {
             for (let i = 0; i < tables.length; i++) {
                 const table = tables[i];
                 let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(table.Properties);
 
                 if (table.Fields !== undefined) {
                     for (let j = 0; j < table.Fields.length; j++) {
                         const field = table.Fields[j];
-                        alObject.fields.push(new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0));
+                        const tableField = new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0);
+                        tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
+
+                        alObject.fields.push(tableField);
                     }
                 }
 
@@ -591,6 +597,21 @@ export class Reader {
 
         return type;
     }
+
+    private getSymbolReferenceProperties(propertiesArray: any): Map<string, string> {
+        const properties: Map<string, string> = new Map<string, string>();
+
+        if (propertiesArray === undefined)
+            return properties;
+
+        for (let i = 0; i < propertiesArray.length; i++) {
+            const element = propertiesArray[i];
+            properties.set(element.Name, element.Value);
+        }
+
+        return properties;
+    }
+    //#endregion
 
     /**
      * Reads a list of ALObjects out of a list of .al files in a zip
