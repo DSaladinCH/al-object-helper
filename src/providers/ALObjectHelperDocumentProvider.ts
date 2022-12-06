@@ -1,6 +1,6 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALObject, ALTable, ALVariable, HelperFunctions, ObjectType, reader } from "../internal";
+import { ALEnum, ALObject, ALTable, ALVariable, HelperFunctions, ObjectType, reader } from "../internal";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -51,7 +51,13 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
     }
 
     private createSymbolFile(alObject: ALObject): string {
-        let fileText = ObjectType[alObject.objectType].toLowerCase();
+        let fileText = "";
+        fileText += "// ------------------- AL Object Helper ------------------- //\n";
+        fileText += "// This feature is in preview and still has missing parts!  //\n";
+        fileText += "// Report any weird behaviour on GitHub                     //\n";
+        fileText += "// -------------------------------------------------------- //\n";
+        fileText += "\n";
+        fileText += ObjectType[alObject.objectType].toLowerCase();
 
         if (alObject.objectID != "") {
             fileText += " " + alObject.objectID;
@@ -64,24 +70,7 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
             fileText += "\t" + this.getProperty(property);
         }
 
-        if (alObject.objectType === ObjectType.Table) {
-            fileText += "\n";
-            fileText += "\tfields\n";
-            fileText += this.addArea(false, 1);
-
-            (alObject as ALTable).fields.forEach(field => {
-                fileText += `\t\tfield(${field.fieldID}; "${field.fieldName}"; ${field.dataType})\n`;
-                fileText += this.addArea(false, 2);
-
-                for (const property of field.properties.entries()) {
-                    fileText += "\t\t\t" + this.getProperty(property);
-                }
-
-                fileText += this.addArea(true, 2);
-            });
-
-            fileText += this.addArea(true, 1);
-        }
+        fileText += this.typeSpecificContent(alObject);
 
         if (alObject.variables.length > 0) {
             fileText += "\n";
@@ -170,6 +159,12 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
             case 'optioncaption':
             case 'optioncaptionml':
                 return `${property[0]} = '${property[1]}';\n`;
+            case 'promoted':
+            case 'promotedonly':
+            case 'extensible':
+            case 'editable':
+            case 'singleinstance':
+                return `${property[0]} = ${Boolean(property[1])};\n`;
         }
 
         return `${property[0]} = ${property[1]};\n`;
@@ -190,5 +185,50 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
         text += ";";
 
         return text;
+    }
+
+    private typeSpecificContent(alObject: ALObject): string {
+        let fileText = "";
+
+        if (alObject.objectType === ObjectType.Table) {
+            fileText += "\n";
+            fileText += "\tfields\n";
+            fileText += this.addArea(false, 1);
+
+            (alObject as ALTable).fields.forEach(field => {
+                fileText += `\t\tfield(${field.fieldID}; "${field.fieldName}"; ${field.dataType})\n`;
+                fileText += this.addArea(false, 2);
+
+                for (const property of field.properties.entries()) {
+                    fileText += "\t\t\t" + this.getProperty(property);
+                }
+
+                fileText += this.addArea(true, 2);
+            });
+
+            fileText += this.addArea(true, 1);
+            return fileText;
+        }
+
+        if (alObject.objectType === ObjectType.Enum) {
+            fileText += "\n";
+
+            (alObject as ALEnum).fields.forEach(field => {
+                fileText += `\tvalue(${field.fieldID}; "${field.fieldName}")\n`;
+                fileText += this.addArea(false, 1);
+
+                for (const property of field.properties.entries()) {
+                    fileText += "\t\t" + this.getProperty(property);
+                }
+
+                fileText += this.addArea(true, 1);
+            });
+
+            return fileText;
+        }
+
+        fileText += "\n";
+        fileText += "\t// The rest is not implemented yet!\n";
+        return fileText;
     }
 }
