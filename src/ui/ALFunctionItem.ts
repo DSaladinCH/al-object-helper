@@ -27,6 +27,8 @@ export class ALFunctionItem {
                 }
                 this.description = `${alFunction.functionArgument.subscriberObjectType} ${alFunction.functionArgument.subscriberObjectName}`;
             }
+
+            this.detail = `${alObject.alApp.appPublisher} - ${alObject.alApp.appName}`;
         }
 
         this.alObject = alObject;

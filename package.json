@@ -8,7 +8,7 @@
         "name": "Dominic Saladin"
     },
     "license": "MIT",
-    "version": "2.2.13",
+    "version": "2.3.0",
     "icon": "Images/ALObjectHelper_Small.png",
     "engines": {
         "vscode": "^1.63.0"
@@ -22,6 +22,12 @@
         "url": "https://github.com/DSaladinCH/al-object-helper/issues",
         "email": "git@dsaladin.ch"
     },
+    "funding": [
+        {
+            "type": "Buy Me a Coffee",
+            "url": "https://www.buymeacoffee.com/dsaladin"
+        }
+    ],
     "galleryBanner": {
         "color": "#1e65d9",
         "theme": "dark"
@@ -74,8 +80,12 @@
                 "title": "AL Helper: Show Extensions"
             },
             {
-                "command": "al-object-helper.reloadObjects",
-                "title": "AL Helper: Reload Objects"
+                "command": "al-object-helper.reload",
+                "title": "AL Helper: Reload"
+            },
+            {
+                "command": "al-object-helper.rereadApp",
+                "title": "AL Helper: Reread App"
             },
             {
                 "command": "al-object-helper.checkLicense",
@@ -119,15 +129,18 @@
                     "type": "boolean",
                     "default": true,
                     "title": "Suppress auto reload Objects",
-                    "description": "Suppress the auto reload of objects when using a al object helper search command (Requires a fast CPU if set to false)",
+                    "description": "Suppress the auto reload of objects when using a al object helper search command (Requires a fast CPU if deactivated)",
                     "scope": "machine-overridable"
                 },
-                "alObjectHelper.onlyLoadSymbolFiles": {
-                    "type": "boolean",
-                    "default": true,
-                    "title": "Only load symbol files",
-                    "description": "Only load the al symbol files, instead of loading the symbols and references in the file. If this option is activated, features like jump to definition and copy events will not work",
-                    "scope": "machine-overridable"
+                "alObjectHelper.mode": {
+                    "enum": [
+						"Normal",
+                        "Performance",
+                        "Hyper Performance"
+					],
+					"description": "Specifies in which mode AL Object Helper should run. Normal = Read everything, Performance = Only read necessary files on startup, but read additional informations on certain commands, Hyper Performance = Only read necessary files on startup",
+					"scope": "resource",
+					"default": "Performance"
                 },
                 "alObjectHelper.onlyShowLocalFiles": {
                     "type": "boolean",

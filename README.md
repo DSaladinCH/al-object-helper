@@ -48,31 +48,47 @@ If you are searching for a event you already subscribed to, you can use the comm
 ## Object Extensions
 If you are in a extension object (for example a table extension) you can navigate to the parent object by running the command **Open extended Object**. In, for example, a table you can view all objects which extended this table by running the command **Show Extensions**.
 
+# Performance Modes
+Specifies in which mode AL Object Helper should run. This mode is useful if the computer is not to powerful to load everything.
+
+## Normal
+Reads everything at startup and load everything needed when a command gets executed.
+
+## Performance
+Only reads necessary files on startup, but read additional informations on certain commands.
+
+## Hyper Performance
+Only reads necessary files on startup. This can not be overruled, except if a specific app get reloaded in mode "Full reload" (Command **Reread App**)
+
 # Planned features
 * Automatically research when changing branch
 * AL Object List
+* Read runtime apps
 
 # Object Shortcuts
 To quickly open any object you can use a object shortcut. <br />
 Just run the command **Open AL Object** and use the type shortcut and the object id as follow:
 
-| Shortcut | Description                                     |
-|----------|-------------------------------------------------|
-| T        | Open a table                                    |
-| TE       | Open a table extension by the parent table id   |
-| TED      | Open a table extension                          |
-| P        | Open a page                                     |
-| PE       | Open a page extension by the parent page id     |
-| PED      | Open a page extension                           |
-| E        | Open a enum                                     |
-| EE       | Open a enum extension by the parent enum id     |
-| EED      | Open a enum extension                           |
-| R        | Open a report                                   |
-| RE       | Open a report extension by the parent report id |
-| RED      | Open a report extension                         |
-| C        | Open a codeunit                                 |
-| X        | Open a xmlport                                  |
-| Q        | Open a query                                    |
+| Shortcut | Description                                                    |
+|----------|----------------------------------------------------------------|
+| T        | Open a table                                                   |
+| TE       | Open a table extension by the parent table id                  |
+| TED      | Open a table extension                                         |
+| P        | Open a page                                                    |
+| PE       | Open a page extension by the parent page id                    |
+| PED      | Open a page extension                                          |
+| E        | Open a enum                                                    |
+| EE       | Open a enum extension by the parent enum id                    |
+| EED      | Open a enum extension                                          |
+| R        | Open a report                                                  |
+| RE       | Open a report extension by the parent report id                |
+| RED      | Open a report extension                                        |
+| C        | Open a codeunit                                                |
+| X        | Open a xmlport                                                 |
+| Q        | Open a query                                                   |
+| PS       | Open a permission set                                          |
+| PSE      | Open a permission set by the parent permission set id          |
+| PSED     | Open a permission set extension                                |
 
 # Examples
 ### Ex. T27 for Item Table
@@ -85,7 +101,7 @@ Just run the command **Open AL Object** and use the type shortcut and the object
 If you use the latest version of the AL Language Extension by Microsoft, you have to remove the "AL: Find Event" keybinding to use the integrated search. <br />
 ![Remove the "AL: Find Event" keybinding](Images/vid03.gif)
 
-With the latest version it is possible to jump to definition within an AL file.
+It is possible to jump to definition within an AL file.
 This is a new feature and may still contain errors. Possibly there are also definitions which have not yet been implemented.
 Please report these in the Git Repository.
 
@@ -113,7 +129,8 @@ Please report these in the Git Repository.
 * **Jump to local Event Subscriber**: Search for a local event subscriber and jump right to it
 * **Open extended Object**: Open the extended object of the current object
 * **Show Extensions**: Show all extensions for the current object
-* **Reload Objects**: Reload and reread all al objects
+* **Reload**: Reload and reread all al objects according the user configurations
+* **Reread App**: Rereads a certain app which options to fully read the app and ignore the user configurations
 
 # Known Issues
 - Reloading of objects causes perfomance issues

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import path = require("path");
-import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, AppType, FunctionType, LicenseCheckInfo, LicenseCheckObject, ObjectType, reader, shortcutRegex } from "../internal";
+import { ALApp, ALAppItem, ALFunction, ALFunctionItem, ALObject, ALObjectItem, AppType, FunctionType, LicenseCheckInfo, LicenseCheckObject, Mode, ObjectType, QuickPickManagement, reader, shortcutRegex } from "../internal";
 import { resolve } from "path";
 import { HelperFunctions } from "../HelperFunctions";
 
@@ -43,6 +43,26 @@ export class UIManagement {
         });
 
         return await this.showALObjectDialog(alObjectItems);
+    }
+
+    static async selectReloadOption(): Promise<Mode | undefined> {
+        let quickPick = new QuickPickManagement<any>();
+        const items = [];
+        items.push({ id: 0, label: 'Full reload', description: 'Will read all symbols' });
+        items.push({ id: 1, label: 'Only search objects', description: 'Only read files to search for objects without the symbols' });
+        const selected = await quickPick.create('Select the type of reload you would like to perform', items);
+
+        if (selected === undefined)
+            return undefined;
+
+        switch (selected.id) {
+            case 0:
+                return Mode.ForceInternal;
+            case 1:
+                return Mode.Performance;
+        }
+
+        return undefined;
     }
 
     static async selectALObject(alObjects: ALObject[]): Promise<ALObject | undefined> {
@@ -188,6 +208,7 @@ export class UIManagement {
         });
     }
 
+    //#region License Check
     static async showLicenseCheckResult(alObjectsOutOfRange: ALObject[], freeObjects: ALObject[]) {
         // Check if a license check panel already exists
         if (UIManagement.licenseCheckWebviewPanel) {
@@ -215,7 +236,7 @@ export class UIManagement {
                         HelperFunctions.openUriFile(vscode.Uri.file(decodeURI(message.data.sourcePath)));
                         return;
                     case "reload":
-                        await reader.startReadingLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
+                        await reader.readLocalApps(reader.alApps.filter(alApp => alApp.appType === AppType.local));
                         // Send data update
                         UIManagement.updateLicenseCheckPanel(await reader.checkLicense(false), await reader.getFreeObjects());
                         return;
@@ -274,7 +295,7 @@ export class UIManagement {
         if (reader.printDebug) {
             reader.outputChannel.appendLine("License Check: Preparing data to update the license panel");
         }
-        
+
         if (!UIManagement.licenseCheckWebviewPanel) {
             return;
         }
@@ -306,4 +327,5 @@ export class UIManagement {
             });
         }
     }
+    //#endregion
 }
