@@ -530,6 +530,7 @@ export class Reader {
                 }
             };
 
+            //#region Codeunits
             for (let i = 0; i < codeunits.length; i++) {
                 const codeunit = codeunits[i];
                 let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
@@ -539,7 +540,21 @@ export class Reader {
                 alApp.alObjects.push(alObject);
                 update();
             }
+            //#endregion
 
+            //#region Interfaces
+            for (let i = 0; i < interfaces.length; i++) {
+                const alInterface = interfaces[i];
+                let alObject = new ALInterface(alInterface.ReferenceSourceFileName, alInterface.Id, alInterface.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(alInterface.Properties);
+                alObject.functions = reader.getSymbolReferenceFunctions(alInterface.Methods);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Tables
             for (let i = 0; i < tables.length; i++) {
                 const table = tables[i];
                 let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
@@ -559,7 +574,31 @@ export class Reader {
                 alApp.alObjects.push(alObject);
                 update();
             }
+            //#endregion
 
+            //#region Table Extensions
+            for (let i = 0; i < tableExtensions.length; i++) {
+                const tableExtension = tableExtensions[i];
+                let alObject = new ALTableExtension(tableExtension.ReferenceSourceFileName, tableExtension.Id, tableExtension.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(tableExtension.Properties);
+                alObject.functions = reader.getSymbolReferenceFunctions(tableExtension.Methods);
+
+                if (tableExtension.Fields !== undefined) {
+                    for (let j = 0; j < tableExtension.Fields.length; j++) {
+                        const field = tableExtension.Fields[j];
+                        const tableField = new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0);
+                        tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
+
+                        alObject.fields.push(tableField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Enums
             for (let i = 0; i < enums.length; i++) {
                 const alEnum = enums[i];
 
@@ -580,6 +619,30 @@ export class Reader {
                 alApp.alObjects.push(alObject);
                 update();
             }
+            //#endregion
+
+            //#region Enum Extensions
+            for (let i = 0; i < enumExtensions.length; i++) {
+                const alEnumExtension = enumExtensions[i];
+
+                let alObject = new ALEnumExtension(alEnumExtension.ReferenceSourceFileName, alEnumExtension.Id, alEnumExtension.Name, alApp);
+                alObject.properties = reader.getSymbolReferenceProperties(alEnumExtension.Properties);
+                alObject.functions = reader.getSymbolReferenceFunctions(alEnumExtension.Methods);
+
+                if (alEnumExtension.Values !== undefined) {
+                    for (let j = 0; j < alEnumExtension.Values.length; j++) {
+                        const enumValue = alEnumExtension.Values[j];
+                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
+                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
+
+                        alObject.fields.push(enumField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
 
             resolve();
             return;

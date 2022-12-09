@@ -1,6 +1,6 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALEnum, ALObject, ALTable, ALVariable, HelperFunctions, ObjectType, reader } from "../internal";
+import { ALEnum, ALEnumExtension, ALEnumField, ALObject, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, reader } from "../internal";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -105,6 +105,9 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
 
                 fileText += "\n";
 
+                if (alObject.objectType === ObjectType.Interface)
+                    return;
+
                 // variables
                 if (procedure.variables.length > 0) {
                     fileText += "\tvar\n";
@@ -190,41 +193,57 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
     private typeSpecificContent(alObject: ALObject): string {
         let fileText = "";
 
-        if (alObject.objectType === ObjectType.Table) {
-            fileText += "\n";
-            fileText += "\tfields\n";
-            fileText += this.addArea(false, 1);
-
-            (alObject as ALTable).fields.forEach(field => {
-                fileText += `\t\tfield(${field.fieldID}; "${field.fieldName}"; ${field.dataType})\n`;
-                fileText += this.addArea(false, 2);
-
-                for (const property of field.properties.entries()) {
-                    fileText += "\t\t\t" + this.getProperty(property);
-                }
-
-                fileText += this.addArea(true, 2);
-            });
-
-            fileText += this.addArea(true, 1);
-            return fileText;
-        }
-
-        if (alObject.objectType === ObjectType.Enum) {
-            fileText += "\n";
-
-            (alObject as ALEnum).fields.forEach(field => {
-                fileText += `\tvalue(${field.fieldID}; "${field.fieldName}")\n`;
+        switch (alObject.objectType) {
+            case ObjectType.Table:
+            case ObjectType.TableExtension:
+                fileText += "\n";
+                fileText += "\tfields\n";
                 fileText += this.addArea(false, 1);
 
-                for (const property of field.properties.entries()) {
-                    fileText += "\t\t" + this.getProperty(property);
-                }
+                let tableFields: ALTableField[] = [];
+                if (alObject.objectType === ObjectType.Table)
+                    tableFields = (alObject as ALTable).fields;
+                else
+                    tableFields = (alObject as ALTableExtension).fields;
+
+                tableFields.forEach(field => {
+                    fileText += `\t\tfield(${field.fieldID}; "${field.fieldName}"; ${field.dataType})\n`;
+                    fileText += this.addArea(false, 2);
+
+                    for (const property of field.properties.entries()) {
+                        fileText += "\t\t\t" + this.getProperty(property);
+                    }
+
+                    fileText += this.addArea(true, 2);
+                });
 
                 fileText += this.addArea(true, 1);
-            });
+                return fileText;
+            case ObjectType.Enum:
+            case ObjectType.EnumExtension:
+                fileText += "\n";
 
-            return fileText;
+                let enumFields: ALEnumField[] = [];
+                if (alObject.objectType === ObjectType.Enum)
+                    enumFields = (alObject as ALEnum).fields;
+                else
+                    enumFields = (alObject as ALEnumExtension).fields;
+
+                enumFields.forEach(field => {
+                    fileText += `\tvalue(${field.fieldID}; "${field.fieldName}")\n`;
+                    fileText += this.addArea(false, 1);
+
+                    for (const property of field.properties.entries()) {
+                        fileText += "\t\t" + this.getProperty(property);
+                    }
+
+                    fileText += this.addArea(true, 1);
+                });
+
+                return fileText;
+            case ObjectType.Codeunit:
+            case ObjectType.Interface:
+                return fileText;
         }
 
         fileText += "\n";
