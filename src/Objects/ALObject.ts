@@ -16,7 +16,7 @@ export abstract class ALObject {
     constructor(objectPath: string, objectType: ObjectType, objectID: string, objectName: string, alApp: ALApp) {
         this.objectPath = objectPath;
         this.objectType = objectType;
-        this.objectID = objectID;
+        this.objectID = objectID === undefined ? "" : objectID;
         this.objectName = objectName;
         if (this.objectName.startsWith("\"")) {
             this.objectName = this.objectName.substring(1);
