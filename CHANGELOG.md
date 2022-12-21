@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.1] - 2022-12-21
+### Fix
+- ALFunction is not a function (Fixes [#71](https://github.com/DSaladinCH/al-object-helper/issues/71))
+
 ## [2.3.0] - 2022-12-06
 ### Add
 - Performance Modes
@@ -226,6 +230,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.13...2.3.0
 [2.2.13]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.12...2.2.13
 [2.2.12]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.10...2.2.12
