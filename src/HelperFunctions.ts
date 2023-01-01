@@ -637,5 +637,16 @@ export class HelperFunctions {
                 index++;
             });
         });
+    }   
+
+    static fixProperties(properties: Map<string, string>): Map<string, string> {
+        if (properties.has("ApplicationArea")) {
+            var applicationArea = properties.get("ApplicationArea")!;
+            applicationArea = applicationArea.replaceAll("#", "");
+            applicationArea = applicationArea.replaceAll(",", ", ");
+            properties.set("ApplicationArea", applicationArea);
+        }
+
+        return properties;
     }
 }

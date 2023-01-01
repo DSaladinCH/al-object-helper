@@ -1,6 +1,7 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALEnum, ALEnumExtension, ALEnumField, ALObject, ALPage, ALPageControl, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageControlKind, reader } from "../internal";
+import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageControl, ALPageExtension, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, reader } from "../internal";
+import { ALPageAction } from "../objects/Page/ALPageAction";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -57,18 +58,40 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
         fileText += "// Report any weird behaviour on GitHub                     //\n";
         fileText += "// -------------------------------------------------------- //\n";
         fileText += "\n";
+
+        // object type
         fileText += ObjectType[alObject.objectType].toLowerCase();
 
+        // object id (optional)
         if (alObject.objectID != "") {
             fileText += " " + alObject.objectID;
         }
 
-        fileText += " \"" + alObject.objectName + "\"\n";
+        // object name with(out) double quotes
+        if (!alObject.objectName.match(/^[0-9a-z]+$/i))
+            fileText += ` "${alObject.objectName}"`;
+        else
+            fileText += ` ${alObject.objectName}`;
+
+        // object parent name (optional)
+        if (alObject.isExtension()) {
+            if (!(alObject as ALExtension).parent?.objectName.match(/^[0-9a-z]+$/i))
+                fileText += ` extends "${(alObject as ALExtension).parent?.objectName}"`;
+            else
+                fileText += ` extends ${(alObject as ALExtension).parent?.objectName}`;
+        }
+
+        fileText += "\n";
+        // object definition done
+
         fileText += this.addArea(false, 0);
 
         for (const property of alObject.properties.entries()) {
             fileText += "\t" + this.getProperty(property);
         }
+
+        if (alObject.properties.size > 0)
+            fileText += "\n";
 
         fileText += this.typeSpecificContent(alObject);
 
@@ -168,9 +191,12 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
                 return `${property[0]} = '${property[1]}';\n`;
             case 'promoted':
             case 'promotedonly':
+            case 'promotedisbig':
             case 'extensible':
             case 'editable':
             case 'singleinstance':
+            case 'visible':
+            case 'enabled':
                 return `${property[0]} = ${Boolean(property[1])};\n`;
         }
 
@@ -200,7 +226,6 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
         switch (alObject.objectType) {
             case ObjectType.Table:
             case ObjectType.TableExtension:
-                fileText += "\n";
                 fileText += "\tfields\n";
                 fileText += this.addArea(false, 1);
 
@@ -225,8 +250,6 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
                 return fileText;
             case ObjectType.Enum:
             case ObjectType.EnumExtension:
-                fileText += "\n";
-
                 let enumFields: ALEnumField[] = [];
                 if (alObject.objectType === ObjectType.Enum)
                     enumFields = (alObject as ALEnum).fields;
@@ -246,12 +269,33 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
 
                 return fileText;
             case ObjectType.Page:
-                fileText += "\n";
+            case ObjectType.PageExtension:
+                var controls: ALPageControl[] = [];
+                if (alObject.objectType === ObjectType.Page)
+                    controls = (alObject as ALPage).controls;
+                else
+                    controls = (alObject as ALPageExtension).controls;
 
-                fileText += "\tlayout\n";
-                fileText += this.addArea(false, 1);
-                fileText += this.writePageControls((alObject as ALPage).controls);
-                fileText += this.addArea(true, 1);
+                if (controls.length > 0) {
+                    fileText += "\tlayout\n";
+                    fileText += this.addArea(false, 1);
+                    fileText += this.writePageControls(controls);
+                    fileText += this.addArea(true, 1);
+                    fileText += "\n";
+                }
+
+                var actions: ALPageAction[] = [];
+                if (alObject.objectType === ObjectType.Page)
+                    actions = (alObject as ALPage).actions;
+                else
+                    actions = (alObject as ALPageExtension).actions;
+
+                if (actions.length > 0) {
+                    fileText += "\tactions\n";
+                    fileText += this.addArea(false, 1);
+                    fileText += this.writePageActions(actions);
+                    fileText += this.addArea(true, 1);
+                }
                 return fileText;
             case ObjectType.Codeunit:
             case ObjectType.Interface:
@@ -269,7 +313,15 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
         for (let i = 0; i < controls.length; i++) {
             const control = controls[i];
 
-            controlsText += this.getTabulators(indentation) + `${PageControlKind[control.kind].toLowerCase()}(${control.name}`;
+            var controlName: string = control.name;
+            if (!controlName.match(/^[0-9a-z]+$/i))
+                controlName = `"${controlName}"`;
+
+            if (control.kind !== PageControlKind.None)
+                controlsText += this.getTabulators(indentation) + `${PageControlKind[control.kind].toLowerCase()}(${controlName}`;
+            else
+                controlsText += this.getTabulators(indentation) + `${PageControlChangeKind[control.changeKind].toLowerCase()}(${controlName}`;
+
             if (control.sourceExpression !== undefined)
                 controlsText += `; ${control.sourceExpression}`;
 
@@ -285,6 +337,43 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
 
             if (control.subControls.length > 0)
                 controlsText += this.writePageControls(control.subControls, indentation + 1);
+
+            controlsText += this.addArea(true, indentation);
+        }
+
+        return controlsText;
+    }
+
+    private writePageActions(actions: ALPageAction[], indentation: number = 2): string {
+        var controlsText: string = "";
+
+        for (let i = 0; i < actions.length; i++) {
+            const action = actions[i];
+
+            var actionName: string = action.name;
+            if (!actionName.match(/^[0-9a-z]+$/i))
+                actionName = `"${actionName}"`;
+
+            if (action.kind !== PageActionKind.None)
+                controlsText += this.getTabulators(indentation) + `${PageActionKind[action.kind].toLowerCase()}(${actionName}`;
+            else
+                controlsText += this.getTabulators(indentation) + `${PageActionChangeKind[action.changeKind].toLowerCase()}(${actionName}`;
+
+            if (action.sourceExpression !== undefined)
+                controlsText += `; ${action.sourceExpression}`;
+
+            controlsText += ")\n";
+            controlsText += this.addArea(false, indentation);
+
+            for (const property of action.properties.entries()) {
+                controlsText += this.getTabulators(indentation + 1) + this.getProperty(property);
+            }
+
+            if (action.properties.size > 0 && action.actions.length > 0)
+                controlsText += "\n";
+
+            if (action.actions.length > 0)
+                controlsText += this.writePageActions(action.actions, indentation + 1);
 
             controlsText += this.addArea(true, indentation);
         }

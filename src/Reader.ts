@@ -658,11 +658,26 @@ export class Reader {
                 alObject.functions = reader.getSymbolReferenceFunctions(page.Methods);
                 alObject.variables = reader.getSymbolReferenceVariables(page.Variables);
 
-                // loop through controls
-                // Kind 0 -> Area
-                // Kind 1 -> Group
-                // Kind 8 -> Field
                 alObject.controls = reader.getSymbolReferenceControls(page.Controls);
+                alObject.actions = reader.getSymbolReferenceActions(page.Actions);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Page Extensions
+            for (let i = 0; i < pageExtensions.length; i++) {
+                const pageExtension = pageExtensions[i];
+                let alObject = new ALPageExtension(pageExtension.ReferenceSourceFileName, pageExtension.Id, pageExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(pageExtension.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(pageExtension.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(pageExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(pageExtension.Variables);
+
+                alObject.controls = reader.getSymbolReferenceControls(pageExtension.ControlChanges, true);
+                alObject.actions = reader.getSymbolReferenceActions(pageExtension.ActionChanges, true);
 
                 alApp.alObjects.push(alObject);
                 update();
@@ -674,7 +689,7 @@ export class Reader {
         });
     }
 
-    private getSymbolReferenceControls(controlsArray: any): ALPageControl[] {
+    private getSymbolReferenceControls(controlsArray: any, isChanges: Boolean = false): ALPageControl[] {
         const controls: ALPageControl[] = [];
 
         if (controlsArray === undefined)
@@ -682,8 +697,21 @@ export class Reader {
 
         for (let i = 0; i < controlsArray.length; i++) {
             const control = controlsArray[i];
-            
-            const pageControl = new ALPageControl(control.Kind, control.Id, control.Name);
+
+            var pageControl: ALPageControl;
+            if (isChanges) {
+                if (!(control.ChangeKind in PageControlChangeKind))
+                    continue;
+
+                pageControl = ALPageControl.pageExtensionControl(control.ChangeKind, control.Id, control.Anchor);
+            }
+            else {
+                if (!(control.Kind in PageControlKind))
+                    continue;
+
+                pageControl = ALPageControl.pageControl(control.Kind, control.Id, control.Name);
+            }
+
             pageControl.setProperties(this.getSymbolReferenceProperties(control.Properties));
             pageControl.subControls = this.getSymbolReferenceControls(control.Controls);
 
@@ -691,6 +719,38 @@ export class Reader {
         }
 
         return controls;
+    }
+
+    private getSymbolReferenceActions(actionsArray: any, isChanges: Boolean = false): ALPageAction[] {
+        const actions: ALPageAction[] = [];
+
+        if (actionsArray === undefined)
+            return actions;
+
+        for (let i = 0; i < actionsArray.length; i++) {
+            const action = actionsArray[i];
+
+            var pageAction: ALPageAction;
+            if (isChanges) {
+                if (!(action.ChangeKind in PageActionChangeKind))
+                    continue;
+
+                pageAction = ALPageAction.pageExtensionAction(action.ChangeKind, action.Id, action.Anchor);
+            }
+            else {
+                if (!(action.Kind in PageActionKind))
+                    continue;
+
+                pageAction = ALPageAction.pageAction(action.Kind, action.Id, action.Name);
+            }
+
+            pageAction.setProperties(this.getSymbolReferenceProperties(action.Properties));
+            pageAction.actions = this.getSymbolReferenceActions(action.Actions);
+
+            actions.push(pageAction);
+        }
+
+        return actions;
     }
 
     private getSymbolReferenceTypeDefinition(typeDefinition: any): string {

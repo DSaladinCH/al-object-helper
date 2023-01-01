@@ -31,7 +31,10 @@ export * from "./objects/Page/ALPage";
 export * from "./objects/Page/ALPageControl";
 export * from "./objects/Page/ALPageExtension";
 export * from "./objects/Page/ALPageField";
-export * from "./objects/Page/PageControlKind";
+export * from "./objects/Page/Kinds/PageActionChangeKind";
+export * from "./objects/Page/Kinds/PageActionKind";
+export * from "./Objects/Page/Kinds/PageControlChangeKind";
+export * from "./objects/Page/Kinds/PageControlKind";
 
 /* Codeunit */
 export * from "./objects/Codeunit/ALCodeunit";

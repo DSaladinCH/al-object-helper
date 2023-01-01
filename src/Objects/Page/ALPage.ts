@@ -1,9 +1,11 @@
 import { ALApp, ALFunction, ALObject, ALPageControl, ALPageExtension, ALPageField, ALTable, ALVariable, FunctionType, HelperFunctions, ObjectType, reader } from "../../internal";
+import { ALPageAction } from "./ALPageAction";
 
 export class ALPage extends ALObject {
     fields: ALPageField[] = [];
     sourceTable: ALTable | undefined;
     controls: ALPageControl[] = [];
+    actions: ALPageAction[] = [];
 
     constructor(objectPath: string, objectID: string, objectName: string, alApp: ALApp) {
         super(objectPath, ObjectType.Page, objectID, objectName, alApp);
