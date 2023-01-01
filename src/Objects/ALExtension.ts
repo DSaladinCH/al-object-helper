@@ -14,6 +14,7 @@ export abstract class ALExtension extends ALObject {
             case ObjectType.TableExtension:
                 return new ALTable(objectPath, objectID, objectName, alApp);
             case ObjectType.PageExtension:
+            case ObjectType.PageCustomization:
                 return new ALPage(objectPath, objectID, objectName, alApp);
             case ObjectType.ReportExtension:
                 return new ALReport(objectPath, objectID, objectName, alApp);

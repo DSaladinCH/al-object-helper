@@ -18,6 +18,8 @@ export class HelperFunctions {
                 return ObjectType.Page;
             case "pageextension":
                 return ObjectType.PageExtension;
+            case "pagecustomization":
+                return ObjectType.PageCustomization;
             case "codeunit":
                 return ObjectType.Codeunit;
             case "xmlport":

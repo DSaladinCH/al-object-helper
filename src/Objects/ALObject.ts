@@ -1,5 +1,5 @@
 import {
-    ALApp, ALCodeunit, ALControlAddIn, ALDotNet, ALEntitlement, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALInterface, ALPage, ALPageExtension, ALPermissionSet, ALPermissionSetExtension,
+    ALApp, ALCodeunit, ALControlAddIn, ALDotNet, ALEntitlement, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALInterface, ALPage, ALPageCustomization, ALPageExtension, ALPermissionSet, ALPermissionSetExtension,
     ALProfile, ALQuery, ALReport, ALReportExtension, ALRequestPage, ALTable, ALTableExtension, ALVariable, ALXmlport, HelperFunctions, ObjectType, reader, shortcutRegex
 } from "../internal";
 
@@ -101,6 +101,8 @@ export abstract class ALObject {
                 return new ALPage(objectPath, objectID, objectName, alApp);
             case ObjectType.PageExtension:
                 return new ALPageExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.PageCustomization:
+                return new ALPageCustomization(objectPath, objectID, objectName, alApp);
             case ObjectType.Codeunit:
                 return new ALCodeunit(objectPath, objectID, objectName, alApp);
             case ObjectType.Xmlport:
@@ -179,6 +181,8 @@ export abstract class ALObject {
             case "pe":
             case "ped":
                 return ObjectType.PageExtension;
+            case "pc":
+                return ObjectType.PageCustomization;
             case "e":
                 return ObjectType.Enum;
             case "ee":

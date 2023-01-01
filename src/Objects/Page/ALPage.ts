@@ -1,5 +1,4 @@
-import { ALApp, ALFunction, ALObject, ALPageControl, ALPageExtension, ALPageField, ALTable, ALVariable, FunctionType, HelperFunctions, ObjectType, reader } from "../../internal";
-import { ALPageAction } from "./ALPageAction";
+import { ALApp, ALFunction, ALObject, ALPageAction, ALPageControl, ALPageExtension, ALPageField, ALTable, ALVariable, FunctionType, ObjectType, reader } from "../../internal";
 
 export class ALPage extends ALObject {
     fields: ALPageField[] = [];

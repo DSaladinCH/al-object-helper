@@ -77,6 +77,7 @@ Just run the command **Open AL Object** and use the type shortcut and the object
 | P        | Open a page                                                    |
 | PE       | Open a page extension by the parent page id                    |
 | PED      | Open a page extension                                          |
+| PC       | Open a page customization                                      |
 | E        | Open a enum                                                    |
 | EE       | Open a enum extension by the parent enum id                    |
 | EED      | Open a enum extension                                          |
