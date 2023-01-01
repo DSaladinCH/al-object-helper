@@ -730,6 +730,7 @@ export class Reader {
                 let alObject = new ALTableExtension(tableExtension.ReferenceSourceFileName, tableExtension.Id, tableExtension.Name, alApp);
                 alObject.properties = reader.getSymbolReferenceProperties(tableExtension.Properties);
                 alObject.functions = reader.getSymbolReferenceFunctions(tableExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(tableExtension.Variables);
 
                 if (tableExtension.Fields !== undefined) {
                     for (let j = 0; j < tableExtension.Fields.length; j++) {
@@ -751,8 +752,9 @@ export class Reader {
                 const alEnum = enums[i];
 
                 let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(alEnum.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alEnum.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alEnum.Variables);
 
                 if (alEnum.Values !== undefined) {
                     for (let j = 0; j < alEnum.Values.length; j++) {
@@ -774,8 +776,9 @@ export class Reader {
                 const alEnumExtension = enumExtensions[i];
 
                 let alObject = new ALEnumExtension(alEnumExtension.ReferenceSourceFileName, alEnumExtension.Id, alEnumExtension.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(alEnumExtension.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alEnumExtension.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(alEnumExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alEnumExtension.Variables);
 
                 if (alEnumExtension.Values !== undefined) {
                     for (let j = 0; j < alEnumExtension.Values.length; j++) {
@@ -786,6 +789,25 @@ export class Reader {
                         alObject.fields.push(enumField);
                     }
                 }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Pages
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                let alObject = new ALPage(page.ReferenceSourceFileName, page.Id, page.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(page.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(page.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(page.Variables);
+
+                // loop through controls
+                // Kind 0 -> Area
+                // Kind 1 -> Group
+                // Kind 8 -> Field
+                alObject.controls = reader.getSymbolReferenceControls(page.Controls);
 
                 alApp.alObjects.push(alObject);
                 update();
