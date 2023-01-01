@@ -217,4 +217,15 @@ export abstract class ALObject {
                 return undefined;
         }
     }
+
+    setProperties(properties: Map<string, string>) {
+        if (properties.has("ApplicationArea")) {
+            var applicationArea = properties.get("ApplicationArea")!;
+            applicationArea = applicationArea.replaceAll("#", "");
+            applicationArea = applicationArea.replaceAll(",", ", ");
+            properties.set("ApplicationArea", applicationArea);
+        }
+
+        this.properties = properties;
+    }
 }

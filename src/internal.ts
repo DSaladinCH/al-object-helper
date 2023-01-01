@@ -28,8 +28,10 @@ export * from "./objects/Table/ALTableField";
 
 /* Page */
 export * from "./objects/Page/ALPage";
+export * from "./objects/Page/ALPageControl";
 export * from "./objects/Page/ALPageExtension";
 export * from "./objects/Page/ALPageField";
+export * from "./objects/Page/PageControlKind";
 
 /* Codeunit */
 export * from "./objects/Codeunit/ALCodeunit";
