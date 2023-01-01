@@ -1,16 +1,39 @@
 import { ALApp, ALExtension, ALObject, ALPage, ALPageAction, ALPageControl, ALPageField, ObjectType } from "../../internal";
 
-export class ALPageExtension extends ALExtension {
+export class ALPageCustomization extends ALExtension {
     fields: ALPageField[] = [];
     controls: ALPageControl[] = [];
     actions: ALPageAction[] = [];
 
     constructor(objectPath: string, objectID: string, objectName: string, alApp: ALApp) {
-        super(objectPath, ObjectType.PageExtension, objectID, objectName, alApp);
+        super(objectPath, ObjectType.PageCustomization, objectID, objectName, alApp);
     }
 
     setTempParentObjectFromType(objectName: string) {
         this.parent = new ALPage('', '', objectName, ALApp.Empty());
+    }
+
+    getUIDescription(): string {
+        let description = `${ObjectType[this.objectType]} ${this.objectID}`;
+        if (this.parent === undefined) {
+            return " - Customizes unknown";
+        }
+
+        if (this.parent.objectID === "") {
+            description += ` - Customizes "${this.parent.objectName}"`;
+        }
+        else {
+            description += ` - Customizes ${ObjectType[this.parent.objectType]} ${this.parent.objectID} - ${this.parent.objectName}`;
+        }
+
+        return description;
+    }
+
+    getUIDetail(): string {
+        if (!this.alApp) {
+            return "";
+        }
+        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
     }
 
     /**

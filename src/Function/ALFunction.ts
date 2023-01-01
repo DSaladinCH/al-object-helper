@@ -107,6 +107,7 @@ export class ALFunction {
         switch (alObject.objectType) {
             case ObjectType.TableExtension:
             case ObjectType.PageExtension:
+            case ObjectType.PageCustomization:
             case ObjectType.ReportExtension:
             case ObjectType.EnumExtension:
             case ObjectType.PermissionSetExtension:

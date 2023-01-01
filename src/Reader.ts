@@ -1107,24 +1107,29 @@ export class Reader {
 
     readObjectDefinition(lineText: string, filePath: string, alApp: ALApp): ALObject | undefined {
         const alObjectPattern = /^([a-z]+)\s([0-9]+)\s([a-z0-9\_]+|\"[^\"]+\")(\sextends\s([a-z0-9\_]+|\"[^\"]+\")|[\s\{]?|)[\s\{]?/i;
-        const alObjectNonIDPattern = /^([a-z0-9\_]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)$/i;
+        const alObjectNonIDPattern = /^([a-z0-9\_]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)(?:\scustomizes\s([a-z0-9\_]+|\"[^\"]+\"))?$/i;
 
         let matches = alObjectPattern.exec(lineText);
         if (matches === null) {
             matches = alObjectNonIDPattern.exec(lineText);
             if (matches !== null) {
                 let typeStr = matches[1];
+
                 let name = "Type " + ObjectType[HelperFunctions.getObjectTypeFromString(typeStr)];
-                if (matches[2] !== undefined) {
+                if (matches[2] !== undefined)
                     name = HelperFunctions.removeNameSurrounding(matches[2]);
-                }
+
+                let customizes = "";
+                if (matches[3] !== undefined)
+                    customizes = matches[3];
+
                 matches.splice(0);
                 matches.push(lineText);
                 matches.push(typeStr);
                 matches.push("");
                 matches.push(name);
                 matches.push("");
-                matches.push("");
+                matches.push(customizes);
             }
             else {
                 return undefined;

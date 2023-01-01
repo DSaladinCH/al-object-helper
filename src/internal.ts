@@ -28,7 +28,9 @@ export * from "./objects/Table/ALTableField";
 
 /* Page */
 export * from "./objects/Page/ALPage";
+export * from "./objects/Page/ALPageAction";
 export * from "./objects/Page/ALPageControl";
+export * from "./objects/Page/ALPageCustomization";
 export * from "./objects/Page/ALPageExtension";
 export * from "./objects/Page/ALPageField";
 export * from "./objects/Page/Kinds/PageActionChangeKind";
