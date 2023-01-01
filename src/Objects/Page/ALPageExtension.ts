@@ -1,7 +1,10 @@
-import { ALApp, ALExtension, ALObject, ALPage, ALPageField, ObjectType } from "../../internal";
+import { ALApp, ALExtension, ALObject, ALPage, ALPageControl, ALPageField, ObjectType } from "../../internal";
+import { ALPageAction } from "./ALPageAction";
 
 export class ALPageExtension extends ALExtension {
     fields: ALPageField[] = [];
+    controls: ALPageControl[] = [];
+    actions: ALPageAction[] = [];
 
     constructor(objectPath: string, objectID: string, objectName: string, alApp: ALApp) {
         super(objectPath, ObjectType.PageExtension, objectID, objectName, alApp);

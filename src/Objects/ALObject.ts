@@ -1,6 +1,6 @@
 import {
     ALApp, ALCodeunit, ALControlAddIn, ALDotNet, ALEntitlement, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALInterface, ALPage, ALPageExtension, ALPermissionSet, ALPermissionSetExtension,
-    ALProfile, ALQuery, ALReport, ALReportExtension, ALRequestPage, ALTable, ALTableExtension, ALVariable, ALXmlport, ObjectType, reader, shortcutRegex
+    ALProfile, ALQuery, ALReport, ALReportExtension, ALRequestPage, ALTable, ALTableExtension, ALVariable, ALXmlport, HelperFunctions, ObjectType, reader, shortcutRegex
 } from "../internal";
 
 export abstract class ALObject {
@@ -206,13 +206,6 @@ export abstract class ALObject {
     }
 
     setProperties(properties: Map<string, string>) {
-        if (properties.has("ApplicationArea")) {
-            var applicationArea = properties.get("ApplicationArea")!;
-            applicationArea = applicationArea.replaceAll("#", "");
-            applicationArea = applicationArea.replaceAll(",", ", ");
-            properties.set("ApplicationArea", applicationArea);
-        }
-
-        this.properties = properties;
+        this.properties = HelperFunctions.fixProperties(properties);
     }
 }
