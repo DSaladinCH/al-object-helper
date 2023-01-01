@@ -808,6 +808,25 @@ export class Reader {
                 // Kind 1 -> Group
                 // Kind 8 -> Field
                 alObject.controls = reader.getSymbolReferenceControls(page.Controls);
+                alObject.actions = reader.getSymbolReferenceActions(page.Actions);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Page Extensions
+            for (let i = 0; i < pageExtensions.length; i++) {
+                const pageExtension = pageExtensions[i];
+                let alObject = new ALPageExtension(pageExtension.ReferenceSourceFileName, pageExtension.Id, pageExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(pageExtension.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(pageExtension.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(pageExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(pageExtension.Variables);
+
+                alObject.controls = reader.getSymbolReferenceControls(pageExtension.ControlChanges, true);
+                alObject.actions = reader.getSymbolReferenceActions(pageExtension.ActionChanges, true);
 
                 alApp.alObjects.push(alObject);
                 update();
