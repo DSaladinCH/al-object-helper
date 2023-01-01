@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit, ALEnum, ALEnumField, ALTableExtension, ALEnumExtension, ALInterface } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit, ALEnum, ALEnumField, ALTableExtension, ALEnumExtension, ALInterface, ALPageControl } from "./internal";
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -479,8 +479,9 @@ export class Reader {
             for (let i = 0; i < codeunits.length; i++) {
                 const codeunit = codeunits[i];
                 let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(codeunit.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(codeunit.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(codeunit.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(codeunit.Variables);
 
                 alApp.alObjects.push(alObject);
                 update();
@@ -491,8 +492,9 @@ export class Reader {
             for (let i = 0; i < interfaces.length; i++) {
                 const alInterface = interfaces[i];
                 let alObject = new ALInterface(alInterface.ReferenceSourceFileName, alInterface.Id, alInterface.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(alInterface.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alInterface.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(alInterface.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alInterface.Variables);
 
                 alApp.alObjects.push(alObject);
                 update();
@@ -503,8 +505,9 @@ export class Reader {
             for (let i = 0; i < tables.length; i++) {
                 const table = tables[i];
                 let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(table.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(table.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(table.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(table.Variables);
 
                 if (table.Fields !== undefined) {
                     for (let j = 0; j < table.Fields.length; j++) {
@@ -525,8 +528,9 @@ export class Reader {
             for (let i = 0; i < tableExtensions.length; i++) {
                 const tableExtension = tableExtensions[i];
                 let alObject = new ALTableExtension(tableExtension.ReferenceSourceFileName, tableExtension.Id, tableExtension.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(tableExtension.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(tableExtension.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(tableExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(tableExtension.Variables);
 
                 if (tableExtension.Fields !== undefined) {
                     for (let j = 0; j < tableExtension.Fields.length; j++) {
@@ -548,8 +552,9 @@ export class Reader {
                 const alEnum = enums[i];
 
                 let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(alEnum.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alEnum.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alEnum.Variables);
 
                 if (alEnum.Values !== undefined) {
                     for (let j = 0; j < alEnum.Values.length; j++) {
@@ -571,8 +576,9 @@ export class Reader {
                 const alEnumExtension = enumExtensions[i];
 
                 let alObject = new ALEnumExtension(alEnumExtension.ReferenceSourceFileName, alEnumExtension.Id, alEnumExtension.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(alEnumExtension.Properties);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alEnumExtension.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(alEnumExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alEnumExtension.Variables);
 
                 if (alEnumExtension.Values !== undefined) {
                     for (let j = 0; j < alEnumExtension.Values.length; j++) {
@@ -589,9 +595,47 @@ export class Reader {
             }
             //#endregion
 
+            //#region Pages
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                let alObject = new ALPage(page.ReferenceSourceFileName, page.Id, page.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(page.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(page.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(page.Variables);
+
+                // loop through controls
+                // Kind 0 -> Area
+                // Kind 1 -> Group
+                // Kind 8 -> Field
+                alObject.controls = reader.getSymbolReferenceControls(page.Controls);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
             resolve();
             return;
         });
+    }
+
+    private getSymbolReferenceControls(controlsArray: any): ALPageControl[] {
+        const controls: ALPageControl[] = [];
+
+        if (controlsArray === undefined)
+            return controls;
+
+        for (let i = 0; i < controlsArray.length; i++) {
+            const control = controlsArray[i];
+            
+            const pageControl = new ALPageControl(control.Kind, control.Id, control.Name);
+            pageControl.setProperties(this.getSymbolReferenceProperties(control.Properties));
+            pageControl.subControls = this.getSymbolReferenceControls(control.Controls);
+
+            controls.push(pageControl);
+        }
+
+        return controls;
     }
 
     private getSymbolReferenceTypeDefinition(typeDefinition: any): string {
@@ -613,19 +657,7 @@ export class Reader {
             const method = methodsArray[j];
 
             const parameters: ALVariable[] = [];
-            if (method.Parameters !== undefined) {
-                for (let k = 0; k < method.Parameters.length; k++) {
-                    const parameter = method.Parameters[k];
-                    let subtype = "";
-                    if (parameter.TypeDefinition.Subtype !== undefined) {
-                        subtype = `"${parameter.TypeDefinition.Subtype.Name}"`;
-                    }
-
-                    const isVar: boolean = (parameter.IsVar === undefined) ? false : parameter.IsVar;
-                    const isTemporary: boolean = (parameter.TypeDefinition.Temporary === undefined) ? false : parameter.TypeDefinition.Temporary;
-                    parameters.push(new ALVariable(parameter.Name, parameter.TypeDefinition.Name, subtype, 0, { isTemporary: isTemporary, isVar: isVar }))
-                }
-            }
+            parameters.concat(this.getSymbolReferenceVariables(method.Parameters));
 
             // TODO: Check Attributes.Name if function is Event
 
@@ -634,6 +666,27 @@ export class Reader {
         }
 
         return methods;
+    }
+
+    private getSymbolReferenceVariables(variablesArray: any): ALVariable[] {
+        const variables: ALVariable[] = [];
+
+        if (variablesArray === undefined)
+            return variables;
+
+        for (let k = 0; k < variablesArray.length; k++) {
+            const variable = variablesArray[k];
+            let subtype = "";
+            if (variable.TypeDefinition.Subtype !== undefined) {
+                subtype = `"${variable.TypeDefinition.Subtype.Name}"`;
+            }
+
+            const isVar: boolean = (variable.IsVar === undefined) ? false : variable.IsVar;
+            const isTemporary: boolean = (variable.TypeDefinition.Temporary === undefined) ? false : variable.TypeDefinition.Temporary;
+            variables.push(new ALVariable(variable.Name, variable.TypeDefinition.Name, subtype, 0, { isTemporary: isTemporary, isVar: isVar }))
+        }
+
+        return variables;
     }
 
     private getSymbolReferenceProperties(propertiesArray: any): Map<string, string> {

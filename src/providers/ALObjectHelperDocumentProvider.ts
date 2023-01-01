@@ -1,6 +1,6 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALEnum, ALEnumExtension, ALEnumField, ALObject, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, reader } from "../internal";
+import { ALEnum, ALEnumExtension, ALEnumField, ALObject, ALPage, ALPageControl, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageControlKind, reader } from "../internal";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -140,6 +140,10 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
             area += "{";
         }
 
+        // Do not include a new line on last bracket
+        if (end && tabulator == 0)
+            return area;
+
         return area + "\n";
     }
 
@@ -241,6 +245,14 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
                 });
 
                 return fileText;
+            case ObjectType.Page:
+                fileText += "\n";
+
+                fileText += "\tlayout\n";
+                fileText += this.addArea(false, 1);
+                fileText += this.writePageControls((alObject as ALPage).controls);
+                fileText += this.addArea(true, 1);
+                return fileText;
             case ObjectType.Codeunit:
             case ObjectType.Interface:
                 return fileText;
@@ -249,5 +261,43 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
         fileText += "\n";
         fileText += "\t// The rest is not implemented yet!\n";
         return fileText;
+    }
+
+    private writePageControls(controls: ALPageControl[], indentation: number = 2): string {
+        var controlsText: string = "";
+
+        for (let i = 0; i < controls.length; i++) {
+            const control = controls[i];
+
+            controlsText += this.getTabulators(indentation) + `${PageControlKind[control.kind].toLowerCase()}(${control.name}`;
+            if (control.sourceExpression !== undefined)
+                controlsText += `; ${control.sourceExpression}`;
+
+            controlsText += ")\n";
+            controlsText += this.addArea(false, indentation);
+
+            for (const property of control.properties.entries()) {
+                controlsText += this.getTabulators(indentation + 1) + this.getProperty(property);
+            }
+
+            if (control.properties.size > 0 && control.subControls.length > 0)
+                controlsText += "\n";
+
+            if (control.subControls.length > 0)
+                controlsText += this.writePageControls(control.subControls, indentation + 1);
+
+            controlsText += this.addArea(true, indentation);
+        }
+
+        return controlsText;
+    }
+
+    private getTabulators(times: number): string {
+        var text: string = "";
+
+        for (let i = 0; i < times; i++)
+            text += "\t";
+
+        return text;
     }
 }
