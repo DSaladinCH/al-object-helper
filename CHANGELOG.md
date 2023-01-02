@@ -1,6 +1,13 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [NONE] - 2023-XX-XX
+### Add
+- Support for page customizations
+
+### Fix
+- Objects without id not showing up in search
+
 ## [2.3.2] - 2023-01-30
 ### Add
 - Support for app packages with different platform versions (Resolves [#60](https://github.com/DSaladinCH/al-object-helper/issues/60))
