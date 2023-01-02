@@ -692,7 +692,7 @@ export class HelperFunctions {
                 index++;
             });
         });
-    }   
+    }
 
     static fixProperties(properties: Map<string, string>): Map<string, string> {
         if (properties.has("ApplicationArea")) {
