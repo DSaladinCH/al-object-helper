@@ -16,7 +16,7 @@ export abstract class ALObject {
     constructor(objectPath: string, objectType: ObjectType, objectID: string, objectName: string, alApp: ALApp) {
         this.objectPath = objectPath;
         this.objectType = objectType;
-        this.objectID = objectID === undefined ? "" : objectID;
+        this.objectID = (objectID === undefined || objectID === "0") ? "" : objectID;
         this.objectName = objectName;
         if (this.objectName.startsWith("\"")) {
             this.objectName = this.objectName.substring(1);
@@ -181,29 +181,27 @@ export abstract class ALObject {
             case "pe":
             case "ped":
                 return ObjectType.PageExtension;
-            case "pc":
-                return ObjectType.PageCustomization;
-            case "e":
-                return ObjectType.Enum;
-            case "ee":
-            case "eed":
-                return ObjectType.EnumExtension;
+            case "c":
+                return ObjectType.Codeunit;
+            case "x":
+                return ObjectType.Xmlport;
             case "r":
                 return ObjectType.Report;
             case "re":
             case "red":
                 return ObjectType.ReportExtension;
+            case "q":
+                return ObjectType.Query;
+            case "e":
+                return ObjectType.Enum;
+            case "ee":
+            case "eed":
+                return ObjectType.EnumExtension;
+            case "ps":
+                return ObjectType.PermissionSet;
             case "pse":
             case "psed":
                 return ObjectType.PermissionSetExtension;
-            case "c":
-                return ObjectType.Codeunit;
-            case "x":
-                return ObjectType.Xmlport;
-            case "q":
-                return ObjectType.Query;
-            case "ps":
-                return ObjectType.PermissionSet;
             default:
                 return undefined;
         }

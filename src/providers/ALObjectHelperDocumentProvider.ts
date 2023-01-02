@@ -1,7 +1,6 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageControl, ALPageExtension, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, reader } from "../internal";
-import { ALPageAction } from "../objects/Page/ALPageAction";
+import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageAction, ALPageControl, ALPageCustomization, ALPageExtension, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, reader } from "../internal";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -270,11 +269,14 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
                 return fileText;
             case ObjectType.Page:
             case ObjectType.PageExtension:
+            case ObjectType.PageCustomization:
                 var controls: ALPageControl[] = [];
                 if (alObject.objectType === ObjectType.Page)
                     controls = (alObject as ALPage).controls;
-                else
+                else if (alObject.objectType === ObjectType.PageExtension)
                     controls = (alObject as ALPageExtension).controls;
+                else if (alObject.objectType === ObjectType.PageCustomization)
+                    controls = (alObject as ALPageCustomization).controls;
 
                 if (controls.length > 0) {
                     fileText += "\tlayout\n";
@@ -299,6 +301,7 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
                 return fileText;
             case ObjectType.Codeunit:
             case ObjectType.Interface:
+            case ObjectType.Profile:
                 return fileText;
         }
 
