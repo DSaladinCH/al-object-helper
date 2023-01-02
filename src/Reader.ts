@@ -148,7 +148,7 @@ export class Reader {
                 };
                 start();
             });
-            HelperFunctions.fillParentObjects(this.alApps);
+            HelperFunctions.fillMissingObjectNames(this.alApps);
 
             console.log(extensionPrefix + `Found ${alFiles.length} AL Files in all local projects`);
             if (this.printDebug) { this.outputChannel.appendLine(`Found ${alFiles.length} al files in all local projects`); }
@@ -351,7 +351,7 @@ export class Reader {
                     }
 
                     // console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
-                    HelperFunctions.fillParentObjects(reader.alApps);
+                    HelperFunctions.fillMissingObjectNames(reader.alApps);
                     resolve('');
                 };
                 start();

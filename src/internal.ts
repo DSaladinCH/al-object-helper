@@ -65,6 +65,9 @@ export * from "./objects/Misc/ALPermissionSet";
 export * from "./objects/Misc/ALPermissionSetExtension";
 export * from "./objects/Misc/ALProfile";
 export * from "./objects/Misc/ALRequestPage";
+export * from "./objects/Misc/PermissionObjectType";
+export * from "./objects/Misc/PermissionSetElement";
+export * from "./objects/Misc/PermissionValue";
 
 /**********/
 /*** UI ***/
