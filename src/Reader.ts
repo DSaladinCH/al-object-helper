@@ -509,6 +509,7 @@ export class Reader {
             const enumExtensions: Array<any> = symbolReference.EnumExtensionTypes;
             const enums: Array<any> = symbolReference.EnumTypes;
             const interfaces: Array<any> = symbolReference.Interfaces;
+            const pageCustomizations: Array<any> = symbolReference.PageCustomizations;
             const pageExtensions: Array<any> = symbolReference.PageExtensions;
             const pages: Array<any> = symbolReference.Pages;
             const profileExtensions: Array<any> = symbolReference.ProfileExtensions;
@@ -678,6 +679,24 @@ export class Reader {
 
                 alObject.controls = reader.getSymbolReferenceControls(pageExtension.ControlChanges, true);
                 alObject.actions = reader.getSymbolReferenceActions(pageExtension.ActionChanges, true);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Page Customizations
+            for (let i = 0; i < pageCustomizations.length; i++) {
+                const pageCustomization = pageCustomizations[i];
+                let alObject = new ALPageCustomization(pageCustomization.ReferenceSourceFileName, pageCustomization.Id, pageCustomization.Name, alApp);
+                alObject.setTempParentObjectFromType(pageCustomization.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(pageCustomization.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(pageCustomization.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(pageCustomization.Variables);
+
+                alObject.controls = reader.getSymbolReferenceControls(pageCustomization.ControlChanges, true);
+                alObject.actions = reader.getSymbolReferenceActions(pageCustomization.ActionChanges, true);
 
                 alApp.alObjects.push(alObject);
                 update();
