@@ -1,6 +1,6 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageAction, ALPageControl, ALPageCustomization, ALPageExtension, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, reader } from "../internal";
+import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageAction, ALPageControl, ALPageCustomization, ALPageExtension, ALPermissionSet, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, PermissionObjectType, reader } from "../internal";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -197,6 +197,9 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
             case 'visible':
             case 'enabled':
                 return `${property[0]} = ${Boolean(property[1])};\n`;
+            case 'sourcetable':
+                if (!property[1].match(/^[0-9a-z]+$/i))
+                    return `${property[0]} = "${property[1]}";\n`;
         }
 
         return `${property[0]} = ${property[1]};\n`;
@@ -298,6 +301,17 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
                     fileText += this.writePageActions(actions);
                     fileText += this.addArea(true, 1);
                 }
+                return fileText;
+            case ObjectType.PermissionSet:
+                const permissions = (alObject as ALPermissionSet).permissions;
+
+                fileText += "Permissions = "
+                permissions.forEach(permission => {
+                    fileText += `${PermissionObjectType[permission.objectType]} ${permission.id === 0 ? "*" : permission.id} = ${permission.getPermissionText()},`
+                });
+
+                fileText = fileText.substring(0, fileText.length - 1);
+                fileText += ";";
                 return fileText;
             case ObjectType.Codeunit:
             case ObjectType.Interface:

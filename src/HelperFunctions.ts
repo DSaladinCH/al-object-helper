@@ -3,7 +3,7 @@ import { Position, TextDocument } from "vscode";
 import path = require("path");
 import fs = require("fs-extra");
 import JSZip = require("jszip");
-import { ALApp, ALExtension, ALFunction, ALObject, ALPage, ALPageExtension, ALPageField, ALTable, ALTableExtension, ALTableField, ALVariable, AppType, extensionPrefix, FunctionType, ObjectType, reader, shortcutRegex } from "./internal";
+import { ALApp, ALExtension, ALFunction, ALObject, ALPage, ALPageExtension, ALPageField, ALPermissionSet, ALTable, ALTableExtension, ALTableField, ALVariable, AppType, extensionPrefix, FunctionType, ObjectType, PermissionObjectType, reader, shortcutRegex } from "./internal";
 import lineReader = require("line-reader");
 
 export class HelperFunctions {
@@ -288,36 +288,69 @@ export class HelperFunctions {
         });
     }
 
-    static fillParentObjects(alApps: ALApp[]) {
+    static fillMissingObjectNames(alApps: ALApp[]) {
         alApps.forEach(alApp => {
-            var alObjects = (alApp.alObjects.filter(alObject => alObject.isExtension()) as ALExtension[]);
-            for (let index = 0; index < alObjects.length; index++) {
-                var alObject = alObjects[index];
-                if (!alObject.parent) {
-                    continue;
+            // var alObjects = (alApp.alObjects.filter(alObject => alObject.isExtension()) as ALExtension[]);
+            for (let index = 0; index < alApp.alObjects.length; index++) {
+                var alObject = alApp.alObjects[index];
+                if (alObject.isExtension()) {
+                    var extension = alObject as ALExtension;
+                    if (!extension.parent) {
+                        continue;
+                    }
+
+                    var parent = HelperFunctions.searchALObjectByName(alApps, extension.parent.objectType, extension.parent.objectName);
+                    if (!parent) {
+                        continue;
+                    }
+
+                    extension.parent.objectName = parent.objectName;
+                    extension.parent.objectPath = parent.objectPath;
+                    extension.parent.objectID = parent.objectID;
+                    extension.parent.alApp = parent.alApp;
                 }
 
-                var parent = HelperFunctions.searchALObjectByName(alApps, alObject.parent.objectType, alObject.parent.objectName);
-                if (!parent) {
-                    continue;
-                }
+                if (!alApp.showMyCode) {
+                    if (alObject.objectType === ObjectType.PermissionSet) {
+                        const permissionSet = alObject as ALPermissionSet;
+                        permissionSet.permissions.forEach(permission => {
+                            const permissionAlObject = this.searchALObjectByID(alApps, this.mapPermissionObjectTypeToObjectType(permission.objectType), permission.id.toString())
+                            if (permissionAlObject === undefined)
+                                return;
 
-                alObject.parent.objectName = parent.objectName;
-                alObject.parent.objectPath = parent.objectPath;
-                alObject.parent.objectID = parent.objectID;
-                alObject.parent.alApp = parent.alApp;
+                            permission.name = permissionAlObject.objectName;
+                        });
+
+                        continue;
+                    }
+
+                    if (alObject.objectType === ObjectType.Page) {
+                        const page = alObject as ALPage;
+                        if (!page.properties.has("SourceTable"))
+                            continue;
+
+                        const sourceTable = this.searchALObjectByID(alApps, ObjectType.Table, page.properties.get("SourceTable")!);
+                        if (sourceTable === undefined)
+                            continue;
+
+                        page.properties.set("SourceTable", sourceTable.objectName);
+                        continue;
+                    }
+                }
             }
         });
     }
 
     static searchALObjectByID(alApps: ALApp[], objectType: ObjectType, objectID: string): ALObject | undefined {
         let alObject: ALObject | undefined;
-        alApps.forEach(alApp => {
+
+        for (let i = 0; i < alApps.length; i++) {
+            const alApp = alApps[i];
+
             alObject = alApp.alObjects.find(alObject => alObject.objectType === objectType && alObject.objectID === objectID);
-            if (alObject) {
+            if (alObject)
                 return alObject;
-            }
-        });
+        }
 
         return alObject;
     }
@@ -333,6 +366,26 @@ export class HelperFunctions {
         }
 
         return alObject;
+    }
+
+    static mapPermissionObjectTypeToObjectType(objectType: PermissionObjectType): ObjectType {
+        switch (objectType) {
+            case PermissionObjectType.TableData:
+            case PermissionObjectType.Table:
+                return ObjectType.Table;
+            case PermissionObjectType.Report:
+                return ObjectType.Report;
+            case PermissionObjectType.Codeunit:
+                return ObjectType.Codeunit;
+            case PermissionObjectType.XMLport:
+                return ObjectType.Xmlport;
+            case PermissionObjectType.Page:
+                return ObjectType.Page;
+            case PermissionObjectType.Query:
+                return ObjectType.Query;
+            default:
+                return ObjectType.NotAvailable;
+        }
     }
 
     static getALObjectOfALVariable(alVariable: ALVariable): ALObject | undefined {
@@ -639,7 +692,7 @@ export class HelperFunctions {
                 index++;
             });
         });
-    }   
+    }
 
     static fixProperties(properties: Map<string, string>): Map<string, string> {
         if (properties.has("ApplicationArea")) {
