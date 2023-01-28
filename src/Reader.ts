@@ -17,6 +17,7 @@ export class Reader {
     mode: Mode = Mode.Performance;
     onlyShowLocalFiles: boolean = false;
     alPackageCachePath: string = "";
+    alApplication: string = "";
 
     private isReadingLocalApp: boolean = false;
     private isReadingApp: boolean = false;
@@ -59,12 +60,28 @@ export class Reader {
     async start() {
         if (!path.isAbsolute(this.alPackageCachePath)) {
             for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
-                const alApp = this.alApps[index];
+                const alApp = this.alApps.filter(app => app.appType === AppType.local)[index];
                 await this.searchAppPackages(alApp.appRootPath);
             }
         }
         else {
             await this.searchAppPackages(this.alPackageCachePath);
+        }
+
+        if (this.alApps.filter(app => app.appType === AppType.appPackage).length > 0) {
+            var groups = new Map<string, ALApp[]>();
+
+            for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.appPackage).length; index++) {
+                const alApp = this.alApps.filter(app => app.appType === AppType.appPackage)[index];
+                var apps = groups.get(alApp.appId);
+                if (apps === undefined)
+                    apps = [];
+
+                apps.push(alApp);
+                groups.set(alApp.appId, apps);
+            }
+
+            console.log(groups);
         }
 
         if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
@@ -79,7 +96,18 @@ export class Reader {
         var appPath = path.join(folderPath, "app.json");
         if (fs.existsSync(appPath)) {
             var json = fs.readJSONSync(appPath);
-            const alApp = new ALApp(AppType.local, json.name, json.publisher, json.version, json.runtime, folderPath, new Date());
+
+            let showMyCode = false;
+            if (json.showMyCode !== undefined) {
+                showMyCode = JSON.parse(json.showMyCode);
+            }
+            else if (json.resourceExposurePolicy.includeSourceInSymbolFile !== undefined) {
+                showMyCode = JSON.parse(json.resourceExposurePolicy.includeSourceInSymbolFile);
+            }
+
+            this.alApplication = json.application;
+
+            const alApp = new ALApp(AppType.local, json.id, json.name, json.publisher, json.version, json.application, json.runtime, folderPath, new Date(), showMyCode);
             this.alApps.push(alApp);
             return alApp;
         }
@@ -160,9 +188,8 @@ export class Reader {
         return new Promise<void>(async (resolve) => {
             if (this.printDebug) { this.outputChannel.appendLine(`Now search all app files in path ${searchPath}`); }
 
-            if (!searchPath.endsWith(".alpackages")) {
+            if (!searchPath.endsWith(".alpackages"))
                 searchPath = path.join(searchPath, ".alpackages");
-            }
 
             let appFiles = await HelperFunctions.getFiles(searchPath, 'app');
             if (this.printDebug) { this.outputChannel.appendLine(`Found ${appFiles.length} app files in path ${searchPath}`); }
@@ -182,44 +209,53 @@ export class Reader {
                 if (this.printDebug) { this.outputChannel.appendLine(`Now extracting NavxManifest.xml from app file ${appPath}`); }
 
                 const manifest = Object.keys(jsZip.files).find(fileName => fileName.endsWith("NavxManifest.xml"));
-                if (!manifest) {
+                if (!manifest)
                     continue;
-                }
 
                 if (this.printDebug) { this.outputChannel.appendLine(`Creating buffer of NavxManifest.xml from app file ${appPath}`); }
 
                 const contentBuffer: Buffer | undefined = await jsZip.file(manifest)?.async("nodebuffer");
-                if (!contentBuffer) {
+                if (!contentBuffer)
                     continue;
-                }
+
                 const content = contentBuffer.toString();
-                const manifestAppPattern = /<App.+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Runtime="([^"]+)"/i;
+                const manifestAppPattern = /<App.+Id="([^"]+)".+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Application="([^"]+).+Runtime="([^"]+)".+ShowMyCode="([^"]+)"/i;
+                const manifestAppPattern2 = /<App.+Id="([^"]+)".+Name="([^"]+)".+Publisher="([^"]+)".+Version="([^"]+)".+Platform="([^"]+).+Runtime="([^"]+)".+ShowMyCode="([^"]+)"/i;
+                const manifestREPPattern = /<ResourceExposurePolicy.+IncludeSourceInSymbolFile="([^"]+)"/i;
 
                 if (this.printDebug) { this.outputChannel.appendLine(`Extracting data of NavxManifest.xml from app file ${appPath}`); }
 
-                const matches = manifestAppPattern.exec(content);
-                if (!matches) {
-                    continue;
+                var appMatches = manifestAppPattern.exec(content);
+                const repMatches = manifestREPPattern.exec(content);
+                if (!appMatches) {
+                    appMatches = manifestAppPattern2.exec(content);
+                    if (!appMatches)
+                        continue;
                 }
+
+                let showMyCode: boolean = JSON.parse(appMatches[7].toLowerCase());
+                if (repMatches)
+                    showMyCode = JSON.parse(repMatches[1].toLowerCase());
 
                 const appDate = await HelperFunctions.getFileModifyDate(appPath);
                 if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
 
-                if (!this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2])) {
-                    this.alApps.push(new ALApp(AppType.appPackage, matches[1], matches[2], matches[3], matches[4], appPath, appDate));
-                }
-                else {
-                    var existingALApp = this.alApps.find(app => app.appName === matches[1] && app.appPublisher === matches[2]);
-                    if (existingALApp && existingALApp.appType === AppType.appPackage) {
-                        // app did not change by default
-                        existingALApp.appChanged = false;
-                        // if the date is not the same as the saved date, then the app changed
-                        if (existingALApp.appDate.getTime() !== appDate.getTime()) {
-                            existingALApp.appDate = appDate;
-                            existingALApp.appChanged = true;
-                        }
-                    }
-                }
+                this.alApps.push(new ALApp(AppType.appPackage, appMatches[1], appMatches[2], appMatches[3], appMatches[4], appMatches[5], appMatches[6], appPath, appDate, showMyCode));
+                // if (!this.alApps.find(app => app.appName === appMatches[2] && app.appPublisher === appMatches[3])) {
+                //     this.alApps.push(new ALApp(AppType.appPackage, appMatches[1], appMatches[2], appMatches[3], appMatches[4], appMatches[5], appMatches[6], appPath, appDate, showMyCode));
+                // }
+                // else {
+                //     var existingALApp = this.alApps.find(app => app.appName === appMatches[2] && app.appPublisher === appMatches[3]);
+                //     if (existingALApp && existingALApp.appType === AppType.appPackage) {
+                //         // app did not change by default
+                //         existingALApp.appChanged = false;
+                //         // if the date is not the same as the saved date, then the app changed
+                //         if (existingALApp.appDate.getTime() !== appDate.getTime()) {
+                //             existingALApp.appDate = appDate;
+                //             existingALApp.appChanged = true;
+                //         }
+                //     }
+                // }
             }
 
             const appPackages = this.alApps.filter(alApp => alApp.appType === AppType.appPackage);
