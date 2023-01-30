@@ -96,7 +96,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const quickPick = new QuickPickManagement<ALFunction>();
+		const quickPick = new QuickPickManagement<ALFunctionItem>();
 		const picked = quickPick.create(`Select event from ${ObjectType[alObject.objectType]} "${alObject.objectName}" to copy`);
 
 		alObject = await reader.readAlObject(alObject);
@@ -112,13 +112,13 @@ export async function activate(context: vscode.ExtensionContext) {
 		).forEach(alFunction => alFunctionItems.push(new ALFunctionItem(alObject!, alFunction, true)));
 
 		quickPick.updateValue(alFunctionItems);
-		const alFunction = await picked;
+		const alFunctionItem = await picked;
 
-		if (!alFunction) {
+		if (!alFunctionItem) {
 			return;
 		}
 
-		await vscode.env.clipboard.writeText(alFunction.getEventSubscriberText(alObject));
+		await vscode.env.clipboard.writeText(alFunctionItem.alFunction.getEventSubscriberText(alObject));
 		vscode.window.showInformationMessage("Copied to Clipboard!");
 	}));
 
