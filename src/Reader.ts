@@ -5,6 +5,7 @@ import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
 import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode } from "./internal";
+import { compareVersions } from 'compare-versions';
 
 export class Reader {
     extensionContext: vscode.ExtensionContext;
@@ -17,7 +18,7 @@ export class Reader {
     mode: Mode = Mode.Performance;
     onlyShowLocalFiles: boolean = false;
     alPackageCachePath: string = "";
-    alApplication: string = "";
+    alApplicationVersion: string = "";
 
     private isReadingLocalApp: boolean = false;
     private isReadingApp: boolean = false;
@@ -68,22 +69,6 @@ export class Reader {
             await this.searchAppPackages(this.alPackageCachePath);
         }
 
-        if (this.alApps.filter(app => app.appType === AppType.appPackage).length > 0) {
-            var groups = new Map<string, ALApp[]>();
-
-            for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.appPackage).length; index++) {
-                const alApp = this.alApps.filter(app => app.appType === AppType.appPackage)[index];
-                var apps = groups.get(alApp.appId);
-                if (apps === undefined)
-                    apps = [];
-
-                apps.push(alApp);
-                groups.set(alApp.appId, apps);
-            }
-
-            console.log(groups);
-        }
-
         if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
 
         await Promise.all([
@@ -105,9 +90,13 @@ export class Reader {
                 showMyCode = JSON.parse(json.resourceExposurePolicy.includeSourceInSymbolFile);
             }
 
-            this.alApplication = json.application;
+            var supportedVersion = json.application;
+            if (supportedVersion === undefined)
+                supportedVersion = json.platform;
 
-            const alApp = new ALApp(AppType.local, json.id, json.name, json.publisher, json.version, json.application, json.runtime, folderPath, new Date(), showMyCode);
+            this.alApplicationVersion = supportedVersion;
+
+            const alApp = new ALApp(AppType.local, json.id, json.name, json.publisher, json.version, supportedVersion, json.runtime, folderPath, new Date(), showMyCode);
             this.alApps.push(alApp);
             return alApp;
         }
@@ -140,7 +129,7 @@ export class Reader {
                     for (let i = 0; i < filteredALApps.length; i++) {
                         const alApp = filteredALApps[i];
                         alApp.clearALObjects();
-                        await reader.searchAppPackages(alApp.appRootPath);
+                        // await reader.searchAppPackages(alApp.appRootPath);
                         progress.report({ message: `${alApp.appName} (0 of 0)`, increment: quotient });
 
                         console.log(extensionPrefix + `Found project "${alApp.appName}" with path "${alApp.appRootPath}"`);
@@ -240,22 +229,12 @@ export class Reader {
                 const appDate = await HelperFunctions.getFileModifyDate(appPath);
                 if (this.printDebug) { this.outputChannel.appendLine(`Adding app file ${appPath} to array`); }
 
-                this.alApps.push(new ALApp(AppType.appPackage, appMatches[1], appMatches[2], appMatches[3], appMatches[4], appMatches[5], appMatches[6], appPath, appDate, showMyCode));
-                // if (!this.alApps.find(app => app.appName === appMatches[2] && app.appPublisher === appMatches[3])) {
-                //     this.alApps.push(new ALApp(AppType.appPackage, appMatches[1], appMatches[2], appMatches[3], appMatches[4], appMatches[5], appMatches[6], appPath, appDate, showMyCode));
-                // }
-                // else {
-                //     var existingALApp = this.alApps.find(app => app.appName === appMatches[2] && app.appPublisher === appMatches[3]);
-                //     if (existingALApp && existingALApp.appType === AppType.appPackage) {
-                //         // app did not change by default
-                //         existingALApp.appChanged = false;
-                //         // if the date is not the same as the saved date, then the app changed
-                //         if (existingALApp.appDate.getTime() !== appDate.getTime()) {
-                //             existingALApp.appDate = appDate;
-                //             existingALApp.appChanged = true;
-                //         }
-                //     }
-                // }
+                const appId = appMatches[1];
+                const appVersion = appMatches[4];
+                const appSupportedVersion = appMatches[5];
+
+                if (!this.alApps.find(app => app.appId === appId && app.appVersion === appVersion))
+                    this.alApps.push(new ALApp(AppType.appPackage, appMatches[1], appMatches[2], appMatches[3], appMatches[4], appMatches[5], appMatches[6], appPath, appDate, showMyCode));
             }
 
             const appPackages = this.alApps.filter(alApp => alApp.appType === AppType.appPackage);
@@ -271,8 +250,64 @@ export class Reader {
                 this.outputChannel.appendLine(`Found all app files in ${searchPath}`);
             }
 
+            if (this.alApps.filter(app => app.appType === AppType.appPackage).length > 0) {
+                var groups = this.groupAppPackagesById();
+
+                const applicationMajor = +this.alApplicationVersion.split('.')[0];
+                groups.forEach((alApps: ALApp[], appId: string) => {
+                    alApps = alApps.sort((a, b) => compareVersions(a.appSupportedVersion, b.appSupportedVersion));
+
+                    var hasCorrectMajorPackage: boolean = false;
+                    var alAppToUse: ALApp;
+                    alApps.forEach(alApp => {
+                        if (compareVersions(alApp.appSupportedVersion, this.alApplicationVersion) < 0) {
+                            this.alApps.splice(this.alApps.indexOf(alApp), 1);
+                            return;
+                        }
+
+                        const appSupportedVersionMajor = +alApp.appSupportedVersion.split('.')[0];
+                        if (appSupportedVersionMajor === applicationMajor)
+                            hasCorrectMajorPackage = true;
+
+                        if (hasCorrectMajorPackage && appSupportedVersionMajor > applicationMajor) {
+                            this.alApps.splice(this.alApps.indexOf(alApp), 1);
+                            return;
+                        }
+                    });
+                });
+
+                var groups = this.groupAppPackagesById();
+                groups.forEach((alApps: ALApp[], appId: string) => {
+                    alApps = alApps.sort((a, b) => compareVersions(a.appVersion, b.appVersion));
+                    alApps.pop();
+
+                    alApps.forEach(alApp => {
+                        this.alApps.splice(this.alApps.indexOf(alApp), 1);
+                    });
+                });
+
+                console.log(groups);
+                console.log(this.alApps);
+            }
+
             resolve();
         });
+    }
+
+    groupAppPackagesById(): Map<string, ALApp[]> {
+        var groups = new Map<string, ALApp[]>();
+
+        for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.appPackage).length; index++) {
+            const alApp = this.alApps.filter(app => app.appType === AppType.appPackage)[index];
+            var apps = groups.get(alApp.appId);
+            if (apps === undefined)
+                apps = [];
+
+            apps.push(alApp);
+            groups.set(alApp.appId, apps);
+        }
+
+        return groups;
     }
 
     async readAppPackages(alApps: ALApp[], mode?: Mode) {
