@@ -1,4 +1,4 @@
-import { ALObject, ALEnumField, ObjectType, ALApp} from "../../internal";
+import { ALObject, ALEnumField, ObjectType, ALApp } from "../../internal";
 
 export class ALEnum extends ALObject {
     fields: ALEnumField[] = [];
@@ -7,18 +7,7 @@ export class ALEnum extends ALObject {
         super(objectPath, ObjectType.Enum, objectID, objectName, alApp);
     }
 
-    getUIDescription(): string{
-        return `${ObjectType[this.objectType]} ${this.objectID}`;
-    }
+    addLocalEvents() {
 
-    getUIDetail(): string {
-        if (!this.alApp){
-            return "";
-        }
-        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
-    }
-
-    addLocalEvents(){
-        
     }
 }

@@ -31,7 +31,7 @@ export class ALEnumExtension extends ALExtension {
         if (!this.alApp){
             return "";
         }
-        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
+        return `${this.alApp.appName} by ${this.alApp.appPublisher}`;
     }
 
     addLocalEvents(){

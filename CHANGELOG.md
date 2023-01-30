@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.2] - 2023-01-30
+### Add
+- Support for app packages with different platform versions (Resolves [#60](https://github.com/DSaladinCH/al-object-helper/issues/60))
+
 ## [2.3.1] - 2022-12-21
 ### Fix
 - ALFunction is not a function (Fixes [#71](https://github.com/DSaladinCH/al-object-helper/issues/71))
@@ -230,6 +234,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.3.2]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.1...2.3.2
 [2.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.13...2.3.0
 [2.2.13]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.12...2.2.13

@@ -48,6 +48,9 @@ If you are searching for a event you already subscribed to, you can use the comm
 ## Object Extensions
 If you are in a extension object (for example a table extension) you can navigate to the parent object by running the command **Open extended Object**. In, for example, a table you can view all objects which extended this table by running the command **Show Extensions**.
 
+## Support for app package cache
+If you got a global app package cache it will only read the packages for your platform version or higher if no package for the current version is available (It uses the last project if you are using a workspace).
+
 # Performance Modes
 Specifies in which mode AL Object Helper should run. This mode is useful if the computer is not to powerful to load everything.
 
@@ -132,5 +135,5 @@ Please report these in the Git Repository.
 * **Reload**: Reload and reread all al objects according the user configurations
 * **Reread App**: Rereads a certain app which options to fully read the app and ignore the user configurations
 
-# Known Issues
-- Reloading of objects causes perfomance issues
+# Planned features
+* Only read apps that are defined as dependency

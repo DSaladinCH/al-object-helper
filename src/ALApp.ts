@@ -3,9 +3,11 @@ import os = require('os');
 
 export class ALApp {
     appType: AppType;
+    appId: string;
     appName: string;
     appPublisher: string;
     appVersion: string;
+    appSupportedVersion: string;
     appRunTimeVersion: string;
     appRootPath: string;
     appDate: Date;
@@ -19,16 +21,20 @@ export class ALApp {
     /**
      * Create a new app
      * @param appType The internal app type
+     * @param id The id of this app
      * @param name The name of this app
      * @param publisher The publisher of this app
+     * @param alApplicationVersion The application version of this app
      * @param alRunTimeVersion The runtime version of this app
      * @param appPath The path to this app (project path or app path)
      */
-    constructor(appType: AppType, name: string, publisher: string, version: string, alRunTimeVersion: string, appPath: string, appDate: Date) {
+    constructor(appType: AppType, appId: string, name: string, publisher: string, version: string, appSupportedVersion: string, alRunTimeVersion: string, appPath: string, appDate: Date, showMyCode: boolean) {
         this.appType = appType;
+        this.appId = appId.toLowerCase().trim();
         this.appName = name.trim();
         this.appPublisher = publisher.trim();
         this.appVersion = version;
+        this.appSupportedVersion = appSupportedVersion.trim();
         this.appRunTimeVersion = alRunTimeVersion.trim();
         this.appRootPath = appPath;
         if (!this.appRootPath.endsWith(".app")) {
@@ -47,7 +53,7 @@ export class ALApp {
     }
 
     static Empty(): ALApp {
-        return new ALApp(AppType.appPackage, '', '', '', '', '', new Date());
+        return new ALApp(AppType.appPackage, '', '', '', '', '', '', '', new Date(), true);
     }
 
     /**
