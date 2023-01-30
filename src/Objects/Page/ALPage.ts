@@ -8,17 +8,6 @@ export class ALPage extends ALObject {
         super(objectPath, ObjectType.Page, objectID, objectName, alApp);
     }
 
-    getUIDescription(): string {
-        return `${ObjectType[this.objectType]} ${this.objectID}`;
-    }
-
-    getUIDetail(): string {
-        if (!this.alApp) {
-            return "";
-        }
-        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
-    }
-
     getAllFields(): ALPageField[] {
         let alFields: ALPageField[] = [];
         alFields = alFields.concat(this.fields);

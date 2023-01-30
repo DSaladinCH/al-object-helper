@@ -7,17 +7,6 @@ export class ALTable extends ALObject {
         super(objectPath, ObjectType.Table, objectID, objectName, alApp);
     }
 
-    getUIDescription(): string {
-        return `${ObjectType[this.objectType]} ${this.objectID}`;
-    }
-
-    getUIDetail(): string {
-        if (!this.alApp) {
-            return "";
-        }
-        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
-    }
-
     /**
      * Get all table field including table extension fields
      * @returns All table field in this table and all table extensions

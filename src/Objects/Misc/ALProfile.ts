@@ -5,16 +5,7 @@ export class ALProfile extends ALObject {
         super(objectPath, ObjectType.Profile, objectID, objectName, alApp);
     }
 
-    getUIDescription(): string {
-        return `${ObjectType[this.objectType]} ${this.objectID}`;
+    addLocalEvents() {
+        
     }
-
-    getUIDetail(): string {
-        if (!this.alApp) {
-            return "";
-        }
-        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
-    }
-
-    addLocalEvents() { }
 }
