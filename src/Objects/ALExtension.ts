@@ -7,6 +7,22 @@ export abstract class ALExtension extends ALObject {
         super(objectPath, objectType, objectID, objectName, alApp);
     }
 
+    getUIDescription(): string {
+        let description = `${ObjectType[this.objectType]} ${this.objectID}`;
+        if (this.parent === undefined) {
+            return " - Extends unknown";
+        }
+
+        if (this.parent.objectID === "") {
+            description += ` - Extends "${this.parent.objectName}"`;
+        }
+        else {
+            description += ` - Extends ${ObjectType[this.parent.objectType]} ${this.parent.objectID} - ${this.parent.objectName}`;
+        }
+
+        return description;
+    }
+
     abstract setTempParentObjectFromType(objectName: string): void;
 
     static getParentObjectFromType(objectType: ObjectType, objectPath: string, objectID: string, objectName: string, alApp: ALApp): ALObject | undefined {

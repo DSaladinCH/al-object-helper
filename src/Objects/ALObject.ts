@@ -24,8 +24,17 @@ export abstract class ALObject {
         this.alApp = alApp;
     }
 
-    abstract getUIDescription(): string;
-    abstract getUIDetail(): string;
+    getUIDescription(): string {
+        return `${ObjectType[this.objectType]} ${this.objectID}`;
+    }
+
+    getUIDetail(): string {
+        if (!this.alApp) {
+            return "";
+        }
+        return `${this.alApp.appName} by ${this.alApp.appPublisher}`;
+    }
+
     abstract addLocalEvents(): void;
 
     isExtension(): boolean {
@@ -88,6 +97,10 @@ export abstract class ALObject {
         }
 
         return true;
+    }
+
+    getDefaultUiDetails() {
+
     }
 
     static createByObjectType(objectType: ObjectType, objectPath: string, objectID: string, objectName: string, alApp: ALApp): ALObject | ALExtension | undefined {

@@ -5,18 +5,7 @@ export class ALXmlport extends ALObject {
         super(objectPath, ObjectType.Xmlport, objectID, objectName, alApp);
     }
 
-    getUIDescription(): string{
-        return `${ObjectType[this.objectType]} ${this.objectID}`;
-    }
+    addLocalEvents() {
 
-    getUIDetail(): string {
-        if (!this.alApp){
-            return "";
-        }
-        return `${this.alApp.appPublisher} - ${this.alApp.appName}`;
-    }
-
-    addLocalEvents(){
-        
     }
 }
