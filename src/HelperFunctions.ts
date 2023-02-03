@@ -267,7 +267,7 @@ export class HelperFunctions {
         return new Promise<JSZip | undefined>((resolve, reject) => {
             try {
                 new JSZip.external.Promise(function (resolve: any, reject: any) {
-                    fs.readFile(zipPath, function (error: NodeJS.ErrnoException, data: Buffer) {
+                    fs.readFile(zipPath, function (error: NodeJS.ErrnoException | null, data: Buffer) {
                         if (error) {
                             resolve(undefined);
                         } else {
@@ -692,17 +692,6 @@ export class HelperFunctions {
                 index++;
             });
         });
-    }
-
-    static fixProperties(properties: Map<string, string>): Map<string, string> {
-        if (properties.has("ApplicationArea")) {
-            var applicationArea = properties.get("ApplicationArea")!;
-            applicationArea = applicationArea.replaceAll("#", "");
-            applicationArea = applicationArea.replaceAll(",", ", ");
-            properties.set("ApplicationArea", applicationArea);
-        }
-
-        return properties;
     }
 
     static fixProperties(properties: Map<string, string>): Map<string, string> {
