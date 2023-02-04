@@ -51,6 +51,25 @@ If you are in a extension object (for example a table extension) you can navigat
 ## Support for app package cache
 If you got a global app package cache it will only read the packages for your platform version or higher if no package for the current version is available (It uses the last project if you are using a workspace).
 
+## Support for runtime packages
+It extracts as much information as possible from the runtime packages. This feature is still in preview and will have missing pieces. So report any weird behaviour on GitHub.
+The Code itself is not in the runtime package, so it is not possible to display any.
+What can be and will be extracted from runtime packages:
+- Properties
+- Global Function Definitions
+- Global Integration and Business Event Definitions
+- Global variables
+- Fields
+- Page Controls
+- Page Actions
+
+At the moment, those type of objects will be extracted:
+- Codeunits
+- Interfaces
+- Table and Table extensions
+- Page, Page extensions and Page customizations
+- Enum and Enum extensions
+
 # Performance Modes
 Specifies in which mode AL Object Helper should run. This mode is useful if the computer is not to powerful to load everything.
 
