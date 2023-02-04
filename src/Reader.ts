@@ -584,6 +584,8 @@ export class Reader {
             for (let i = 0; i < tableExtensions.length; i++) {
                 const tableExtension = tableExtensions[i];
                 let alObject = new ALTableExtension(tableExtension.ReferenceSourceFileName, tableExtension.Id, tableExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(tableExtension.TargetObject);
+
                 alObject.setProperties(reader.getSymbolReferenceProperties(tableExtension.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(tableExtension.Methods);
                 alObject.variables = reader.getSymbolReferenceVariables(tableExtension.Variables);
@@ -595,54 +597,6 @@ export class Reader {
                         tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
 
                         alObject.fields.push(tableField);
-                    }
-                }
-
-                alApp.alObjects.push(alObject);
-                update();
-            }
-            //#endregion
-
-            //#region Enums
-            for (let i = 0; i < enums.length; i++) {
-                const alEnum = enums[i];
-
-                let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
-                alObject.setProperties(reader.getSymbolReferenceProperties(alEnum.Properties));
-                alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
-                alObject.variables = reader.getSymbolReferenceVariables(alEnum.Variables);
-
-                if (alEnum.Values !== undefined) {
-                    for (let j = 0; j < alEnum.Values.length; j++) {
-                        const enumValue = alEnum.Values[j];
-                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
-                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
-
-                        alObject.fields.push(enumField);
-                    }
-                }
-
-                alApp.alObjects.push(alObject);
-                update();
-            }
-            //#endregion
-
-            //#region Enum Extensions
-            for (let i = 0; i < enumExtensions.length; i++) {
-                const alEnumExtension = enumExtensions[i];
-
-                let alObject = new ALEnumExtension(alEnumExtension.ReferenceSourceFileName, alEnumExtension.Id, alEnumExtension.Name, alApp);
-                alObject.setProperties(reader.getSymbolReferenceProperties(alEnumExtension.Properties));
-                alObject.functions = reader.getSymbolReferenceFunctions(alEnumExtension.Methods);
-                alObject.variables = reader.getSymbolReferenceVariables(alEnumExtension.Variables);
-
-                if (alEnumExtension.Values !== undefined) {
-                    for (let j = 0; j < alEnumExtension.Values.length; j++) {
-                        const enumValue = alEnumExtension.Values[j];
-                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
-                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
-
-                        alObject.fields.push(enumField);
                     }
                 }
 
@@ -703,50 +657,6 @@ export class Reader {
             }
             //#endregion
 
-            for (let i = 0; i < enums.length; i++) {
-                const alEnum = enums[i];
-
-                let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(alEnum.Properties);
-                alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
-
-                if (alEnum.Values !== undefined) {
-                    for (let j = 0; j < alEnum.Values.length; j++) {
-                        const enumValue = alEnum.Values[j];
-                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
-                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
-
-                        alObject.fields.push(enumField);
-                    }
-                }
-
-                alApp.alObjects.push(alObject);
-                update();
-            }
-
-            //#region Table Extensions
-            for (let i = 0; i < tableExtensions.length; i++) {
-                const tableExtension = tableExtensions[i];
-                let alObject = new ALTableExtension(tableExtension.ReferenceSourceFileName, tableExtension.Id, tableExtension.Name, alApp);
-                alObject.properties = reader.getSymbolReferenceProperties(tableExtension.Properties);
-                alObject.functions = reader.getSymbolReferenceFunctions(tableExtension.Methods);
-                alObject.variables = reader.getSymbolReferenceVariables(tableExtension.Variables);
-
-                if (tableExtension.Fields !== undefined) {
-                    for (let j = 0; j < tableExtension.Fields.length; j++) {
-                        const field = tableExtension.Fields[j];
-                        const tableField = new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0);
-                        tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
-
-                        alObject.fields.push(tableField);
-                    }
-                }
-
-                alApp.alObjects.push(alObject);
-                update();
-            }
-            //#endregion
-
             //#region Enums
             for (let i = 0; i < enums.length; i++) {
                 const alEnum = enums[i];
@@ -776,6 +686,8 @@ export class Reader {
                 const alEnumExtension = enumExtensions[i];
 
                 let alObject = new ALEnumExtension(alEnumExtension.ReferenceSourceFileName, alEnumExtension.Id, alEnumExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(alEnumExtension.TargetObject);
+
                 alObject.setProperties(reader.getSymbolReferenceProperties(alEnumExtension.Properties));
                 alObject.functions = reader.getSymbolReferenceFunctions(alEnumExtension.Methods);
                 alObject.variables = reader.getSymbolReferenceVariables(alEnumExtension.Variables);
@@ -789,44 +701,6 @@ export class Reader {
                         alObject.fields.push(enumField);
                     }
                 }
-
-                alApp.alObjects.push(alObject);
-                update();
-            }
-            //#endregion
-
-            //#region Pages
-            for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                let alObject = new ALPage(page.ReferenceSourceFileName, page.Id, page.Name, alApp);
-                alObject.setProperties(reader.getSymbolReferenceProperties(page.Properties));
-                alObject.functions = reader.getSymbolReferenceFunctions(page.Methods);
-                alObject.variables = reader.getSymbolReferenceVariables(page.Variables);
-
-                // loop through controls
-                // Kind 0 -> Area
-                // Kind 1 -> Group
-                // Kind 8 -> Field
-                alObject.controls = reader.getSymbolReferenceControls(page.Controls);
-                alObject.actions = reader.getSymbolReferenceActions(page.Actions);
-
-                alApp.alObjects.push(alObject);
-                update();
-            }
-            //#endregion
-
-            //#region Page Extensions
-            for (let i = 0; i < pageExtensions.length; i++) {
-                const pageExtension = pageExtensions[i];
-                let alObject = new ALPageExtension(pageExtension.ReferenceSourceFileName, pageExtension.Id, pageExtension.Name, alApp);
-                alObject.setTempParentObjectFromType(pageExtension.TargetObject);
-
-                alObject.setProperties(reader.getSymbolReferenceProperties(pageExtension.Properties));
-                alObject.functions = reader.getSymbolReferenceFunctions(pageExtension.Methods);
-                alObject.variables = reader.getSymbolReferenceVariables(pageExtension.Variables);
-
-                alObject.controls = reader.getSymbolReferenceControls(pageExtension.ControlChanges, true);
-                alObject.actions = reader.getSymbolReferenceActions(pageExtension.ActionChanges, true);
 
                 alApp.alObjects.push(alObject);
                 update();
@@ -920,13 +794,35 @@ export class Reader {
         for (let j = 0; j < methodsArray.length; j++) {
             const method = methodsArray[j];
 
+            var functionType = FunctionType.Standard;
+
             const parameters: ALVariable[] = [];
             parameters.concat(this.getSymbolReferenceVariables(method.Parameters));
 
-            // TODO: Check Attributes.Name if function is Event
+            var alFunctionArgument: ALFunctionArgument | undefined;
+            if (method.Attributes !== undefined && method.Attributes[0].Arguments !== undefined) {
+                const attribute = method.Attributes[0];
+                if (attribute.Name === "IntegrationEvent") {
+                    functionType = FunctionType.IntegrationEvent;
+                    alFunctionArgument = ALFunctionArgument.createIntegrationEvent(Boolean(attribute.Arguments[0].Value),
+                        Boolean(attribute.Arguments[1].Value), attribute.Arguments[2] === undefined ? false : Boolean(attribute.Arguments[2].Value));
+                }
+                else if (attribute.Name === "BusinessEvent") {
+                    functionType = FunctionType.BusinessEvent;
+                    alFunctionArgument = ALFunctionArgument.createBusinessEvent(Boolean(attribute.Arguments[0].Value),
+                        attribute.Arguments[1] === undefined ? false : Boolean(attribute.Arguments[1].Value));
+                }
+                else if (attribute.Name === "InternalEvent") {
+                    functionType = FunctionType.InternalEvent;
+                    alFunctionArgument = ALFunctionArgument.createInternalEvent(Boolean(attribute.Arguments[0].Value),
+                        attribute.Arguments[1] === undefined ? false : Boolean(attribute.Arguments[1].Value));
+                }
+            }
 
             const isLocal: boolean = (method.IsLocal === undefined) ? false : method.IsLocal;
-            methods.push(new ALFunction(FunctionType.Standard, method.Name, { lineNo: 0, parameters: parameters, returnValue: undefined, isLocal: isLocal }));
+            const alFunction = new ALFunction(functionType, method.Name, { lineNo: 0, parameters: parameters, returnValue: undefined, isLocal: isLocal });
+            alFunction.functionArgument = alFunctionArgument;
+            methods.push(alFunction);
         }
 
         return methods;

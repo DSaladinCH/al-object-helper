@@ -1,6 +1,6 @@
 import { CancellationToken, Event, TextDocumentContentProvider, Uri } from "vscode";
 import JSZip = require("jszip");
-import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageAction, ALPageControl, ALPageCustomization, ALPageExtension, ALPermissionSet, ALTable, ALTableExtension, ALTableField, ALVariable, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, PermissionObjectType, reader } from "../internal";
+import { ALEnum, ALEnumExtension, ALEnumField, ALExtension, ALObject, ALPage, ALPageAction, ALPageControl, ALPageCustomization, ALPageExtension, ALPermissionSet, ALTable, ALTableExtension, ALTableField, ALVariable, FunctionType, HelperFunctions, ObjectType, PageActionChangeKind, PageActionKind, PageControlChangeKind, PageControlKind, PermissionObjectType, reader } from "../internal";
 
 export class ALObjectHelperDocumentProvider implements TextDocumentContentProvider {
     onDidChange?: Event<Uri> | undefined;
@@ -107,7 +107,19 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
             alObject.functions.forEach(procedure => {
                 fileText += "\n";
 
-                // TODO: Add function argument
+                if (procedure.functionArgument !== undefined) {
+                    fileText += `\t[${FunctionType[procedure.functionType]}(`;
+
+                    if (procedure.functionType === FunctionType.BusinessEvent)
+                        fileText += `${procedure.functionArgument.includeSender}, ${procedure.functionArgument.isolated}`;
+                    else if (procedure.functionType === FunctionType.IntegrationEvent)
+                        fileText += `${procedure.functionArgument.includeSender}, ${procedure.functionArgument.globalVarAccess}, ${procedure.functionArgument.isolated}`;
+                    else if (procedure.functionType === FunctionType.InternalEvent)
+                        fileText += `${procedure.functionArgument.includeSender}, ${procedure.functionArgument.isolated}`;
+
+                    fileText += ')]\n';
+                }
+
                 // function definition
                 fileText += `\t${procedure.isLocal ? "local " : ""}procedure ${procedure.functionName}(`;
 
@@ -141,7 +153,7 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
 
                 fileText += "\tbegin\n";
 
-                fileText += "\tend\n";
+                fileText += "\tend;\n";
             });
         }
 
