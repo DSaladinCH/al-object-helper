@@ -4,7 +4,7 @@ import fs = require("fs-extra");
 import lineReader = require("line-reader");
 import { Readable } from 'stream';
 import JSZip = require("jszip");
-import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode } from "./internal";
+import { ALExtension, ALObject, extensionPrefix, HelperFunctions, ALApp, ALFunction, ALVariable, FunctionType, AppType, ObjectType, ALTable, ALTableField, ALPageField, ALPage, variablePattern, ALFunctionArgument, LicenseObject, LicenseInformation, LicensePurchasedObject, Mode, ALCodeunit, ALEnum, ALEnumField, ALInterface, ALTableExtension, ALEnumExtension, ALPageExtension, ALPageCustomization, ALPageControl, PageControlChangeKind, PageControlKind, ALPageAction, PageActionChangeKind, PageActionKind } from "./internal";
 import { compareVersions } from 'compare-versions';
 
 export class Reader {
@@ -52,7 +52,6 @@ export class Reader {
         reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
 
         reader.alPackageCachePath = reader.workspaceConfig.get("al.packageCachePath") as string;
-        console.log(extensionPrefix + `Cache Path: ${reader.alPackageCachePath} - Is Absolute: ${path.isAbsolute(reader.alPackageCachePath)}`);
     }
 
     /**
@@ -149,7 +148,7 @@ export class Reader {
                 };
                 start();
             });
-            HelperFunctions.fillParentObjects(this.alApps);
+            HelperFunctions.fillMissingObjectNames(this.alApps);
 
             console.log(extensionPrefix + `Found ${alFiles.length} AL Files in all local projects`);
             if (this.printDebug) { this.outputChannel.appendLine(`Found ${alFiles.length} al files in all local projects`); }
@@ -352,7 +351,7 @@ export class Reader {
                     }
 
                     // console.log(extensionPrefix + `Duration: ${(Date.now() - start)}`);
-                    HelperFunctions.fillParentObjects(reader.alApps);
+                    HelperFunctions.fillMissingObjectNames(reader.alApps);
                     resolve('');
                 };
                 start();
@@ -437,6 +436,13 @@ export class Reader {
                 return;
             }
 
+            if (!alApp.showMyCode) {
+                await reader.getAlFilesSymbolReference(alApp, updateCallback);
+
+                resolve();
+                return;
+            }
+
             const alFiles = Object.keys(jsZip.files).filter(file => file.endsWith(".al"));
             if (alFiles.length === 0) {
                 resolve();
@@ -471,6 +477,392 @@ export class Reader {
             resolve();
         });
     }
+
+    //#region Symbol Reference
+    private getAlFilesSymbolReference(alApp: ALApp, updateCallback?: (alreadyDone: number, maxNumber: number) => void): Promise<void> {
+        return new Promise<void>(async (resolve) => {
+            let reader = this;
+
+            const jsZip = await HelperFunctions.readZip(alApp.appRootPath);
+            if (!jsZip) {
+                resolve();
+                return;
+            }
+
+            const symbolReferenceBuffer: Buffer | undefined = await jsZip.file('SymbolReference.json')?.async("nodebuffer");
+            if (!symbolReferenceBuffer) {
+                resolve();
+                return;
+            }
+
+            const UTF8_BOM = "\u{FEFF}"
+            let json = symbolReferenceBuffer.toString('utf8').replace(/\0/g, '');
+
+            if (json.startsWith(UTF8_BOM)) {
+                // Remove the BOM
+                json = json.substring(UTF8_BOM.length);
+            }
+
+            let symbolReference = JSON.parse(json);
+            const codeunits: Array<any> = symbolReference.Codeunits;
+            const controlAddIns: Array<any> = symbolReference.ControlAddIns;
+            const enumExtensions: Array<any> = symbolReference.EnumExtensionTypes;
+            const enums: Array<any> = symbolReference.EnumTypes;
+            const interfaces: Array<any> = symbolReference.Interfaces;
+            const pageCustomizations: Array<any> = symbolReference.PageCustomizations;
+            const pageExtensions: Array<any> = symbolReference.PageExtensions;
+            const pages: Array<any> = symbolReference.Pages;
+            const profileExtensions: Array<any> = symbolReference.ProfileExtensions;
+            const profiles: Array<any> = symbolReference.Profiles;
+            const queries: Array<any> = symbolReference.Queries;
+            const reports: Array<any> = symbolReference.Reports;
+            const tableExtensions: Array<any> = symbolReference.TableExtensions;
+            const tables: Array<any> = symbolReference.Tables;
+            const xmlPorts: Array<any> = symbolReference.XmlPorts;
+
+            let alreadyDoneCounter = 0;
+            let maxLength = codeunits.length + controlAddIns.length + enumExtensions.length + enums.length + interfaces.length + pageExtensions.length + pages.length +
+                profileExtensions.length + profiles.length + queries.length + reports.length + tableExtensions.length + tables.length + xmlPorts.length;
+
+            var update = (): void => {
+                alreadyDoneCounter++;
+                if (updateCallback) {
+                    updateCallback(alreadyDoneCounter, maxLength);
+                }
+            };
+
+            //#region Codeunits
+            for (let i = 0; i < codeunits.length; i++) {
+                const codeunit = codeunits[i];
+                let alObject = new ALCodeunit(codeunit.ReferenceSourceFileName, codeunit.Id, codeunit.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(codeunit.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(codeunit.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(codeunit.Variables);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Interfaces
+            for (let i = 0; i < interfaces.length; i++) {
+                const alInterface = interfaces[i];
+                let alObject = new ALInterface(alInterface.ReferenceSourceFileName, alInterface.Id, alInterface.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alInterface.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(alInterface.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alInterface.Variables);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Tables
+            for (let i = 0; i < tables.length; i++) {
+                const table = tables[i];
+                let alObject = new ALTable(table.ReferenceSourceFileName, table.Id, table.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(table.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(table.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(table.Variables);
+
+                if (table.Fields !== undefined) {
+                    for (let j = 0; j < table.Fields.length; j++) {
+                        const field = table.Fields[j];
+                        const tableField = new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0);
+                        tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
+
+                        alObject.fields.push(tableField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Table Extensions
+            for (let i = 0; i < tableExtensions.length; i++) {
+                const tableExtension = tableExtensions[i];
+                let alObject = new ALTableExtension(tableExtension.ReferenceSourceFileName, tableExtension.Id, tableExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(tableExtension.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(tableExtension.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(tableExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(tableExtension.Variables);
+
+                if (tableExtension.Fields !== undefined) {
+                    for (let j = 0; j < tableExtension.Fields.length; j++) {
+                        const field = tableExtension.Fields[j];
+                        const tableField = new ALTableField(field.Id, field.Name, reader.getSymbolReferenceTypeDefinition(field.TypeDefinition), 0);
+                        tableField.properties = reader.getSymbolReferenceProperties(field.Properties);
+
+                        alObject.fields.push(tableField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Pages
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                let alObject = new ALPage(page.ReferenceSourceFileName, page.Id, page.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(page.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(page.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(page.Variables);
+
+                alObject.controls = reader.getSymbolReferenceControls(page.Controls);
+                alObject.actions = reader.getSymbolReferenceActions(page.Actions);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Page Extensions
+            for (let i = 0; i < pageExtensions.length; i++) {
+                const pageExtension = pageExtensions[i];
+                let alObject = new ALPageExtension(pageExtension.ReferenceSourceFileName, pageExtension.Id, pageExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(pageExtension.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(pageExtension.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(pageExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(pageExtension.Variables);
+
+                alObject.controls = reader.getSymbolReferenceControls(pageExtension.ControlChanges, true);
+                alObject.actions = reader.getSymbolReferenceActions(pageExtension.ActionChanges, true);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Page Customizations
+            for (let i = 0; i < pageCustomizations.length; i++) {
+                const pageCustomization = pageCustomizations[i];
+                let alObject = new ALPageCustomization(pageCustomization.ReferenceSourceFileName, pageCustomization.Id, pageCustomization.Name, alApp);
+                alObject.setTempParentObjectFromType(pageCustomization.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(pageCustomization.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(pageCustomization.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(pageCustomization.Variables);
+
+                alObject.controls = reader.getSymbolReferenceControls(pageCustomization.ControlChanges, true);
+                alObject.actions = reader.getSymbolReferenceActions(pageCustomization.ActionChanges, true);
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Enums
+            for (let i = 0; i < enums.length; i++) {
+                const alEnum = enums[i];
+
+                let alObject = new ALEnum(alEnum.ReferenceSourceFileName, alEnum.Id, alEnum.Name, alApp);
+                alObject.setProperties(reader.getSymbolReferenceProperties(alEnum.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(alEnum.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alEnum.Variables);
+
+                if (alEnum.Values !== undefined) {
+                    for (let j = 0; j < alEnum.Values.length; j++) {
+                        const enumValue = alEnum.Values[j];
+                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
+                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
+
+                        alObject.fields.push(enumField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            //#region Enum Extensions
+            for (let i = 0; i < enumExtensions.length; i++) {
+                const alEnumExtension = enumExtensions[i];
+
+                let alObject = new ALEnumExtension(alEnumExtension.ReferenceSourceFileName, alEnumExtension.Id, alEnumExtension.Name, alApp);
+                alObject.setTempParentObjectFromType(alEnumExtension.TargetObject);
+
+                alObject.setProperties(reader.getSymbolReferenceProperties(alEnumExtension.Properties));
+                alObject.functions = reader.getSymbolReferenceFunctions(alEnumExtension.Methods);
+                alObject.variables = reader.getSymbolReferenceVariables(alEnumExtension.Variables);
+
+                if (alEnumExtension.Values !== undefined) {
+                    for (let j = 0; j < alEnumExtension.Values.length; j++) {
+                        const enumValue = alEnumExtension.Values[j];
+                        const enumField = new ALEnumField(enumValue.Ordinal, enumValue.Name);
+                        enumField.properties = reader.getSymbolReferenceProperties(enumValue.Properties);
+
+                        alObject.fields.push(enumField);
+                    }
+                }
+
+                alApp.alObjects.push(alObject);
+                update();
+            }
+            //#endregion
+
+            resolve();
+            return;
+        });
+    }
+
+    private getSymbolReferenceControls(controlsArray: any, isChanges: Boolean = false): ALPageControl[] {
+        const controls: ALPageControl[] = [];
+
+        if (controlsArray === undefined)
+            return controls;
+
+        for (let i = 0; i < controlsArray.length; i++) {
+            const control = controlsArray[i];
+
+            var pageControl: ALPageControl;
+            if (isChanges) {
+                if (!(control.ChangeKind in PageControlChangeKind))
+                    continue;
+
+                pageControl = ALPageControl.pageExtensionControl(control.ChangeKind, control.Id, control.Anchor);
+            }
+            else {
+                if (!(control.Kind in PageControlKind))
+                    continue;
+
+                pageControl = ALPageControl.pageControl(control.Kind, control.Id, control.Name);
+            }
+
+            pageControl.setProperties(this.getSymbolReferenceProperties(control.Properties));
+            pageControl.subControls = this.getSymbolReferenceControls(control.Controls);
+
+            controls.push(pageControl);
+        }
+
+        return controls;
+    }
+
+    private getSymbolReferenceActions(actionsArray: any, isChanges: Boolean = false): ALPageAction[] {
+        const actions: ALPageAction[] = [];
+
+        if (actionsArray === undefined)
+            return actions;
+
+        for (let i = 0; i < actionsArray.length; i++) {
+            const action = actionsArray[i];
+
+            var pageAction: ALPageAction;
+            if (isChanges) {
+                if (!(action.ChangeKind in PageActionChangeKind))
+                    continue;
+
+                pageAction = ALPageAction.pageExtensionAction(action.ChangeKind, action.Id, action.Anchor);
+            }
+            else {
+                if (!(action.Kind in PageActionKind))
+                    continue;
+
+                pageAction = ALPageAction.pageAction(action.Kind, action.Id, action.Name);
+            }
+
+            pageAction.setProperties(this.getSymbolReferenceProperties(action.Properties));
+            pageAction.actions = this.getSymbolReferenceActions(action.Actions);
+
+            actions.push(pageAction);
+        }
+
+        return actions;
+    }
+
+    private getSymbolReferenceTypeDefinition(typeDefinition: any): string {
+        let type = typeDefinition.Name;
+        if (typeDefinition.Subtype !== undefined) {
+            type += ` "${typeDefinition.Subtype.Name}"`;
+        }
+
+        return type;
+    }
+
+    private getSymbolReferenceFunctions(methodsArray: any): ALFunction[] {
+        const methods: ALFunction[] = [];
+
+        if (methodsArray === undefined)
+            return methods;
+
+        for (let j = 0; j < methodsArray.length; j++) {
+            const method = methodsArray[j];
+
+            var functionType = FunctionType.Standard;
+
+            const parameters: ALVariable[] = [];
+            parameters.concat(this.getSymbolReferenceVariables(method.Parameters));
+
+            var alFunctionArgument: ALFunctionArgument | undefined;
+            if (method.Attributes !== undefined && method.Attributes[0].Arguments !== undefined) {
+                const attribute = method.Attributes[0];
+                if (attribute.Name === "IntegrationEvent") {
+                    functionType = FunctionType.IntegrationEvent;
+                    alFunctionArgument = ALFunctionArgument.createIntegrationEvent(Boolean(attribute.Arguments[0].Value),
+                        Boolean(attribute.Arguments[1].Value), attribute.Arguments[2] === undefined ? false : Boolean(attribute.Arguments[2].Value));
+                }
+                else if (attribute.Name === "BusinessEvent") {
+                    functionType = FunctionType.BusinessEvent;
+                    alFunctionArgument = ALFunctionArgument.createBusinessEvent(Boolean(attribute.Arguments[0].Value),
+                        attribute.Arguments[1] === undefined ? false : Boolean(attribute.Arguments[1].Value));
+                }
+                else if (attribute.Name === "InternalEvent") {
+                    functionType = FunctionType.InternalEvent;
+                    alFunctionArgument = ALFunctionArgument.createInternalEvent(Boolean(attribute.Arguments[0].Value),
+                        attribute.Arguments[1] === undefined ? false : Boolean(attribute.Arguments[1].Value));
+                }
+            }
+
+            const isLocal: boolean = (method.IsLocal === undefined) ? false : method.IsLocal;
+            const alFunction = new ALFunction(functionType, method.Name, { lineNo: 0, parameters: parameters, returnValue: undefined, isLocal: isLocal });
+            alFunction.functionArgument = alFunctionArgument;
+            methods.push(alFunction);
+        }
+
+        return methods;
+    }
+
+    private getSymbolReferenceVariables(variablesArray: any): ALVariable[] {
+        const variables: ALVariable[] = [];
+
+        if (variablesArray === undefined)
+            return variables;
+
+        for (let k = 0; k < variablesArray.length; k++) {
+            const variable = variablesArray[k];
+            let subtype = "";
+            if (variable.TypeDefinition.Subtype !== undefined) {
+                subtype = `"${variable.TypeDefinition.Subtype.Name}"`;
+            }
+
+            const isVar: boolean = (variable.IsVar === undefined) ? false : variable.IsVar;
+            const isTemporary: boolean = (variable.TypeDefinition.Temporary === undefined) ? false : variable.TypeDefinition.Temporary;
+            variables.push(new ALVariable(variable.Name, variable.TypeDefinition.Name, subtype, 0, { isTemporary: isTemporary, isVar: isVar }))
+        }
+
+        return variables;
+    }
+
+    private getSymbolReferenceProperties(propertiesArray: any): Map<string, string> {
+        const properties: Map<string, string> = new Map<string, string>();
+
+        if (propertiesArray === undefined)
+            return properties;
+
+        for (let i = 0; i < propertiesArray.length; i++) {
+            const element = propertiesArray[i];
+            properties.set(element.Name, element.Value);
+        }
+
+        return properties;
+    }
+    //#endregion
 
     /**
      * Reads a list of ALObjects out of a list of .al files in a zip
@@ -760,24 +1152,29 @@ export class Reader {
 
     readObjectDefinition(lineText: string, filePath: string, alApp: ALApp): ALObject | undefined {
         const alObjectPattern = /^([a-z]+)\s([0-9]+)\s([a-z0-9\_]+|\"[^\"]+\")(\sextends\s([a-z0-9\_]+|\"[^\"]+\")|[\s\{]?|)[\s\{]?/i;
-        const alObjectNonIDPattern = /^([a-z0-9\_]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)$/i;
+        const alObjectNonIDPattern = /^([a-z0-9\_]+)(?: ([a-z0-9\_]+|\"[^\"]+\")|$)(?:\scustomizes\s([a-z0-9\_]+|\"[^\"]+\"))?$/i;
 
         let matches = alObjectPattern.exec(lineText);
         if (matches === null) {
             matches = alObjectNonIDPattern.exec(lineText);
             if (matches !== null) {
                 let typeStr = matches[1];
+
                 let name = "Type " + ObjectType[HelperFunctions.getObjectTypeFromString(typeStr)];
-                if (matches[2] !== undefined) {
+                if (matches[2] !== undefined)
                     name = HelperFunctions.removeNameSurrounding(matches[2]);
-                }
+
+                let customizes = "";
+                if (matches[3] !== undefined)
+                    customizes = matches[3];
+
                 matches.splice(0);
                 matches.push(lineText);
                 matches.push(typeStr);
                 matches.push("");
                 matches.push(name);
                 matches.push("");
-                matches.push("");
+                matches.push(customizes);
             }
             else {
                 return undefined;

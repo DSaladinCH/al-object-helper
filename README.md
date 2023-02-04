@@ -80,15 +80,15 @@ Just run the command **Open AL Object** and use the type shortcut and the object
 | P        | Open a page                                                    |
 | PE       | Open a page extension by the parent page id                    |
 | PED      | Open a page extension                                          |
-| E        | Open a enum                                                    |
-| EE       | Open a enum extension by the parent enum id                    |
-| EED      | Open a enum extension                                          |
+| C        | Open a codeunit                                                |
+| X        | Open a xmlport                                                 |
 | R        | Open a report                                                  |
 | RE       | Open a report extension by the parent report id                |
 | RED      | Open a report extension                                        |
-| C        | Open a codeunit                                                |
-| X        | Open a xmlport                                                 |
 | Q        | Open a query                                                   |
+| E        | Open a enum                                                    |
+| EE       | Open a enum extension by the parent enum id                    |
+| EED      | Open a enum extension                                          |
 | PS       | Open a permission set                                          |
 | PSE      | Open a permission set by the parent permission set id          |
 | PSED     | Open a permission set extension                                |

@@ -12,6 +12,7 @@ export class ALApp {
     appRootPath: string;
     appDate: Date;
     appChanged: boolean = true;
+    showMyCode: boolean = true;
     private _alObjects: ALObject[] = [];
 
     get alObjects() {
@@ -37,6 +38,7 @@ export class ALApp {
         this.appSupportedVersion = appSupportedVersion.trim();
         this.appRunTimeVersion = alRunTimeVersion.trim();
         this.appRootPath = appPath;
+
         if (!this.appRootPath.endsWith(".app")) {
             if (os.type() == "Windows_NT") {
                 if (!this.appRootPath.endsWith("\\")) {
@@ -49,7 +51,9 @@ export class ALApp {
                 }
             }
         }
+
         this.appDate = appDate;
+        this.showMyCode = showMyCode;
     }
 
     static Empty(): ALApp {
@@ -61,8 +65,11 @@ export class ALApp {
      * @param newAlObject The al object which should be added
      */
     addObject(newAlObject: ALObject) {
-        var index = this._alObjects.findIndex(alObject => alObject.objectType === newAlObject.objectType && alObject.objectID === newAlObject.objectID &&
-            alObject.alApp.appName === newAlObject.alApp.appName);
+        var index = -1;
+        if (newAlObject.objectID !== "")
+            var index = this._alObjects.findIndex(alObject => alObject.objectType === newAlObject.objectType && alObject.objectID === newAlObject.objectID && alObject.alApp.appName === newAlObject.alApp.appName);
+        else
+            var index = this._alObjects.findIndex(alObject => alObject.objectType === newAlObject.objectType && alObject.objectName === newAlObject.objectName && alObject.alApp.appName === newAlObject.alApp.appName);
 
         // if the object already exists, update it
         if (index !== -1) {

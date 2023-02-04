@@ -3,6 +3,9 @@ export class ALFunctionArgument {
     subscriberObjectName: string = "";
     subscriberEventName: string = "";
     eventElementName: string = "";
+    includeSender: Boolean = false;
+    globalVarAccess: Boolean = false;
+    isolated: Boolean = false;
 
     constructor() {
 
@@ -21,6 +24,31 @@ export class ALFunctionArgument {
         functionArgument.subscriberObjectName = objectName;
         functionArgument.subscriberEventName = eventName;
         functionArgument.eventElementName = elementName;
+
+        return functionArgument;
+    }
+
+    static createIntegrationEvent(includeSender: Boolean, globalVarAccess: Boolean, isolated: Boolean): ALFunctionArgument {
+        let functionArgument = new ALFunctionArgument();
+        functionArgument.includeSender = includeSender;
+        functionArgument.globalVarAccess = globalVarAccess;
+        functionArgument.isolated = isolated;
+
+        return functionArgument;
+    }
+
+    static createInternalEvent(includeSender: Boolean, isolated: Boolean): ALFunctionArgument {
+        let functionArgument = new ALFunctionArgument();
+        functionArgument.includeSender = includeSender;
+        functionArgument.isolated = isolated;
+
+        return functionArgument;
+    }
+
+    static createBusinessEvent(includeSender: Boolean, isolated: Boolean): ALFunctionArgument {
+        let functionArgument = new ALFunctionArgument();
+        functionArgument.includeSender = includeSender;
+        functionArgument.isolated = isolated;
 
         return functionArgument;
     }
