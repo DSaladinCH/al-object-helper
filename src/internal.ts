@@ -28,8 +28,15 @@ export * from "./objects/Table/ALTableField";
 
 /* Page */
 export * from "./objects/Page/ALPage";
+export * from "./objects/Page/ALPageAction";
+export * from "./objects/Page/ALPageControl";
+export * from "./objects/Page/ALPageCustomization";
 export * from "./objects/Page/ALPageExtension";
 export * from "./objects/Page/ALPageField";
+export * from "./objects/Page/Kinds/PageActionChangeKind";
+export * from "./objects/Page/Kinds/PageActionKind";
+export * from "./Objects/Page/Kinds/PageControlChangeKind";
+export * from "./objects/Page/Kinds/PageControlKind";
 
 /* Codeunit */
 export * from "./objects/Codeunit/ALCodeunit";
@@ -58,6 +65,9 @@ export * from "./objects/Misc/ALPermissionSet";
 export * from "./objects/Misc/ALPermissionSetExtension";
 export * from "./objects/Misc/ALProfile";
 export * from "./objects/Misc/ALRequestPage";
+export * from "./objects/Misc/PermissionObjectType";
+export * from "./objects/Misc/PermissionSetElement";
+export * from "./objects/Misc/PermissionValue";
 
 /**********/
 /*** UI ***/

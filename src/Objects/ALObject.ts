@@ -1,6 +1,6 @@
 import {
-    ALApp, ALCodeunit, ALControlAddIn, ALDotNet, ALEntitlement, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALInterface, ALPage, ALPageExtension, ALPermissionSet, ALPermissionSetExtension,
-    ALProfile, ALQuery, ALReport, ALReportExtension, ALRequestPage, ALTable, ALTableExtension, ALVariable, ALXmlport, ObjectType, reader, shortcutRegex
+    ALApp, ALCodeunit, ALControlAddIn, ALDotNet, ALEntitlement, ALEnum, ALEnumExtension, ALExtension, ALFunction, ALInterface, ALPage, ALPageCustomization, ALPageExtension, ALPermissionSet, ALPermissionSetExtension,
+    ALProfile, ALQuery, ALReport, ALReportExtension, ALRequestPage, ALTable, ALTableExtension, ALVariable, ALXmlport, HelperFunctions, ObjectType, reader, shortcutRegex
 } from "../internal";
 
 export abstract class ALObject {
@@ -11,11 +11,12 @@ export abstract class ALObject {
     alApp: ALApp;
     functions: ALFunction[] = [];
     variables: ALVariable[] = [];
+    properties: Map<string, string> = new Map<string, string>();
 
     constructor(objectPath: string, objectType: ObjectType, objectID: string, objectName: string, alApp: ALApp) {
         this.objectPath = objectPath;
         this.objectType = objectType;
-        this.objectID = objectID;
+        this.objectID = (objectID === undefined || objectID === "0") ? "" : objectID;
         this.objectName = objectName;
         if (this.objectName.startsWith("\"")) {
             this.objectName = this.objectName.substring(1);
@@ -113,6 +114,8 @@ export abstract class ALObject {
                 return new ALPage(objectPath, objectID, objectName, alApp);
             case ObjectType.PageExtension:
                 return new ALPageExtension(objectPath, objectID, objectName, alApp);
+            case ObjectType.PageCustomization:
+                return new ALPageCustomization(objectPath, objectID, objectName, alApp);
             case ObjectType.Codeunit:
                 return new ALCodeunit(objectPath, objectID, objectName, alApp);
             case ObjectType.Xmlport:
@@ -191,29 +194,33 @@ export abstract class ALObject {
             case "pe":
             case "ped":
                 return ObjectType.PageExtension;
-            case "e":
-                return ObjectType.Enum;
-            case "ee":
-            case "eed":
-                return ObjectType.EnumExtension;
+            case "c":
+                return ObjectType.Codeunit;
+            case "x":
+                return ObjectType.Xmlport;
             case "r":
                 return ObjectType.Report;
             case "re":
             case "red":
                 return ObjectType.ReportExtension;
+            case "q":
+                return ObjectType.Query;
+            case "e":
+                return ObjectType.Enum;
+            case "ee":
+            case "eed":
+                return ObjectType.EnumExtension;
+            case "ps":
+                return ObjectType.PermissionSet;
             case "pse":
             case "psed":
                 return ObjectType.PermissionSetExtension;
-            case "c":
-                return ObjectType.Codeunit;
-            case "x":
-                return ObjectType.Xmlport;
-            case "q":
-                return ObjectType.Query;
-            case "ps":
-                return ObjectType.PermissionSet;
             default:
                 return undefined;
         }
+    }
+
+    setProperties(properties: Map<string, string>) {
+        this.properties = HelperFunctions.fixProperties(properties);
     }
 }

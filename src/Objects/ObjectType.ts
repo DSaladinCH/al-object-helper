@@ -5,6 +5,7 @@ export enum ObjectType {
     TableExtension,
     Page,
     PageExtension,
+    PageCustomization,
     Codeunit,
     Xmlport,
     Report,
