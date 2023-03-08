@@ -438,9 +438,6 @@ export class Reader {
 
             if (!alApp.showMyCode) {
                 await reader.getAlFilesSymbolReference(alApp, updateCallback);
-
-                resolve();
-                return;
             }
 
             const alFiles = Object.keys(jsZip.files).filter(file => file.endsWith(".al"));
@@ -495,7 +492,7 @@ export class Reader {
                 return;
             }
 
-            const UTF8_BOM = "\u{FEFF}"
+            const UTF8_BOM = "\u{FEFF}";
             let json = symbolReferenceBuffer.toString('utf8').replace(/\0/g, '');
 
             if (json.startsWith(UTF8_BOM)) {
@@ -986,25 +983,26 @@ export class Reader {
                         }
 
                         alObject = tempALObject;
+                        alObject.isSymbolsOnly = false;
                         firstLine = false;
                         alObject.addLocalEvents();
 
                         // Finish searching because of user preferences
-                        if ((forcedMode && (forcedMode as Mode) != Mode.ForceInternal) && reader.mode === Mode.HyperPerformance) {
+                        if ((forcedMode && (forcedMode as Mode) !== Mode.ForceInternal) && reader.mode === Mode.HyperPerformance) {
                             cb(false);
                             return false;
                         }
 
                         if (forcedMode === undefined) {
                             // Finish searching because of user preferences
-                            if (reader.mode == Mode.Performance || reader.mode == Mode.HyperPerformance) {
+                            if (reader.mode === Mode.Performance || reader.mode === Mode.HyperPerformance) {
                                 cb(false);
                                 return false;
                             }
                         }
 
                         if (forcedMode !== undefined) {
-                            if (forcedMode == Mode.Performance || forcedMode == Mode.HyperPerformance) {
+                            if (forcedMode === Mode.Performance || forcedMode === Mode.HyperPerformance) {
                                 cb(false);
                                 return false;
                             }
