@@ -1,6 +1,11 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.4] - 2023-03-08
+### Fix
+- Extension not loading if resourceExposurePolicy is not available (Resolves [#80](https://github.com/DSaladinCH/al-object-helper/issues/80))
+- Only showing symbols files, if al files are available
+
 ## [2.3.3] - 2023-02-04
 ### Add
 - Support for page customizations
