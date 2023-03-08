@@ -12,8 +12,11 @@ export abstract class ALObject {
     functions: ALFunction[] = [];
     variables: ALVariable[] = [];
     properties: Map<string, string> = new Map<string, string>();
+    isSymbolsOnly: boolean = true;
 
     constructor(objectPath: string, objectType: ObjectType, objectID: string, objectName: string, alApp: ALApp) {
+        objectID = objectID.toString();
+        
         this.objectPath = objectPath;
         this.objectType = objectType;
         this.objectID = (objectID === undefined || objectID === "0") ? "" : objectID;
