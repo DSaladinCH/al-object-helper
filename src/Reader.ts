@@ -85,7 +85,7 @@ export class Reader {
             if (json.showMyCode !== undefined) {
                 showMyCode = JSON.parse(json.showMyCode);
             }
-            else if (json.resourceExposurePolicy.includeSourceInSymbolFile !== undefined) {
+            else if (json.resourceExposurePolicy.includeSourceInSymbolFile !== undefined && json.resourceExposurePolicy.includeSourceInSymbolFile !== undefined) {
                 showMyCode = JSON.parse(json.resourceExposurePolicy.includeSourceInSymbolFile);
             }
 
