@@ -29,7 +29,7 @@ export class ALObjectHelperDocumentProvider implements TextDocumentContentProvid
             return result;
         }
 
-        if (!alObject.alApp.showMyCode) {
+        if (!alObject.alApp.showMyCode && alObject.isSymbolsOnly) {
             return this.createSymbolFile(alObject);
         }
 
