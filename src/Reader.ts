@@ -11,6 +11,8 @@ export class Reader {
     extensionContext: vscode.ExtensionContext;
     outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("AL Object Helper");
     workspaceConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration();
+    userConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration(undefined, null);
+    extensionConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration(undefined, vscode.Uri.parse(''));
     alApps: ALApp[] = [];
     licenseInformation: LicenseInformation | undefined;
     printDebug: boolean = false;
@@ -52,12 +54,20 @@ export class Reader {
         reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
 
         reader.alPackageCachePath = reader.workspaceConfig.get("al.packageCachePath") as string;
+        if (vscode.workspace.workspaceFolders) {
+            const workspaceFolder = vscode.workspace.workspaceFolders[0];
+            let config = vscode.workspace.getConfiguration('al', workspaceFolder.uri);
+            let mySetting = config.get('packageCachePath');
+        }
     }
 
     /**
      * Starts the complete reading of all apps and .al files
      */
     async start() {
+        let t = this.userConfig.get("al.packageCachePath") as string;
+        let tt = this.extensionConfig.get("al.packageCachePath") as string;
+
         if (!path.isAbsolute(this.alPackageCachePath)) {
             for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
                 const alApp = this.alApps.filter(app => app.appType === AppType.local)[index];
