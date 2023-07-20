@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.5] - 2023-07-20
+### Fix
+- #85 Argument path expects type string, not array
+
 ## [2.3.4] - 2023-03-08
 ### Fix
 - Extension not loading if resourceExposurePolicy is not available (Resolves [#80](https://github.com/DSaladinCH/al-object-helper/issues/80))
@@ -247,6 +251,9 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.4...2.3.5
+[2.3.4]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.3...2.3.4
+[2.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.1...2.3.2
 [2.3.1]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/DSaladinCH/al-object-helper/compare/2.2.13...2.3.0
