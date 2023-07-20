@@ -11,6 +11,8 @@ export class Reader {
     extensionContext: vscode.ExtensionContext;
     outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("AL Object Helper");
     workspaceConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration();
+    userConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration(undefined, null);
+    extensionConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration(undefined, vscode.Uri.parse(''));
     alApps: ALApp[] = [];
     licenseInformation: LicenseInformation | undefined;
     printDebug: boolean = false;
