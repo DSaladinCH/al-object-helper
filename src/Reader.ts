@@ -17,7 +17,7 @@ export class Reader {
     autoReloadObjects: boolean = false;
     mode: Mode = Mode.Performance;
     onlyShowLocalFiles: boolean = false;
-    alPackageCachePath: string = "";
+    alPackageCachePaths: string[] = [];
     alApplicationVersion: string = "";
 
     private isReadingLocalApp: boolean = false;
@@ -51,29 +51,49 @@ export class Reader {
         reader.mode = Mode[(reader.workspaceConfig.get("alObjectHelper.mode") as string).replace(/\s/g, '') as keyof typeof Mode];
         reader.onlyShowLocalFiles = reader.workspaceConfig.get("alObjectHelper.onlyShowLocalFiles") as boolean;
 
-        reader.alPackageCachePath = reader.workspaceConfig.get("al.packageCachePath") as string;
+        let workspacePackageCache = reader.workspaceConfig.get<string>("al.packageCachePath");
+
+        if (vscode.workspace.workspaceFolders) {
+            vscode.workspace.workspaceFolders.forEach(wf => {
+                if (workspacePackageCache)
+                    if (!reader.alPackageCachePaths.includes(path.resolve(wf.uri.fsPath, workspacePackageCache[0])))
+                            reader.alPackageCachePaths.push(path.resolve(wf.uri.fsPath, workspacePackageCache[0]));
+
+                let workspaceFolderconfig = vscode.workspace.getConfiguration('al', wf.uri);
+                let packageCache = workspaceFolderconfig.get<string>('packageCachePath');
+                
+                if (packageCache)
+                    if (!reader.alPackageCachePaths.includes(path.resolve(wf.uri.fsPath, packageCache[0])))
+                        reader.alPackageCachePaths.push(path.resolve(wf.uri.fsPath, packageCache[0]));
+            });
+        }
     }
 
     /**
      * Starts the complete reading of all apps and .al files
      */
     async start() {
-        if (!path.isAbsolute(this.alPackageCachePath)) {
-            for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
-                const alApp = this.alApps.filter(app => app.appType === AppType.local)[index];
-                await this.searchAppPackages(alApp.appRootPath);
+        if (!this.alPackageCachePaths || this.alPackageCachePaths.length == 0)
+            return;
+
+        this.alPackageCachePaths.forEach(async apcp => {
+            if (!path.isAbsolute(apcp)) {
+                for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
+                    const alApp = this.alApps.filter(app => app.appType === AppType.local)[index];
+                    await this.searchAppPackages(alApp.appRootPath);
+                }
             }
-        }
-        else {
-            await this.searchAppPackages(this.alPackageCachePath);
-        }
-
-        if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
-
-        await Promise.all([
-            this.readLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
-            this.readAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
-        ]);
+            else {
+                await this.searchAppPackages(apcp);
+            }
+            
+            if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
+            
+            await Promise.all([
+                this.readLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
+                this.readAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
+            ]);
+        });
     }
 
     addLocalFolderAsApp(folderPath: string): ALApp | null {
@@ -313,11 +333,14 @@ export class Reader {
         if (this.isReadingApp) {
             return;
         }
+
+        console.log('setting to true');
         this.isReadingApp = true;
 
         if (this.printDebug) { this.outputChannel.appendLine("Start reading app packages!"); }
 
         if (alApps.length === 0) {
+            this.isReadingApp = false;
             return;
         }
 
