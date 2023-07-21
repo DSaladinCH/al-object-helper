@@ -255,6 +255,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.3.6]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.5...2.3.6
 [2.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.4...2.3.5
 [2.3.4]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.3...2.3.4
 [2.3.3]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.2...2.3.3
