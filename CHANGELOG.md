@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.6] - 2023-07-21
+### Fix
+- Version Comparing when checking app packages
+
 ## [2.3.5] - 2023-07-20
 ### Fix
 - #85 Argument path expects type string, not array
