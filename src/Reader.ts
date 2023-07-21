@@ -281,7 +281,7 @@ export class Reader {
                     var hasCorrectMajorPackage: boolean = false;
                     var alAppToUse: ALApp;
                     alApps.forEach(alApp => {
-                        if (compareVersions(alApp.appSupportedVersion, this.alApplicationVersion) < 0) {
+                        if (compareVersions(alApp.appSupportedVersion, this.alApplicationVersion) > 0) {
                             this.alApps.splice(this.alApps.indexOf(alApp), 1);
                             return;
                         }
