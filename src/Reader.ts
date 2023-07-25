@@ -64,9 +64,18 @@ export class Reader {
                 let workspaceFolderconfig = vscode.workspace.getConfiguration('al', wf.uri);
                 let packageCache = workspaceFolderconfig.get<string>('packageCachePath');
                 
-                if (packageCache)
-                    if (!reader.alPackageCachePaths.includes(path.resolve(wf.uri.fsPath, packageCache[0])))
-                        reader.alPackageCachePaths.push(path.resolve(wf.uri.fsPath, packageCache[0]));
+                if (packageCache) {
+                    let newPath = "";
+                    if (typeof packageCache === "string")
+                        newPath = path.resolve(wf.uri.fsPath, packageCache);
+                    else if (Array.isArray(packageCache))
+                        newPath = path.resolve(wf.uri.fsPath, packageCache[0]);
+                    else
+                        return;
+
+                    if (!reader.alPackageCachePaths.includes(newPath))
+                        reader.alPackageCachePaths.push(newPath);
+                }
             });
         }
     }
@@ -78,7 +87,7 @@ export class Reader {
         if (!this.alPackageCachePaths || this.alPackageCachePaths.length == 0)
             return;
 
-        this.alPackageCachePaths.forEach(async apcp => {
+        for (const apcp of this.alPackageCachePaths) {
             if (!path.isAbsolute(apcp)) {
                 for (let index = 0; index < this.alApps.filter(app => app.appType === AppType.local).length; index++) {
                     const alApp = this.alApps.filter(app => app.appType === AppType.local)[index];
@@ -88,14 +97,14 @@ export class Reader {
             else {
                 await this.searchAppPackages(apcp);
             }
-            
-            if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
-            
-            await Promise.all([
-                this.readLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
-                this.readAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
-            ]);
-        });
+        }
+
+        if (this.printDebug) { this.outputChannel.appendLine(`Found ${this.alApps.filter(alApp => alApp.appType === AppType.appPackage).length} app files in all projects`); }
+
+        await Promise.all([
+            this.readLocalApps(this.alApps.filter(app => app.appType === AppType.local)),
+            this.readAppPackages(this.alApps.filter(app => app.appType === AppType.appPackage && app.appChanged))
+        ]);
     }
 
     addLocalFolderAsApp(folderPath: string): ALApp | null {
@@ -115,7 +124,8 @@ export class Reader {
             if (supportedVersion === undefined)
                 supportedVersion = json.platform;
 
-            this.alApplicationVersion = supportedVersion;
+            if (this.alApplicationVersion == "")
+                this.alApplicationVersion = supportedVersion;
 
             const alApp = new ALApp(AppType.local, json.id, json.name, json.publisher, json.version, supportedVersion, json.runtime, folderPath, new Date(), showMyCode);
             this.alApps.push(alApp);
@@ -281,7 +291,7 @@ export class Reader {
                     var hasCorrectMajorPackage: boolean = false;
                     var alAppToUse: ALApp;
                     alApps.forEach(alApp => {
-                        if (compareVersions(alApp.appSupportedVersion, this.alApplicationVersion) > 0) {
+                        if (compareVersions(alApp.appSupportedVersion, this.alApplicationVersion) < 0) {
                             this.alApps.splice(this.alApps.indexOf(alApp), 1);
                             return;
                         }
