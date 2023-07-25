@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.7] - 2023-07-25
+### Fix
+- App packages not loading if configuration is a string and not a array
+
 ## [2.3.6] - 2023-07-21
 ### Fix
 - Version Comparing when checking app packages
@@ -255,6 +259,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.3.7]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.6...2.3.7
 [2.3.6]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.5...2.3.6
 [2.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.4...2.3.5
 [2.3.4]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.3...2.3.4
