@@ -3,7 +3,7 @@ All versions of AL Object Helper will be documented in this file.
 
 ## [2.3.8] - 2023-11-09
 ### Fix
-- Fix extension crashing if symbols reference is null
+- Extension crashing if symbols reference is null
 
 ## [2.3.7] - 2023-07-25
 ### Fix
@@ -263,6 +263,7 @@ All versions of AL Object Helper will be documented in this file.
 ## [1.0.0] - 2020-06-24
 - Initial release
 
+[2.3.8]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.7...2.3.8
 [2.3.7]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.6...2.3.7
 [2.3.6]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.5...2.3.6
 [2.3.5]: https://github.com/DSaladinCH/al-object-helper/compare/2.3.4...2.3.5
