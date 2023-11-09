@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.8] - 2023-11-09
+### Fix
+- Fix extension crashing if symbols reference is null
+
 ## [2.3.7] - 2023-07-25
 ### Fix
 - App packages not loading if configuration is a string and not a array
