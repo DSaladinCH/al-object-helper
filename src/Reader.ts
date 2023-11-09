@@ -536,21 +536,21 @@ export class Reader {
             }
 
             let symbolReference = JSON.parse(json);
-            const codeunits: Array<any> = symbolReference.Codeunits;
-            const controlAddIns: Array<any> = symbolReference.ControlAddIns;
-            const enumExtensions: Array<any> = symbolReference.EnumExtensionTypes;
-            const enums: Array<any> = symbolReference.EnumTypes;
-            const interfaces: Array<any> = symbolReference.Interfaces;
-            const pageCustomizations: Array<any> = symbolReference.PageCustomizations;
-            const pageExtensions: Array<any> = symbolReference.PageExtensions;
-            const pages: Array<any> = symbolReference.Pages;
-            const profileExtensions: Array<any> = symbolReference.ProfileExtensions;
-            const profiles: Array<any> = symbolReference.Profiles;
-            const queries: Array<any> = symbolReference.Queries;
-            const reports: Array<any> = symbolReference.Reports;
-            const tableExtensions: Array<any> = symbolReference.TableExtensions;
-            const tables: Array<any> = symbolReference.Tables;
-            const xmlPorts: Array<any> = symbolReference.XmlPorts;
+            const codeunits: Array<any> = symbolReference.Codeunits ?? [];
+            const controlAddIns: Array<any> = symbolReference.ControlAddIns ?? [];
+            const enumExtensions: Array<any> = symbolReference.EnumExtensionTypes ?? [];
+            const enums: Array<any> = symbolReference.EnumTypes ?? [];
+            const interfaces: Array<any> = symbolReference.Interfaces ?? [];
+            const pageCustomizations: Array<any> = symbolReference.PageCustomizations ?? [];
+            const pageExtensions: Array<any> = symbolReference.PageExtensions ?? [];
+            const pages: Array<any> = symbolReference.Pages ?? [];
+            const profileExtensions: Array<any> = symbolReference.ProfileExtensions ?? [];
+            const profiles: Array<any> = symbolReference.Profiles ?? [];
+            const queries: Array<any> = symbolReference.Queries ?? [];
+            const reports: Array<any> = symbolReference.Reports ?? [];
+            const tableExtensions: Array<any> = symbolReference.TableExtensions ?? [];
+            const tables: Array<any> = symbolReference.Tables ?? [];
+            const xmlPorts: Array<any> = symbolReference.XmlPorts ?? [];
 
             let alreadyDoneCounter = 0;
             let maxLength = codeunits.length + controlAddIns.length + enumExtensions.length + enums.length + interfaces.length + pageExtensions.length + pages.length +
