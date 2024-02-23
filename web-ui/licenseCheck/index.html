@@ -109,7 +109,7 @@
                         statusText = "Some objects are out of range, but can be fixed";
                         statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
                     }
-                    else if (licenseCheckInfo.noOutOfRange === 0 && licenseCheckInfo.noFreeObjects > 0) {
+                    else if (licenseCheckInfo.noOutOfRange === 0 && licenseCheckInfo.noFreeObjects <= 3) {
                         statusText = "All objects are covered by the license, but the license should be extended";
                         statusColor = getComputedStyle(document.documentElement).getPropertyValue('--vscode-list-warningForeground');
                     }
