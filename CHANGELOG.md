@@ -1,6 +1,10 @@
 # Change Log
 All versions of AL Object Helper will be documented in this file.
 
+## [2.3.9] - 2024-02-23
+### Fix
+- Module permissions not loading correctly on license check (Fix [#92](https://github.com/DSaladinCH/al-object-helper/issues/92))
+
 ## [2.3.8] - 2023-11-09
 ### Fix
 - Extension crashing if symbols reference is null
