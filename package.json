@@ -11,7 +11,7 @@
     "version": "2.3.9",
     "icon": "Images/ALObjectHelper_Small.png",
     "engines": {
-        "vscode": "^1.80.0"
+        "vscode": "^1.86.0"
     },
     "homepage": "https://github.com/DSaladinCH/al-object-helper/blob/main/README.md",
     "repository": {
