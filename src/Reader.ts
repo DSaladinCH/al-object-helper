@@ -59,11 +59,11 @@ export class Reader {
             vscode.workspace.workspaceFolders.forEach(wf => {
                 if (workspacePackageCache)
                     if (!reader.alPackageCachePaths.includes(path.resolve(wf.uri.fsPath, workspacePackageCache[0])))
-                            reader.alPackageCachePaths.push(path.resolve(wf.uri.fsPath, workspacePackageCache[0]));
+                        reader.alPackageCachePaths.push(path.resolve(wf.uri.fsPath, workspacePackageCache[0]));
 
                 let workspaceFolderconfig = vscode.workspace.getConfiguration('al', wf.uri);
                 let packageCache = workspaceFolderconfig.get<string>('packageCachePath');
-                
+
                 if (packageCache) {
                     let newPath = "";
                     if (typeof packageCache === "string")
@@ -1472,11 +1472,9 @@ export class Reader {
                     objectType = LicenseObject.getObjectType(objectTypeStr);
                     if (objectType === undefined) { return true; }
 
-                    if (moduleName === "Essentials Objects (hidden)") {
-                        // No more important license data to import
-                        cb(false);
-                        return false;
-                    }
+                    const moduleObject = new LicenseObject(objectType, rangeFrom, rangeTo, rimdx, moduleName);
+
+                    if (!moduleObject.insertPermission) { return true; }
                     licenseObjects.push(new LicenseObject(objectType, rangeFrom, rangeTo, rimdx, moduleName));
                 }
 

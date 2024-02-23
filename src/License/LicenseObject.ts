@@ -7,7 +7,7 @@ export class LicenseObject {
     rangeTo: string;
 
     readPermission: Boolean;
-    indirectPermission: Boolean;
+    insertPermission: Boolean;
     modifyPermission: Boolean;
     deletePermission: Boolean;
     executePermission: Boolean;
@@ -21,7 +21,7 @@ export class LicenseObject {
         const rimdxPermissions = rimdx.split("");
 
         this.readPermission = !(rimdxPermissions[0] === "-");
-        this.indirectPermission = !(rimdxPermissions[1] === "-");
+        this.insertPermission = !(rimdxPermissions[1] === "-");
         this.modifyPermission = !(rimdxPermissions[2] === "-");
         this.deletePermission = !(rimdxPermissions[3] === "-");
         this.executePermission = !(rimdxPermissions[4] === "-");
