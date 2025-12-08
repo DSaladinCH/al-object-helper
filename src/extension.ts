@@ -1,7 +1,7 @@
 // The module "vscode" contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { ALApp, ALDefinitionProvider, ALExtension, ALFunction, ALFunctionItem, ALHoverProvider, ALObject, ALObjectHelperDocumentProvider, ALObjectHelperTreeDataProvider, AppType, FunctionType, HelperFunctions, ObjectType, QuickPickManagement, Reader, UIManagement } from './internal';
+import { ALApp, ALExtension, ALFunction, ALFunctionItem, ALObject, AppType, FunctionType, HelperFunctions, ObjectType, QuickPickManagement, Reader, UIManagement } from './internal';
 import os = require('os');
 
 // this method is called when your extension is activated
@@ -23,13 +23,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	setIsALExtension(false);
 
+	const startDate = new Date();
 	reader = new Reader(context);
 	await reader.start();
-
-	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(textDocumentScheme, new ALObjectHelperDocumentProvider()));
-	context.subscriptions.push(vscode.languages.registerDefinitionProvider("al", new ALDefinitionProvider(reader)));
-	context.subscriptions.push(vscode.languages.registerHoverProvider("al", new ALHoverProvider(reader)));
-	// context.subscriptions.push(vscode.window.registerTreeDataProvider("alObjectHelperObjectList", new ALObjectHelperTreeDataProvider()));
+	vscode.window.showInformationMessage(`Loading time: ${(new Date().getTime() - startDate.getTime()) / 1000} seconds`);
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.openALObject", async function () {
 		if (reader.autoReloadObjects) {
@@ -50,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		if (await HelperFunctions.openFile(alObject)) {
 			vscode.window.showInformationMessage(`Opened ${ObjectType[alObject.objectType]} ${alObject.objectName}`);
+			vscode.window.showInformationMessage(`Opened ${alObject.objectPath}`);
 		}
 		else {
 			vscode.window.showWarningMessage("Could not find or open this object");
@@ -102,7 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		alObject = await reader.readAlObject(alObject);
 
 		if (!alObject)
-			return;
+			{return;}
 
 		const alFunctionItems: ALFunctionItem[] = [];
 		alObject.functions.filter(alFunction =>
@@ -168,16 +166,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.rereadApp", async function () {
 		const alApp = await UIManagement.selectALApp(reader.alApps);
 		if (!alApp)
-			return;
+			{return;}
 
 		const mode = await UIManagement.selectReloadOption();
 		if (mode === undefined)
-			return;
+			{return;}
 
-		if (alApp.appType == AppType.local)
-			await reader.readLocalApps([alApp], mode);
+		if (alApp.appType === AppType.local)
+			{await reader.readLocalApps([alApp], mode);}
 		else
-			await reader.readAppPackages([alApp], mode);
+			{await reader.readAppPackages([alApp], mode);}
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand("al-object-helper.checkLicense", async function () {
@@ -258,7 +256,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(async (workspaceFoldersChange) => {
 		for (let i = 0; i < workspaceFoldersChange.removed.length; i++) {
 			let appPath = workspaceFoldersChange.removed[i].uri.fsPath;
-			if (os.type() == "Windows_NT") {
+			if (os.type() === "Windows_NT") {
 				if (!appPath.endsWith("\\")) {
 					appPath += "\\";
 				}

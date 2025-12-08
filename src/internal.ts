@@ -77,14 +77,6 @@ export * from "./ui/ALObjectItem";
 export * from "./ui/ALFunctionItem";
 export * from "./ui/UIManagement";
 
-/*****************/
-/*** Providers ***/
-/*****************/
-export * from "./providers/ALDefinitionProvider";
-export * from "./providers/ALHoverProvider";
-export * from "./providers/ALObjectHelperDocumentProvider";
-export * from "./providers/ALObjectHelperTreeDataProvider";
-
 /***************/
 /*** License ***/
 /***************/
